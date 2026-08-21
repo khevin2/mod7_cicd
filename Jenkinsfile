@@ -133,6 +133,36 @@ REMOTE
         }
       }
     }
+    stage('Runtime Cleanup') {
+      steps {
+        script { if (!params.DEPLOY_HOST?.trim()) { error('DEPLOY_HOST is required before runtime cleanup.') } }
+        sshagent(credentials: ['ec2_ssh']) {
+          sh '''#!/usr/bin/env bash
+            set -Eeuo pipefail
+            remote_command=$(printf 'REGISTRY_HOST=%q APP_NAME=%q DEPLOY_PORT=%q bash -s' "$REGISTRY_HOST" "$APP_NAME" "$DEPLOY_PORT")
+            ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" "${DEPLOY_USER}@${DEPLOY_HOST}" "$remote_command" <<'REMOTE'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+candidate="${APP_NAME}-candidate"
+
+# The approved host-retention policy is intentionally narrow: remove only the
+# deployment candidate and dangling layers. Immutable, tagged images are left
+# in place so the active image and its previous known-good rollback image stay
+# available. Do not replace this with a broad image/container prune.
+docker rm -f "$candidate" >/dev/null 2>&1 || true
+docker image prune --force
+docker logout "$REGISTRY_HOST" >/dev/null 2>&1 || true
+
+running_count="$(docker ps --filter "name=^/${APP_NAME}$" --filter 'status=running' --format '{{.ID}}' | wc -l | tr -d '[:space:]')"
+[[ "$running_count" == '1' ]]
+[[ "$(docker inspect --format='{{.State.Health.Status}}' "$APP_NAME")" == 'healthy' ]]
+curl --fail --silent --show-error --max-time 10 "http://127.0.0.1:${DEPLOY_PORT}/health"
+df -h /
+REMOTE
+          '''
+        }
+      }
+    }
   }
   post {
     always {
