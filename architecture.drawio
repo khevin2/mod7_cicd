@@ -1,0 +1,52 @@
+<mxfile host="65bd71144e">
+    <diagram id="jenkins-cicd-simple" name="Jenkins CI/CD Architecture">
+        <mxGraphModel dx="932" dy="597" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="700" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="Jenkins CI/CD deployment flow" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#16191f;fontSize=24;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="250" y="35" width="700" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="aws-cloud" value="AWS Cloud" style="shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud_alt;container=1;recursiveResize=0;collapsible=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingLeft=32;fontSize=16;fontStyle=1;fontColor=#232f3e;strokeColor=#147eba;fillColor=none;" parent="1" vertex="1">
+                    <mxGeometry x="725" y="145" width="390" height="320" as="geometry"/>
+                </mxCell>
+                <mxCell id="vpc" value="VPC" style="shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_vpc;container=1;recursiveResize=0;collapsible=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingLeft=32;fontSize=14;fontStyle=1;fontColor=#248814;strokeColor=#248814;fillColor=none;" parent="1" vertex="1">
+                    <mxGeometry x="755" y="200" width="330" height="210" as="geometry"/>
+                </mxCell>
+                <mxCell id="github" value="&lt;b&gt;GitHub&lt;/b&gt;&lt;br&gt;Source code" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#24292f;strokeColor=#24292f;fontColor=#ffffff;fontSize=15;spacing=8;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="230" width="150" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="jenkins" value="&lt;b&gt;Jenkins&lt;/b&gt;&lt;br&gt;Build and deploy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d33833;strokeWidth=2;fontColor=#232f3e;fontSize=15;spacing=8;" parent="1" vertex="1">
+                    <mxGeometry x="275" y="230" width="165" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="ghcr" value="&lt;b&gt;GHCR&lt;/b&gt;&lt;br&gt;Immutable image" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#24292f;strokeColor=#24292f;fontColor=#ffffff;fontSize=15;spacing=8;" parent="1" vertex="1">
+                    <mxGeometry x="510" y="230" width="155" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="ec2" value="EC2 host" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ec2;outlineConnect=0;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontColor=#232f3e;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="825" y="265" width="75" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="app" value="&lt;b&gt;Docker app&lt;/b&gt;&lt;br&gt;Express service on :80" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfdf3;strokeColor=#248814;fontColor=#1f2937;fontSize=13;spacing=8;" parent="1" vertex="1">
+                    <mxGeometry x="945" y="265" width="110" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="browser" value="&lt;b&gt;Public user&lt;/b&gt;&lt;br&gt;Browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#64748b;fontColor=#1f2937;fontSize=14;spacing=8;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="500" width="150" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-github-jenkins" value="Checkout" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#5f6b7a;fontSize=12;fontColor=#374151;labelBackgroundColor=#ffffff;" parent="1" source="github" target="jenkins" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-jenkins-ghcr" value="Build and push" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#5f6b7a;fontSize=12;fontColor=#374151;labelBackgroundColor=#ffffff;" parent="1" source="jenkins" target="ghcr" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-ghcr-ec2" value="Pull image digest" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#5f6b7a;fontSize=12;fontColor=#374151;labelBackgroundColor=#ffffff;" parent="1" source="ghcr" target="ec2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-ec2-app" value="Run" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#248814;fontSize=12;fontColor=#1f6b15;labelBackgroundColor=#ffffff;" parent="1" source="ec2" target="app" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-browser-app" value="HTTP :80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#5f6b7a;fontSize=12;fontColor=#374151;labelBackgroundColor=#ffffff;" parent="1" source="browser" target="app" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

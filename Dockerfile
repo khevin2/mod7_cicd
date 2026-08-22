@@ -17,6 +17,11 @@ ENV NODE_ENV=production \
 RUN addgroup -g 10001 -S appgroup \
     && adduser -u 10001 -S -D -H -G appgroup appuser
 
+# npm is required only in the dependency stage. Removing it from the runtime
+# image reduces the attack surface while retaining the Node.js executable.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx
+
 WORKDIR /app
 
 COPY --from=production-dependencies --chown=10001:10001 /app/node_modules ./node_modules

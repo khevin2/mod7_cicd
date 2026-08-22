@@ -1,0 +1,7 @@
+# Copy to backend.hcl after applying ../bootstrap and replace the bucket value
+# with the sanitized bootstrap output. Do not commit backend.hcl.
+bucket       = "replace-with-unique-state-bucket-name"
+key          = "mod7-cicd/live/terraform.tfstate"
+region       = "eu-north-1"
+encrypt      = true
+use_lockfile = true

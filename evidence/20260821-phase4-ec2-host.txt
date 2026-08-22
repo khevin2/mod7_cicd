@@ -1,0 +1,35 @@
+Phase 4 EC2 deployment-host verification
+Date: 2026-08-21
+Scope: Sanitized runtime evidence; identifiers, public addresses, keys, and credentials are omitted.
+
+AWS checks
+- The tagged deployment instance was running with both EC2 status checks reported as ok.
+- AMI release: Amazon Linux 2 x86_64.
+- Instance metadata requires IMDSv2 with hop limit 1.
+- Root volume: encrypted gp3, 20 GiB.
+- Final SSH ingress: TCP 22 from the approved Jenkins/administrator /32 only. Public HTTP remains on TCP 80.
+- A temporary regional EC2 Instance Connect prefix-list rule was added through a reviewed 0-add/1-change/0-destroy plan solely to obtain the host fingerprint, then removed through a reviewed 0-add/1-change/0-destroy plan.
+
+Trusted SSH verification
+- The Ed25519 host-key fingerprint was obtained through an authenticated EC2 Instance Connect console session.
+- ssh-keyscan returned the same fingerprint before SSH was attempted.
+- SSH used BatchMode, IdentitiesOnly, StrictHostKeyChecking=yes, and a dedicated temporary known-hosts file.
+
+Host checks through the verified SSH session
+- OS: Amazon Linux 2.
+- ec2-user group membership includes docker.
+- Docker is enabled and active; client version 25.0.14 and server version 25.0.16 were reported.
+- Docker successfully returned to active status after one systemctl restart.
+- Root filesystem: 20 GiB total, approximately 18 GiB available.
+- No containers or images were present before the first deployment.
+- A one-second privileged TCP 80 bind/release test did not report an address-in-use error.
+
+Cleanup policy
+- Before the first deployment, leave the empty host unchanged.
+- After a new deployment proves healthy, prune only stopped containers and dangling images; retain the current and immediately previous immutable deployment images for rollback.
+- Registry retention remains an unresolved Phase 4 registry decision.
+
+Open items
+- Create the GHCR package and a least-privilege Jenkins registry credential.
+- Verify authenticated registry push/pull and private-registry host access when applicable.
+- Design a dedicated least-privilege deployment identity if the lab requires stronger separation than ec2-user.

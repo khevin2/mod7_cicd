@@ -1,0 +1,19 @@
+Phase 2 Docker build evidence
+Date: 2026-08-20
+Environment: Docker Engine 29.7.2, Linux amd64
+
+Base image manifest check:
+node:24.19.0-alpine
+index digest: sha256:d32cdf619f63fe0471182d08996dd516c6275bb5fd31ae06e55a570bd9e1ad43
+linux/amd64 manifest: sha256:2a49bdf71e9fd965a58c1703fd9ddd205b34e5782b692a72dd1d248abb0beb43
+
+Command: docker build --check .
+Result: exit 0; Check complete, no warnings found.
+
+Command: docker build --pull --progress=plain --tag jenkins-webapp:phase2-local .
+Result: exit 0
+Initial clean build context transferred: 171.38 kB
+Final incremental rebuild context delta: 158 B
+Production dependency install: 67 packages; audit reported 0 vulnerabilities
+Image tag: jenkins-webapp:phase2-local
+Final image ID: sha256:2f88ca43cdd7bc6b9804cddf9784096e91f10dd4174b446f00f25e076a221afa

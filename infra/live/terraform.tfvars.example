@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars and replace each placeholder with approved values.
+# The SSH public key is not secret; never place a private key in this file.
+owner                  = "replace-with-owner"
+jenkins_ssh_cidr       = "198.51.100.10/32"
+administrator_ssh_cidr = "203.0.113.10/32"
+ssh_public_key_path    = "../../keys/jenkins-webapp-lab-ec2.pub"

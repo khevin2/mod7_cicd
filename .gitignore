@@ -22,6 +22,8 @@ keys/
 **/.terraform/
 *.tfstate
 *.tfstate.*
+*.tfplan
+*.tfplan.*
 crash.log
 crash.*.log
 infra/live/backend.hcl

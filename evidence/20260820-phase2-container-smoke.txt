@@ -1,0 +1,39 @@
+Phase 2 local container smoke evidence
+Date: 2026-08-20
+Image: jenkins-webapp:phase2-local
+
+Run command:
+docker run --detach --name jenkins-webapp-phase2 --publish 80:3000 jenkins-webapp:phase2-local
+Result: exit 0
+
+Container inspection:
+Status=running
+Health=healthy
+User=10001:10001
+Port mapping=host TCP 80 to container TCP 3000 on IPv4 and IPv6
+
+GET /
+{"service":"jenkins-webapp","message":"Jenkins CI/CD lab service is running"}
+http_status=200
+
+GET /health
+{"service":"jenkins-webapp","status":"ok"}
+http_status=200
+
+Docker health-check exit code: 0
+
+Stop command:
+docker stop --timeout 15 jenkins-webapp-phase2
+Result: exit 0
+Status=exited
+ExitCode=0
+OOMKilled=false
+
+Container log:
+Server listening on http://0.0.0.0:3000
+Received SIGTERM; closing HTTP server
+HTTP server closed
+
+Cleanup:
+The stopped test container was removed after inspection.
+The local image jenkins-webapp:phase2-local was retained.

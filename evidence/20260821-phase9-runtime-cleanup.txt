@@ -1,0 +1,29 @@
+Phase 9 runtime artifact cleanup (sanitized)
+Date: 2026-08-21
+Scope: EC2 deployment host cleanup. Host address, credentials, and keys are omitted.
+
+Approved retention policy
+- Remove only the named deployment candidate and dangling layers.
+- Retain immutable tagged images so the active image and a previous known-good image remain available for rollback.
+- Do not run broad container or image pruning on the host.
+
+Before cleanup
+- Application container: jenkins-webapp; Up and healthy.
+- Candidate container: none.
+- Docker reported one dangling image: 4cc530133b64 (169 MB).
+- Root filesystem: 20 GiB total; 2.2 GiB used; 18 GiB available (12%).
+
+Executed cleanup
+- Removed the exact candidate name jenkins-webapp-candidate if present; none existed.
+- Ran docker image prune --force. It reclaimed 0 B.
+- Ran docker logout ghcr.io; Docker confirmed removal of login credentials.
+
+After cleanup
+- Exactly one application container remains: jenkins-webapp; Up and healthy.
+- No jenkins-webapp-candidate container exists.
+- The remaining dangling image ID 4cc530133b64 is the image ID configured for the active jenkins-webapp container; it is required and was intentionally preserved.
+- No unnecessary dangling image remains.
+- Host-local health check returned: {"service":"jenkins-webapp","status":"ok"}.
+- Root filesystem remains 20 GiB total; 2.2 GiB used; 18 GiB available (12%).
+
+Jenkins workspace cleanup is implemented in Jenkinsfile and must be evidenced by a build that runs the new Runtime Cleanup stage.

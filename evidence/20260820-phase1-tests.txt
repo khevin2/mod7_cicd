@@ -1,0 +1,25 @@
+Phase 1 application test evidence
+Date: 2026-08-20
+Environment: Linux x86_64, Node.js v24.19.0, npm 11.17.0
+
+Command: npm ci
+Result: exit 0; 346 packages installed; audit reported 0 vulnerabilities.
+
+Command: npm run check
+Result: exit 0; Node.js syntax checks passed for src/app.js, src/server.js, and test/app.test.js.
+
+Command: npm test -- --runInBand
+Result: exit 0
+
+PASS test/app.test.js
+  Express service
+    GET /
+      passed: returns HTTP 200 with JSON content
+      passed: returns the user-facing response shape
+    GET /health
+      passed: returns HTTP 200 with JSON content
+      passed: returns the deployment health response shape
+
+Test Suites: 1 passed, 1 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
