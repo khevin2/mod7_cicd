@@ -102,3 +102,50 @@ variable "root_volume_size_gib" {
     error_message = "root_volume_size_gib must be at least 20 GiB to leave space for deployment images and logs."
   }
 }
+
+variable "jenkins_ssh_public_key_path" {
+  description = "Optional Ed25519 public key for Jenkins administration. Null reuses ssh_public_key_path; never provide a private key."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.jenkins_ssh_public_key_path == null || can(regex("^ssh-ed25519 [A-Za-z0-9+/]+={0,3}( .*)?$", trimspace(file(var.jenkins_ssh_public_key_path))))
+    error_message = "jenkins_ssh_public_key_path must be null or reference a valid Ed25519 OpenSSH public-key file."
+  }
+}
+
+variable "jenkins_instance_type" {
+  description = "EC2 instance type for the cost-constrained Jenkins controller-runner."
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "jenkins_root_volume_size_gib" {
+  description = "Encrypted gp3 root-volume size in GiB for the Jenkins controller-runner."
+  type        = number
+  default     = 20
+
+  validation {
+    condition     = var.jenkins_root_volume_size_gib >= 20
+    error_message = "jenkins_root_volume_size_gib must be at least 20 GiB."
+  }
+}
+
+variable "jenkins_allocate_elastic_ip" {
+  description = "Allocate an Elastic IP for a stable Jenkins HTTPS endpoint only after DNS ownership and cost are approved."
+  type        = bool
+  default     = false
+}
+
+variable "enable_jenkins_webhook_ingress" {
+  description = "Open TCP 443 to Nginx for GitHub webhooks only after TLS, Nginx allow rules, and a stable Jenkins URL are verified."
+  type        = bool
+  default     = false
+}
+
+variable "enable_jenkins_http_ingress" {
+  description = "Open TCP 80 for Let's Encrypt HTTP-01 validation and HTTPS redirects."
+  type        = bool
+  default     = false
+}

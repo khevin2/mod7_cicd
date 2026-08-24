@@ -1,0 +1,319 @@
+---
+- name: Install and configure the Jenkins controller-runner
+  hosts: jenkins_controllers
+  become: true
+  gather_facts: true
+
+  vars:
+    jenkins_java_options: "-Djava.awt.headless=true -Xms256m -Xmx512m"
+    jenkins_swap_size: "2G"
+    jenkins_acme_webroot: /var/lib/letsencrypt
+    jenkins_java_tmp_dir: /var/lib/jenkins/tmp
+    jenkins_plugin_manager_version: "2.15.0"
+    jenkins_plugin_manager_url: "https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/{{ jenkins_plugin_manager_version }}/jenkins-plugin-manager-{{ jenkins_plugin_manager_version }}.jar"
+    jenkins_required_plugins:
+      - workflow-aggregator
+      - git
+      - credentials-binding
+      - docker-plugin
+      - docker-workflow
+      - ssh-agent
+      - nodejs
+      - timestamper
+      - github
+      - junit
+
+  pre_tasks:
+    - name: Confirm the host uses Amazon Linux 2023
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Amazon"
+          - ansible_distribution_major_version == "2023"
+        fail_msg: "This playbook is intended only for Amazon Linux 2023 hosts."
+
+    - name: Require certificate contact details and a verified application host key
+      ansible.builtin.assert:
+        that:
+          - jenkins_server_name is defined
+          - jenkins_server_name is not match('^ci\\.example\\.com$')
+          - jenkins_certbot_email is defined
+          - jenkins_certbot_email is match('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+          - jenkins_admin_cidrs | length > 0
+          - jenkins_known_hosts_entries | length > 0
+        fail_msg: >-
+          Set the final DNS name, Certbot contact email, administrator CIDRs,
+          and only trusted application-host ED25519 known-host entries in the
+          ignored Ansible inventory before provisioning Jenkins.
+
+  tasks:
+    - name: Import the Jenkins RPM signing key
+      ansible.builtin.rpm_key:
+        state: present
+        key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2026.key
+
+    - name: Configure the Jenkins LTS RPM repository
+      ansible.builtin.get_url:
+        url: https://pkg.jenkins.io/rpm-stable/jenkins.repo
+        dest: /etc/yum.repos.d/jenkins.repo
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install Jenkins controller and build dependencies
+      ansible.builtin.dnf:
+        name:
+          - docker
+          - fontconfig
+          - git
+          - certbot
+          - java-21-amazon-corretto-headless
+          - jenkins
+          - jq
+          - nginx
+        state: present
+        update_cache: true
+
+    - name: Stop Jenkins while installing managed plugins
+      ansible.builtin.service:
+        name: jenkins
+        state: stopped
+    - name: Download the Jenkins Plugin Installation Manager
+      ansible.builtin.get_url:
+        url: "{{ jenkins_plugin_manager_url }}"
+        dest: /usr/local/lib/jenkins-plugin-manager.jar
+        mode: "0644"
+        checksum: "sha256:{{ jenkins_plugin_manager_url }}.sha256"
+
+    - name: Install required Jenkins plugins
+      ansible.builtin.command:
+        argv:
+          - java
+          - -jar
+          - /usr/local/lib/jenkins-plugin-manager.jar
+          - --war
+          - /usr/share/java/jenkins.war
+          - --plugin-download-directory
+          - /var/lib/jenkins/plugins
+          - --plugins
+          - "{{ jenkins_required_plugins | join(' ') }}"
+      become_user: jenkins
+      environment:
+        HOME: /var/lib/jenkins
+      register: jenkins_plugin_install
+      changed_when: >-
+        'Downloading plugin' in jenkins_plugin_install.stdout or
+        'Downloading plugin' in jenkins_plugin_install.stderr
+      notify: Restart Jenkins
+
+    - name: Configure Docker log rotation
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        mode: "0644"
+        content: |
+          {"log-driver":"json-file","log-opts":{"max-size":"10m","max-file":"3"}}
+      notify: Restart Docker
+
+    - name: Enable Docker and grant Jenkins Docker access
+      ansible.builtin.user:
+        name: jenkins
+        groups: docker
+        append: true
+
+    - name: Start Docker
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Create the Jenkins EBS-backed Java temporary directory
+      ansible.builtin.file:
+        path: "{{ jenkins_java_tmp_dir }}"
+        state: directory
+        owner: jenkins
+        group: jenkins
+        mode: "0755"
+
+    - name: Create the Jenkins systemd override directory
+      ansible.builtin.file:
+        path: /etc/systemd/system/jenkins.service.d
+        state: directory
+        mode: "0755"
+
+    - name: Limit Jenkins memory and bind its listener locally
+      ansible.builtin.template:
+        src: ../templates/jenkins-systemd-override.conf.j2
+        dest: /etc/systemd/system/jenkins.service.d/override.conf
+        mode: "0644"
+      notify: Restart Jenkins
+
+    - name: Create the Jenkins service account SSH directory
+      ansible.builtin.file:
+        path: /var/lib/jenkins/.ssh
+        state: directory
+        owner: jenkins
+        group: jenkins
+        mode: "0700"
+
+    - name: Install verified application host keys for Jenkins
+      ansible.builtin.copy:
+        dest: /var/lib/jenkins/.ssh/known_hosts
+        owner: jenkins
+        group: jenkins
+        mode: "0600"
+        content: |
+          {% for entry in jenkins_known_hosts_entries %}
+          {{ entry }}
+          {% endfor %}
+      no_log: true
+
+    - name: Create and enable a bounded swap file
+      ansible.builtin.command:
+        argv: [fallocate, -l, "{{ jenkins_swap_size }}", /swapfile]
+        creates: /swapfile
+
+    - name: Initialize and enable the swap file
+      ansible.builtin.command:
+        argv: [mkswap, /swapfile]
+      when: ansible_swaptotal_mb | int == 0
+      changed_when: true
+
+    - name: Persist and enable swap
+      ansible.builtin.shell: |
+        chmod 600 /swapfile
+        grep -qxF '/swapfile swap swap defaults 0 0' /etc/fstab || echo '/swapfile swap swap defaults 0 0' >> /etc/fstab
+        swapon --show=NAME | grep -qx '/swapfile' || swapon /swapfile
+      changed_when: false
+
+    - name: Create the Certbot HTTP-01 webroot
+      ansible.builtin.file:
+        path: "{{ jenkins_acme_webroot }}/.well-known/acme-challenge"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install the HTTP-only Nginx policy for certificate issuance
+      ansible.builtin.template:
+        src: ../templates/jenkins-nginx-bootstrap.conf.j2
+        dest: /etc/nginx/conf.d/jenkins.conf
+        mode: "0644"
+
+    - name: Enable Nginx for certificate issuance
+      ansible.builtin.service:
+        name: nginx
+        enabled: true
+        state: started
+
+    - name: Obtain or renew the Jenkins TLS certificate
+      ansible.builtin.command:
+        argv:
+          - certbot
+          - certonly
+          - --webroot
+          - --webroot-path={{ jenkins_acme_webroot }}
+          - --non-interactive
+          - --agree-tos
+          - --keep-until-expiring
+          - --email
+          - "{{ jenkins_certbot_email }}"
+          - --cert-name
+          - "{{ jenkins_server_name }}"
+          - -d
+          - "{{ jenkins_server_name }}"
+      register: jenkins_certificate
+      changed_when: "'Successfully received certificate' in jenkins_certificate.stdout"
+
+    - name: Seed a deny-all webhook allowlist
+      ansible.builtin.copy:
+        dest: /etc/nginx/conf.d/github-webhook-allowlist.conf
+        mode: "0644"
+        content: "deny all;\n"
+
+    - name: Install Nginx webhook and UI policy
+      ansible.builtin.template:
+        src: ../templates/jenkins-nginx.conf.j2
+        dest: /etc/nginx/conf.d/jenkins.conf
+        mode: "0644"
+      notify: Restart Nginx
+
+    - name: Activate the HTTPS Nginx policy
+      ansible.builtin.meta: flush_handlers
+
+    - name: Create the Certbot deployment-hook directory
+      ansible.builtin.file:
+        path: /etc/letsencrypt/renewal-hooks/deploy
+        state: directory
+        mode: "0755"
+
+    - name: Reload Nginx after certificate renewal
+      ansible.builtin.copy:
+        dest: /etc/letsencrypt/renewal-hooks/deploy/reload-nginx
+        mode: "0755"
+        content: |
+          #!/usr/bin/env sh
+          set -eu
+          systemctl reload nginx
+
+    - name: Install the Jenkins Certbot renewal service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/jenkins-certbot-renew.service
+        mode: "0644"
+        content: |
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/bin/certbot renew --quiet
+
+    - name: Install the Jenkins Certbot renewal timer
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/jenkins-certbot-renew.timer
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Daily Jenkins TLS certificate renewal check
+
+          [Timer]
+          OnCalendar=daily
+          RandomizedDelaySec=1h
+          Persistent=true
+
+          [Install]
+          WantedBy=timers.target
+
+    - name: Enable the Jenkins Certbot renewal timer
+      ansible.builtin.systemd:
+        name: jenkins-certbot-renew.timer
+        daemon_reload: true
+        enabled: true
+        state: started
+
+    - name: Install and refresh the GitHub webhook allowlist
+      ansible.builtin.copy:
+        src: ../files/refresh-github-webhook-allowlist
+        dest: /usr/local/sbin/refresh-github-webhook-allowlist
+        mode: "0750"
+
+    - name: Enable Nginx and Jenkins
+      ansible.builtin.service:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+      loop: [nginx, jenkins]
+
+    - name: Refresh GitHub webhook ranges safely
+      ansible.builtin.command: /usr/local/sbin/refresh-github-webhook-allowlist
+      changed_when: true
+
+  handlers:
+    - name: Restart Docker
+      ansible.builtin.service:
+        name: docker
+        state: restarted
+    - name: Restart Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+    - name: Restart Jenkins
+      ansible.builtin.systemd:
+        name: jenkins
+        state: restarted
+        daemon_reload: true

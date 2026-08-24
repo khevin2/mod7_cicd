@@ -4,3 +4,11 @@ owner                  = "replace-with-owner"
 jenkins_ssh_cidr       = "198.51.100.10/32"
 administrator_ssh_cidr = "203.0.113.10/32"
 ssh_public_key_path    = "../../keys/jenkins-webapp-lab-ec2.pub"
+
+# Set a distinct public key only when Jenkins administration must use a different key.
+# jenkins_ssh_public_key_path = "../../keys/jenkins-controller.pub"
+jenkins_instance_type            = "t3.micro"
+jenkins_root_volume_size_gib     = 20
+jenkins_allocate_elastic_ip      = false
+enable_jenkins_http_ingress      = true
+enable_jenkins_webhook_ingress   = false

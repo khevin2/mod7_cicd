@@ -47,6 +47,117 @@ data "aws_ec2_managed_prefix_list" "instance_connect" {
   name  = format("com.amazonaws.%s.ec2-instance-connect", data.aws_region.current.region)
 }
 
+resource "aws_security_group" "jenkins" {
+  name_prefix = format("%s-%s-jenkins-", var.tags["Project"], var.tags["Environment"])
+  description = "Restricted administrative access and controlled webhook ingress for Jenkins."
+  vpc_id      = aws_vpc.this.id
+
+  dynamic "ingress" {
+    for_each = var.jenkins_admin_ingress_cidrs
+    content {
+      description = "SSH administration from approved administrator egress address"
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      cidr_blocks = [ingress.value]
+    }
+  }
+
+  dynamic "ingress" {
+    for_each = var.enable_ec2_instance_connect ? data.aws_ec2_managed_prefix_list.instance_connect : []
+    content {
+      description     = "Temporary SSH access from the regional EC2 Instance Connect service"
+      from_port       = 22
+      to_port         = 22
+      protocol        = "tcp"
+      prefix_list_ids = [ingress.value.id]
+    }
+  }
+
+  dynamic "ingress" {
+    for_each = var.jenkins_admin_ingress_cidrs
+    content {
+      description = "HTTPS Jenkins UI from approved administrator egress address"
+      from_port   = 443
+      to_port     = 443
+      protocol    = "tcp"
+      cidr_blocks = [ingress.value]
+    }
+  }
+
+  dynamic "ingress" {
+    for_each = var.enable_jenkins_webhook_ingress ? toset(["0.0.0.0/0"]) : toset([])
+    content {
+      description = "Public HTTPS reaches only the Nginx-restricted GitHub webhook path"
+      from_port   = 443
+      to_port     = 443
+      protocol    = "tcp"
+      cidr_blocks = [ingress.value]
+    }
+  }
+
+  dynamic "ingress" {
+    for_each = var.enable_jenkins_http_ingress ? toset(["0.0.0.0/0"]) : toset([])
+    content {
+      description = "Public HTTP for Lets Encrypt validation and HTTPS redirects"
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      cidr_blocks = [ingress.value]
+    }
+  }
+
+  egress {
+    description = "SSH deployment traffic to private lab hosts"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    description = "HTTPS for GitHub, registries, Jenkins plugins, and Trivy databases"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "HTTP for package repositories and certificate issuance"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "DNS resolution"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "DNS resolution over TCP"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Network time synchronization"
+    from_port   = 123
+    to_port     = 123
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.tags, { Name = format("%s-%s-jenkins", var.tags["Project"], var.tags["Environment"]) })
+}
+
 # Egress is restricted by protocol and port, but public registries, package
 # repositories, DNS, and NTP do not provide stable destination CIDRs.
 # Review this exception if a controlled egress proxy or VPC endpoints are added.
@@ -65,6 +176,14 @@ resource "aws_security_group" "deployment" {
       protocol    = "tcp"
       cidr_blocks = [ingress.value]
     }
+  }
+
+  ingress {
+    description     = "SSH deployment access from the Jenkins controller security group"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.jenkins.id]
   }
 
   dynamic "ingress" {

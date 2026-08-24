@@ -1,6 +1,17 @@
 variable "project_name" {
-  description = "Project identifier used in key-pair and host names."
+  description = "Project identifier used in key-pair and instance names."
   type        = string
+}
+
+variable "host_name" {
+  description = "Role-specific suffix used in the EC2 instance name."
+  type        = string
+  default     = "deployment-host"
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.host_name))
+    error_message = "host_name must contain only lowercase letters, digits, and hyphens."
+  }
 }
 
 variable "environment" {
@@ -21,6 +32,19 @@ variable "security_group_id" {
 variable "ssh_public_key" {
   description = "Existing Ed25519 public key content."
   type        = string
+}
+
+variable "key_pair_name" {
+  description = "Optional explicit EC2 key-pair name. Null preserves the existing name convention."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
+variable "allocate_elastic_ip" {
+  description = "Whether this host receives an Elastic IP for a stable public endpoint."
+  type        = bool
+  default     = false
 }
 
 variable "instance_type" {

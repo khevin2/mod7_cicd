@@ -3,6 +3,8 @@ pipeline {
   tools { nodejs 'NodeJS24' }
   options {
     timestamps()
+    skipDefaultCheckout()
+    buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '5'))
     timeout(time: 30, unit: 'MINUTES')
     disableConcurrentBuilds()
   }
@@ -221,7 +223,11 @@ for attempt in {1..12}; do
 done
 [[ "$(docker inspect --format='{{.State.Health.Status}}' "$candidate")" == healthy ]]
 docker rm -f "$candidate" >/dev/null
-if docker container inspect "$APP_NAME" >/dev/null 2>&1; then previous="$(docker inspect --format='{{.Config.Image}}' "$APP_NAME")"; echo "Rollback command: docker run -d --name ${APP_NAME} --restart unless-stopped -p ${DEPLOY_PORT}:${APP_CONTAINER_PORT} ${previous}"; fi
+if docker container inspect "$APP_NAME" >/dev/null 2>&1; then
+  previous="$(docker inspect --format='{{.Config.Image}}' "$APP_NAME")"
+  docker tag "$previous" "${APP_NAME}:rollback"
+  echo "Rollback command: docker run -d --name ${APP_NAME} --restart unless-stopped -p ${DEPLOY_PORT}:${APP_CONTAINER_PORT} ${previous}"
+fi
 rollback=true
 docker rm -f "$APP_NAME" >/dev/null 2>&1 || true
 docker run -d --name "$APP_NAME" --restart unless-stopped -p "${DEPLOY_PORT}:${APP_CONTAINER_PORT}" "$DEPLOY_IMAGE_REF" >/dev/null
