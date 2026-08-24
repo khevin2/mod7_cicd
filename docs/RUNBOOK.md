@@ -1,43 +1,44 @@
 # Jenkins CI/CD deployment runbook
 
-Use this runbook for the Express service in this repository. Replace all
-angle-bracketed placeholders locally. Never commit or print credentials, tokens,
-private keys, host keys, account IDs, or unredacted endpoints.
+Use this runbook to provision and operate the GitHub-triggered Jenkins pipeline.
+Replace placeholders locally. Never commit or print credentials, tokens, private
+keys, host keys, account IDs, or unredacted endpoints.
 
-## Prerequisites and credentials
+## Architecture and prerequisites
 
-The Jenkins execution node needs Git, Docker Engine, Node.js 24, OpenSSH, and
-network access to GitHub, Docker Hub, GHCR, the Trivy vulnerability databases, and
-the deployment host TCP 22. The pipeline downloads the database from
-ghcr.io/aquasecurity/trivy-db:2. Jenkins requires Pipeline, Git, Credentials
-Binding, Docker Pipeline, SSH Agent, and NodeJS plugins, with a NodeJS installation
-named NodeJS24. Trivy runs from the digest-pinned aquasec/trivy container and needs
-no Jenkins plugin or host installation.
+The lab uses two Amazon Linux 2023 EC2 instances in one VPC:
+
+- **Jenkins controller-runner:** Jenkins, Docker, Node.js, Nginx, and Certbot.
+  Jenkins listens only on loopback; Nginx terminates TLS for `ci.kheven.me`.
+- **Application host:** Docker runtime for the Express container. Jenkins reaches
+  it through private-VPC SSH with a verified ED25519 known-host entry.
+
+Jenkins needs Git, Docker Engine, Node.js 24, OpenSSH, and egress to GitHub,
+Docker Hub, GHCR, Jenkins plugins, and Trivy databases. The required Jenkins
+plugins are Pipeline, Git, Credentials Binding, Docker Pipeline, SSH Agent,
+NodeJS, GitHub, JUnit, and Timestamper. The NodeJS tool is named `NodeJS24`.
 
 | ID | Type | Use |
 | --- | --- | --- |
-| registry_creds | Username with password | GHCR push and deployment pull |
-| ec2_ssh | SSH Username with private key | SSH Agent deployment login |
+| `registry_creds` | Username with password | GHCR push and deployment pull |
+| `ec2_ssh` | SSH Username with private key | Application-host SSH login |
 
-Keep credential values only in Jenkins. The Jenkinsfile fixes ghcr.io,
-khevin2/jenkins-webapp, and registry_creds as trusted configuration; callers cannot
-redirect registry credentials with build parameters. Verify the EC2 ED25519 key via
-a trusted channel and install it in the Jenkins runtime user known_hosts. The
-deployment uses StrictHostKeyChecking=yes; do not weaken it.
+Keep credential values only in Jenkins. Verify both SSH host fingerprints through
+a trusted channel and keep `StrictHostKeyChecking=yes`.
 
-## Provision and configure the host
+## Provision infrastructure
 
-Terraform roots are composition-only and use reviewed saved plans. Local
-bootstrap.tfvars, backend.hcl, and terraform.tfvars are ignored; supply only
-approved non-secret values and an existing public Ed25519 key.
+Terraform roots use reviewed saved plans. Keep `bootstrap.tfvars`,
+`backend.hcl`, and `terraform.tfvars` ignored. Private keys never belong in
+Terraform inputs.
 
-~~~bash
+```bash
 cd infra/bootstrap
 terraform init
 terraform fmt -check -recursive
 terraform validate
 terraform plan -var-file=bootstrap.tfvars -out=bootstrap.tfplan
-# Apply only after saved-plan review and explicit approval:
+# Apply only after review and explicit approval:
 terraform apply bootstrap.tfplan
 
 cd ../live
@@ -45,149 +46,151 @@ terraform init -reconfigure -backend-config=backend.hcl
 terraform fmt -check -recursive
 terraform validate
 terraform plan -out=live.tfplan
-# Apply only after saved-plan review and explicit approval:
+# Apply only after review and explicit approval:
 terraform apply live.tfplan
-~~~
+```
 
-The security group permits public TCP 80 and limits TCP 22 to approved Jenkins and
-administrator public /32 CIDRs. After trusted host-key verification:
+The application security group exposes public TCP 80 and limits SSH to approved
+sources. The Jenkins security group restricts UI access to administrator CIDRs.
+When webhooks are enabled, AWS permits TCP 443 to Nginx; Nginx then permits only
+GitHub webhook source ranges on `/github-webhook/`.
 
-~~~bash
+## Configure application and Jenkins hosts
+
+Copy the ignored inventory template, use trusted public-key scans only to compare
+with independently observed fingerprints, and then supply the verified entries.
+
+```bash
 cp ansible/inventory/hosts.yml.example ansible/inventory/hosts.yml
-ssh-keyscan -t ed25519 <EC2_PUBLIC_DNS_OR_IP> > /tmp/deployment_host_keyscan
-ssh-keygen -lf /tmp/deployment_host_keyscan
-# Compare the fingerprint with the trusted value before continuing.
-install -m 600 /tmp/deployment_host_keyscan ansible/inventory/known_hosts
 ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/install_docker.yml
-~~~
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/install_jenkins_controller.yml
+```
 
-The playbook asserts Amazon Linux 2023, installs/enables Docker, and adds the SSH
-user to the Docker group. Start a fresh SSH session and verify docker version.
+The controller playbook installs Jenkins, its plugins, Docker, Nginx, a
+Let's Encrypt certificate, the GitHub webhook allowlist refresher, and the
+Jenkins runtime user's verified application-host `known_hosts` file.
 
-## Configure and operate Jenkins
+## Configure Jenkins
 
-Create a Pipeline-from-SCM job using this repository Jenkinsfile, configure the
-credentials above, then supply:
+Create a **Pipeline from SCM** job using this repository's `Jenkinsfile`.
+Create the credentials listed above. Then configure the following global
+environment variable in **Manage Jenkins -> System -> Global properties ->
+Environment variables**:
 
-~~~text
-DEPLOY_HOST=<EC2_PUBLIC_DNS_OR_IP>
-DEPLOY_USER=ec2-user
-DEPLOY_PORT=80
-~~~
+```text
+APPLICATION_DEPLOY_HOST=<approved application private DNS name or IP>
+```
 
-Required order: Checkout, Install and Validate, Test, Trivy Repository Scan,
-Docker Build, Trivy Image Scan, Push Image, Deploy, Runtime Cleanup. The job
-publishes a full-commit-SHA tag, deploys the immutable digest in
-build-metadata/image-digest.txt, health-checks a temporary candidate, archives
-test/metadata/non-secret security reports, then deletes its workspace in post.
+A manual `DEPLOY_HOST` parameter overrides the global value. GitHub webhook
+builds have no interactive parameters and therefore resolve the target from
+`APPLICATION_DEPLOY_HOST`. The pipeline stops with an explicit error if neither
+value is present.
 
-## Security gates
+After verifying the application host's ED25519 key, ensure the Jenkins service user
+has only the verified host entry. Do not disable strict host-key checking.
 
-The pipeline uses one scanner, Trivy, for dependency vulnerabilities, Terraform
-and Dockerfile misconfigurations, repository secrets, image vulnerabilities, and
-image secrets. The scanner image is pinned to both version 0.73.0 and an immutable
-manifest digest. Repository and image gates fail on fixable HIGH or CRITICAL
-findings. Informational JSON reports contain vulnerability and misconfiguration
-results at all severities; secret results stay inside the ephemeral scanner
-container and are never archived.
+## Configure GitHub webhook delivery
 
-Checkout starts with deleteDir(), so ignored local credentials, Terraform plans,
-and stale scanner/build files cannot enter the Jenkins workspace. The repository
-scans also skip .git, node_modules, and ignored *.tfplan files. The runtime image
-does not include npm or npx because they are required only in the dependency stage;
-removing them eliminates an unused package-management attack surface.
+1. In the ignored `infra/live/terraform.tfvars`, set:
 
-Three current Terraform findings are accepted at the narrowest resource scope
-because removing them would conflict with this lab architecture:
+   ```hcl
+   enable_jenkins_webhook_ingress = true
+   ```
 
-- A public subnet address is required for the direct EC2 public endpoint.
-- Port-restricted egress must reach registries, package repositories, DNS, and NTP,
-  whose public destination addresses are not stable.
-- SSE-S3 protects the isolated lab state; the brief does not mandate a
-  customer-managed KMS key.
+2. Create and review a saved plan, then apply only that plan:
 
-Each exception is an inline Trivy annotation immediately above the affected
-resource and expires on 2027-08-22. Review or remove the exception earlier if the
-design adds a load balancer/private subnet, controlled egress, or a KMS policy. Do
-not replace these with a global ignore file.
+   ```bash
+   cd infra/live
+   terraform plan -out=jenkins-webhook.tfplan
+   terraform show -no-color jenkins-webhook.tfplan
+   terraform apply jenkins-webhook.tfplan
+   ```
 
-To reproduce the blocking repository checks locally from a source-only checkout:
+3. Keep `githubPush()` in the Jenkinsfile and run the job once after adding it,
+   so Jenkins persists the trigger.
+4. In GitHub repository settings, create an active webhook:
 
-~~~bash
-TRIVY_IMAGE='aquasec/trivy:0.73.0@sha256:7cced7cae583819fc7806d4cbc0dbbc7cad18b99f7d3e235192e6da8c091045c'
-TRIVY_DB='ghcr.io/aquasecurity/trivy-db:2'
-docker volume create jenkins-webapp-trivy-cache
-docker run --rm -v "$PWD:/workspace:ro" -v jenkins-webapp-trivy-cache:/root/.cache/trivy "$TRIVY_IMAGE" fs \
-  --db-repository "$TRIVY_DB" --scanners vuln,misconfig --severity HIGH,CRITICAL \
-  --ignore-unfixed --exit-code 1 --skip-dirs /workspace/.git \
-  --skip-dirs /workspace/node_modules --skip-files '**/*.tfplan' /workspace
-docker run --rm -v "$PWD:/workspace:ro" -v jenkins-webapp-trivy-cache:/root/.cache/trivy "$TRIVY_IMAGE" fs \
-  --db-repository "$TRIVY_DB" --scanners secret --severity HIGH,CRITICAL \
-  --exit-code 1 --skip-dirs /workspace/.git --skip-dirs /workspace/node_modules \
-  --skip-files '**/*.tfplan' /workspace
-~~~
+   | Setting | Value |
+   | --- | --- |
+   | Payload URL | `https://ci.kheven.me/github-webhook/` |
+   | Content type | `application/json` |
+   | SSL verification | Enabled |
+   | Events | Just the push event |
+
+5. Push a harmless commit or redeliver a prior **push** event. The Jenkins console
+   must begin with a GitHub-push cause. A `ping` validates the endpoint but does
+   not prove that the job is scheduled.
+
+The webhook path is public at the network layer only so GitHub can reach it. Nginx
+refreshes GitHub's `hooks` CIDRs from `https://api.github.com/meta`, denies all
+other sources on that path, and proxies the permitted request to loopback Jenkins.
+
+## Pipeline and security gates
+
+The required order is Checkout, Install and Validate, Test, Trivy Repository
+Scan, Docker Build, Trivy Image Scan, Push Image, Deploy, and Runtime Cleanup.
+
+The pipeline scans dependencies, Terraform, Dockerfile configuration, repository
+secrets, image vulnerabilities, and image secrets. Fixable HIGH or CRITICAL
+findings block the build. It publishes non-secret JUnit, metadata, and Trivy
+vulnerability/misconfiguration reports; secret reports remain inside the scanner
+container.
+
+Terraform egress exceptions are narrowly scoped to the two required security-group
+resources, documented inline, and expire on 2027-08-22. They cover required
+HTTP/HTTPS, DNS, NTP, and private-VPC SSH traffic; do not replace them with global
+ignore files.
 
 ## Verify a deployment
 
-~~~bash
-curl --fail --silent --show-error --max-time 15 http://<EC2_PUBLIC_DNS_OR_IP>/
-curl --fail --silent --show-error --max-time 15 http://<EC2_PUBLIC_DNS_OR_IP>/health
-ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=<VERIFIED_KNOWN_HOSTS_FILE> ec2-user@<EC2_PUBLIC_DNS_OR_IP> \
-  'docker ps --filter name=jenkins-webapp; docker inspect --format="{{.State.Health.Status}}" jenkins-webapp'
-~~~
+Use a successful GitHub-triggered run as the release evidence. Confirm the
+pipeline's commit, immutable digest, test report, and final result. Then verify the
+application host:
 
-Confirm HTTP 200, exactly one healthy jenkins-webapp container, port mapping 80:3000,
-and a digest matching the archived successful-build metadata. Store only sanitized
-output under evidence.
+```bash
+curl --fail --silent --show-error --max-time 15 http://<APPLICATION_PUBLIC_DNS_OR_IP>/health
+ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=<VERIFIED_KNOWN_HOSTS_FILE> ec2-user@<APPLICATION_PUBLIC_DNS_OR_IP> \
+  'docker inspect --format="{{.Config.Image}} {{.State.Status}} {{.State.Health.Status}}" jenkins-webapp'
+ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=<VERIFIED_KNOWN_HOSTS_FILE> ec2-user@<APPLICATION_PUBLIC_DNS_OR_IP> \
+  'docker image inspect jenkins-webapp:rollback'
+```
 
-## Rollback and downtime
+Confirm HTTP 200, one running healthy application container, an immutable digest
+matching build metadata, and a retained `jenkins-webapp:rollback` image.
 
-Candidate health is checked before cutover, but replacing the single port-80
-container causes brief downtime. The pipeline attempts automatic rollback if
-post-cutover health fails. For manual rollback, obtain the previous known-good
-digest from build metadata or host inspection:
+## Rollback and cleanup
 
-~~~bash
-ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=<VERIFIED_KNOWN_HOSTS_FILE> ec2-user@<EC2_PUBLIC_DNS_OR_IP>
+Candidate health is checked before cutover. If post-cutover health does not recover,
+the pipeline restores the previous image. The current previous image is retained as
+`jenkins-webapp:rollback`.
+
+For a manual rollback, connect with strict host verification and run:
+
+```bash
 docker rm -f jenkins-webapp
-docker run -d --name jenkins-webapp --restart unless-stopped -p 80:3000 \
-  ghcr.io/khevin2/jenkins-webapp@sha256:<PREVIOUS_KNOWN_GOOD_DIGEST>
+docker run -d --name jenkins-webapp --restart unless-stopped -p 80:3000 jenkins-webapp:rollback
 curl --fail --silent --show-error --max-time 10 http://127.0.0.1:80/health
-~~~
+```
 
-Retain active and previous tagged images until rollback is no longer needed.
-
-## Cleanup and teardown
-
-Runtime Cleanup removes only jenkins-webapp-candidate, dangling layers, and the
-host GHCR login; it retains tagged active/rollback images and checks health/disk
-capacity. Do not use broad Docker prune commands without separate approval. The
-Jenkins post block archives outputs, removes the per-build Trivy cache volume and
-scanner image, then deleteDir removes the workspace. Capture a successful
-post-change build before claiming the security and cleanup stages as evidenced.
-
-Retain evidence, destroy infra/live, verify live state is empty, then separately
-review any backend removal. The state bucket is versioned, encrypted, access-blocked,
-and protected from routine destruction.
+Runtime Cleanup removes only the named candidate, dangling layers, and registry
+login. It retains active and rollback tags. Do not use broad Docker prune commands
+without separate approval.
 
 ## Troubleshooting
 
 | Symptom | Safe recovery |
 | --- | --- |
-| Git checkout fails | Confirm SCM URL and private-repo credential access; run git ls-remote against the repository URL without displaying credential-bearing URLs. |
-| Install, check, or test fails | Reproduce with npm ci, npm run check, and npm test -- --runInBand; fix reviewed source/lockfile and rerun. |
-| Docker permission denied | Verify id and docker version; add only the approved user to docker, open a fresh session, and recheck. Docker-group access is privileged. |
-| GHCR auth/push fails | Verify the fixed registry_creds ID/type and package scope with its owner. Use docker login --password-stdin, never a command-line password. |
-| Trivy cannot download its image or databases | Treat this as scanner setup failure. Verify Docker Hub/GHCR egress and DNS, then rerun; never bypass or mark the security gate successful. |
-| Trivy reports HIGH/CRITICAL findings | Review the archived non-secret JSON, upgrade or reconfigure the affected component, rebuild from the same source revision, and rerun. Do not add broad ignores. |
-| SSH authentication fails | Check ec2_ssh, DEPLOY_USER, approved /32 ingress, and TCP 22 reachability with BatchMode and the approved key. |
-| Host-key verification fails | Stop. Compare a scanned ED25519 fingerprint with the trusted value; update known_hosts only after verified key rotation. |
-| Port 80 conflict | Inspect sudo ss -ltnp '( sport = :80 )' and docker ps; remove only an approved conflicting process/container. |
-| Health timeout | Inspect docker ps, candidate/application logs, and docker inspect health. Preserve the known-good app and roll back after failed cutover. |
-| Disk exhausted | Run df -h / and docker system df; remove only the named candidate and dangling layers, retaining active/previous images. |
+| GitHub delivery fails before Jenkins | Check the saved Terraform plan was applied, DNS resolves to the controller, Nginx is active, and the controller's GitHub CIDR allowlist is populated. |
+| GitHub delivery succeeds but no job starts | Run the Pipeline once after adding `githubPush()`; verify the job configuration contains a GitHub push trigger. |
+| Webhook build says deployment host is required | Set `APPLICATION_DEPLOY_HOST` in Jenkins Global properties, or supply `DEPLOY_HOST` for a manual override. |
+| Trivy setup/download fails | Treat it as a failed security gate. Verify Docker Hub/GHCR egress and DNS, then rerun; never bypass the scan. |
+| Trivy finds HIGH/CRITICAL issues | Review non-secret reports, remediate the source or configuration, and rerun. Do not add broad ignores. |
+| SSH authentication or host verification fails | Stop. Check `ec2_ssh`, approved ingress, and the independently verified ED25519 entry. Do not weaken strict checking. |
+| Deployment health fails | Inspect application logs and health. Preserve the current/rollback images and use the rollback command only after diagnosis. |
 
 ## Evidence handling
 
-Use YYYYMMDD-purpose.ext. Redact sensitive values, keep raw captures outside Git,
-and consult [the evidence index](../evidence/README.md). Archive vulnerability and
-misconfiguration reports only; never retain a Trivy secret report.
+Use `YYYYMMDD-purpose.ext`, redact sensitive values, and keep raw captures outside
+Git. Consult [the evidence index](../evidence/README.md) before publishing evidence.
+Archive vulnerability and misconfiguration reports only; never retain a Trivy secret
+report.

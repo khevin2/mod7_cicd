@@ -1,14 +1,15 @@
 # Terraform infrastructure workflow
 
-Phase 3 uses two composition-only roots and three child modules. Only modules
-contain AWS resources or data sources; the roots configure providers, call
-modules, and re-export operational outputs.
+The Terraform live root composes a shared VPC, a Jenkins controller-runner EC2,
+and an application-host EC2. Both hosts use Amazon Linux 2023. Resources remain
+inside child modules; the roots configure providers, compose modules, and expose
+operational outputs.
 
 ## 1. Bootstrap remote state
 
 Create the ignored `bootstrap/bootstrap.tfvars` with a globally unique,
-non-secret `state_bucket_name` and the approved `owner`. Terraform does not
-auto-load this filename, so pass it explicitly when creating the saved plan:
+non-secret `state_bucket_name` and approved owner. Terraform does not auto-load
+this filename, so pass it explicitly:
 
 ```bash
 cd infra/bootstrap
@@ -20,16 +21,14 @@ terraform plan -var-file=bootstrap.tfvars -out=bootstrap.tfplan
 terraform apply bootstrap.tfplan
 ```
 
-Use the sanitized `state_bucket_name` and `state_bucket_region` outputs to
-copy `live/backend.hcl.example` to the ignored `live/backend.hcl`. Keep
-`use_lockfile = true`; it enables S3 native state locking.
+Copy sanitized bootstrap outputs into the ignored `live/backend.hcl`. Keep
+`use_lockfile = true` for S3 native state locking.
 
-## 2. Provision the deployment host
+## 2. Provision application and Jenkins hosts
 
-Copy `live/terraform.tfvars.example` to the ignored `live/terraform.tfvars`
-and replace its placeholders with the approved Jenkins and administrator public
-`/32` CIDRs, owner, and existing Ed25519 public key. Private keys must never be
-provided to Terraform.
+Copy `live/terraform.tfvars.example` to ignored `live/terraform.tfvars`.
+Supply approved CIDRs, ownership metadata, public-key paths, and instance settings.
+Never provide private keys to Terraform.
 
 ```bash
 cd infra/live
@@ -37,47 +36,56 @@ terraform init -reconfigure -backend-config=backend.hcl
 terraform fmt -check -recursive
 terraform validate
 terraform plan -out=live.tfplan
-# Review the saved plan and request explicit approval before this command.
+# Review the exact saved plan before approval and apply:
 terraform apply live.tfplan
 ```
 
-The network exposes TCP 80 publicly for application verification. SSH on TCP
-22 accepts only the two approved public `/32` addresses. Egress is limited to
-HTTP/HTTPS, DNS, and NTP required for Amazon Linux 2023 packages, Docker registry
-pulls, name resolution, and time synchronization.
+The application host exposes HTTP 80 for service verification. Its SSH ingress is
+limited to approved administrator and Jenkins sources. The Jenkins host limits its
+UI to administrator CIDRs and keeps Jenkins itself on loopback behind Nginx TLS.
 
-## 3. Configure Docker with Ansible
+The direct HTTPS webhook route is intentionally opt-in:
 
-After the instance passes its EC2 status checks and SSH host-key fingerprint is
-verified through a trusted channel, copy the ignored inventory template and
-replace its placeholders. Keep the private-key path local and do not commit the
-resulting inventory.
+```hcl
+enable_jenkins_webhook_ingress = true
+```
 
-Before running the playbook, obtain the hosts ED25519 fingerprint through a
-trusted channel, such as the EC2 Instance Connect console. Scan the public key
-once, compare its SHA256 fingerprint to the trusted value, and copy it to the
-dedicated Ansible known-hosts file only when they match.
+After setting it, create a dedicated saved plan and confirm it changes only Jenkins
+security-group ingress:
+
+```bash
+terraform plan -out=jenkins-webhook.tfplan
+terraform show -no-color jenkins-webhook.tfplan
+# Apply only after review and explicit approval:
+terraform apply jenkins-webhook.tfplan
+```
+
+AWS allows TCP 443 so GitHub can reach Nginx. The controller's Nginx configuration
+restricts `/github-webhook/` to GitHub's current published hook CIDRs; this does
+not make the Jenkins UI public.
+
+## 3. Configure both hosts with Ansible
+
+After each EC2 instance passes status checks, verify its ED25519 host-key
+fingerprint through a trusted channel. Add only verified keys to the dedicated
+Ansible known-hosts file.
 
 ```bash
 cd ../..
 cp ansible/inventory/hosts.yml.example ansible/inventory/hosts.yml
-ssh-keyscan -t ed25519 <EC2_PUBLIC_DNS_OR_IP> > /tmp/deployment_host_keyscan
-ssh-keygen -lf /tmp/deployment_host_keyscan
-# Compare this fingerprint with the trusted value before continuing.
-install -m 600 /tmp/deployment_host_keyscan ansible/inventory/known_hosts
 ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/install_docker.yml
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/install_jenkins_controller.yml
 ```
 
-The playbook is idempotent and intentionally fails on non-Amazon-Linux-2023
-hosts. It installs Docker, enables and starts its service, and adds the SSH
-deployment user to the `docker` group. Verify `docker version` from a new SSH
-login before allowing Jenkins to deploy.
+The Docker playbook configures the application runtime. The Jenkins-controller
+playbook configures Jenkins, Docker, Nginx, TLS, plugins, resource limits, the
+GitHub webhook allowlist refresher, and the Jenkins service user's trusted
+application-host key. Keep the actual inventory ignored because it contains local
+paths and trusted host entries.
 
 ## Safe teardown order
 
-Destroy `infra/live` first after retaining required evidence and confirming
-there is no needed deployment state. Confirm the live state is empty before
-considering backend removal. The state bucket has versioning, encryption,
-public-access blocking, `force_destroy = false`, and Terraform
-`prevent_destroy`; removing it requires a deliberate, separately reviewed
-change after state versions and backups are handled.
+Retain required evidence and deployment metadata. Destroy `infra/live` first,
+then confirm the live Terraform state is empty before separately reviewing any
+backend removal. The state bucket is versioned, encrypted, public-access-blocked,
+and protected from routine destruction.

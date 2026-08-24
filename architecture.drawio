@@ -4,7 +4,7 @@
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="title" value="Jenkins CI/CD deployment flow" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#16191f;fontSize=24;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="title" value="Jenkins CI/CD architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#16191f;fontSize=24;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="250" y="35" width="700" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="aws-cloud" value="AWS Cloud" style="shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud_alt;container=1;recursiveResize=0;collapsible=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingLeft=32;fontSize=16;fontStyle=1;fontColor=#232f3e;strokeColor=#147eba;fillColor=none;" parent="1" vertex="1">
@@ -13,28 +13,34 @@
                 <mxCell id="vpc" value="VPC" style="shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_vpc;container=1;recursiveResize=0;collapsible=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingLeft=32;fontSize=14;fontStyle=1;fontColor=#248814;strokeColor=#248814;fillColor=none;" parent="1" vertex="1">
                     <mxGeometry x="755" y="200" width="330" height="210" as="geometry"/>
                 </mxCell>
-                <mxCell id="github" value="&lt;b&gt;GitHub&lt;/b&gt;&lt;br&gt;Source code" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#24292f;strokeColor=#24292f;fontColor=#ffffff;fontSize=15;spacing=8;" parent="1" vertex="1">
+                <mxCell id="github" value="&lt;b&gt;GitHub&lt;/b&gt;&lt;br&gt;Source + webhook" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#24292f;strokeColor=#24292f;fontColor=#ffffff;fontSize=15;spacing=8;" parent="1" vertex="1">
                     <mxGeometry x="55" y="230" width="150" height="75" as="geometry"/>
                 </mxCell>
-                <mxCell id="jenkins" value="&lt;b&gt;Jenkins&lt;/b&gt;&lt;br&gt;Build and deploy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d33833;strokeWidth=2;fontColor=#232f3e;fontSize=15;spacing=8;" parent="1" vertex="1">
+                <mxCell id="jenkins" value="&lt;b&gt;Jenkins&lt;/b&gt;&lt;br&gt;Controller-runner: build, scan, deploy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d33833;strokeWidth=2;fontColor=#232f3e;fontSize=15;spacing=8;" parent="1" vertex="1">
                     <mxGeometry x="275" y="230" width="165" height="75" as="geometry"/>
                 </mxCell>
                 <mxCell id="ghcr" value="&lt;b&gt;GHCR&lt;/b&gt;&lt;br&gt;Immutable image" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#24292f;strokeColor=#24292f;fontColor=#ffffff;fontSize=15;spacing=8;" parent="1" vertex="1">
                     <mxGeometry x="510" y="230" width="155" height="75" as="geometry"/>
                 </mxCell>
-                <mxCell id="ec2" value="EC2 host" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ec2;outlineConnect=0;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontColor=#232f3e;fontSize=14;" parent="1" vertex="1">
+                <mxCell id="ec2" value="Application EC2" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ec2;outlineConnect=0;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontColor=#232f3e;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="825" y="265" width="75" height="75" as="geometry"/>
                 </mxCell>
-                <mxCell id="app" value="&lt;b&gt;Docker app&lt;/b&gt;&lt;br&gt;Express service on :80" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfdf3;strokeColor=#248814;fontColor=#1f2937;fontSize=13;spacing=8;" parent="1" vertex="1">
+                <mxCell id="app" value="&lt;b&gt;Docker app&lt;/b&gt;&lt;br&gt;Express service on port 80" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfdf3;strokeColor=#248814;fontColor=#1f2937;fontSize=13;spacing=8;" parent="1" vertex="1">
                     <mxGeometry x="945" y="265" width="110" height="70" as="geometry"/>
                 </mxCell>
                 <mxCell id="browser" value="&lt;b&gt;Public user&lt;/b&gt;&lt;br&gt;Browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#64748b;fontColor=#1f2937;fontSize=14;spacing=8;" parent="1" vertex="1">
                     <mxGeometry x="430" y="500" width="150" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="edge-github-jenkins" value="Checkout" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#5f6b7a;fontSize=12;fontColor=#374151;labelBackgroundColor=#ffffff;" parent="1" source="github" target="jenkins" edge="1">
+                <mxCell id="nginx" value="&lt;b&gt;Nginx TLS&lt;/b&gt;&lt;br&gt;ci.kheven.me&lt;br&gt;GitHub webhook allowlist" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2f0d9;strokeColor=#70ad47;fontColor=#274e13;fontSize=13;spacing=8;" parent="1" vertex="1">
+                    <mxGeometry x="275" y="125" width="165" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-nginx-jenkins" value="TLS proxy to loopback" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#70ad47;fontSize=12;fontColor=#1f6b15;labelBackgroundColor=#ffffff;" parent="1" source="nginx" target="jenkins" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="edge-jenkins-ghcr" value="Build and push" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#5f6b7a;fontSize=12;fontColor=#374151;labelBackgroundColor=#ffffff;" parent="1" source="jenkins" target="ghcr" edge="1">
+                <mxCell id="edge-github-jenkins" value="Push webhook" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#5f6b7a;fontSize=12;fontColor=#374151;labelBackgroundColor=#ffffff;" parent="1" source="github" target="nginx" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-jenkins-ghcr" value="Push immutable digest" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#5f6b7a;fontSize=12;fontColor=#374151;labelBackgroundColor=#ffffff;" parent="1" source="jenkins" target="ghcr" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="edge-ghcr-ec2" value="Pull image digest" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#5f6b7a;fontSize=12;fontColor=#374151;labelBackgroundColor=#ffffff;" parent="1" source="ghcr" target="ec2" edge="1">
@@ -44,6 +50,98 @@
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="edge-browser-app" value="HTTP :80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#5f6b7a;fontSize=12;fontColor=#374151;labelBackgroundColor=#ffffff;" parent="1" source="browser" target="app" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="jenkins-pipeline-execution-v2" name="Pipeline execution">
+        <mxGraphModel dx="1232" dy="597" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="700" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="p-title" value="GitHub-triggered pipeline execution" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#16191f;fontSize=24;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="30" width="800" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-subtitle" value="Security gates complete before one immutable digest is deployed" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#5f6b7a;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="70" width="800" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-github" value="1. GitHub push&#xa;Webhook delivery" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#24292f;strokeColor=#24292f;fontColor=#ffffff;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="35" y="285" width="170" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-jenkins" value="Jenkins controller-runner" style="swimlane;html=1;rounded=1;startSize=30;fillColor=#f8fafc;swimlaneFillColor=#2f6690;strokeColor=#2f6690;fontColor=#ffffff;fontStyle=1;fontSize=15;horizontal=1;" parent="1" vertex="1">
+                    <mxGeometry x="245" y="125" width="900" height="450" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-checkout" value="2. Checkout&#xa;Pinned commit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2f8;strokeColor=#2f6690;fontColor=#1f2937;fontSize=13;fontStyle=1;" parent="p-jenkins" vertex="1">
+                    <mxGeometry x="35" y="95" width="135" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-validate" value="3. Install + check&#xa;npm ci / syntax" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2f8;strokeColor=#2f6690;fontColor=#1f2937;fontSize=13;fontStyle=1;" parent="p-jenkins" vertex="1">
+                    <mxGeometry x="200" y="95" width="135" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-test" value="4. Test&#xa;Jest + JUnit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f3ec;strokeColor=#3f7f5f;fontColor=#1f2937;fontSize=13;fontStyle=1;" parent="p-jenkins" vertex="1">
+                    <mxGeometry x="365" y="95" width="135" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-repo" value="5. Trivy repository&#xa;Block HIGH / CRITICAL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff4d6;strokeColor=#b7791f;fontColor=#3d2c0d;fontSize=13;fontStyle=1;" parent="p-jenkins" vertex="1">
+                    <mxGeometry x="530" y="95" width="145" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-build" value="6. Docker build&#xa;Non-root image" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2f8;strokeColor=#2f6690;fontColor=#1f2937;fontSize=13;fontStyle=1;" parent="p-jenkins" vertex="1">
+                    <mxGeometry x="705" y="95" width="145" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-image" value="7. Trivy image&#xa;Block HIGH / CRITICAL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff4d6;strokeColor=#b7791f;fontColor=#3d2c0d;fontSize=13;fontStyle=1;" parent="p-jenkins" vertex="1">
+                    <mxGeometry x="705" y="265" width="145" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-push" value="8. Push GHCR&#xa;Immutable digest" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2f8;strokeColor=#2f6690;fontColor=#1f2937;fontSize=13;fontStyle=1;" parent="p-jenkins" vertex="1">
+                    <mxGeometry x="530" y="265" width="145" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-deploy" value="9. SSH deploy&#xa;Verified host key" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2f8;strokeColor=#2f6690;fontColor=#1f2937;fontSize=13;fontStyle=1;" parent="p-jenkins" vertex="1">
+                    <mxGeometry x="355" y="265" width="145" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-health" value="10. Candidate health&#xa;Rollback on failure" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff4d6;strokeColor=#b7791f;fontColor=#3d2c0d;fontSize=13;fontStyle=1;" parent="p-jenkins" vertex="1">
+                    <mxGeometry x="180" y="265" width="145" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-cleanup" value="11. Runtime cleanup&#xa;Retain rollback tag" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f3ec;strokeColor=#3f7f5f;fontColor=#1f2937;fontSize=13;fontStyle=1;" parent="p-jenkins" vertex="1">
+                    <mxGeometry x="20" y="265" width="130" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#2f6690;" parent="p-jenkins" source="p-checkout" target="p-validate" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#2f6690;" parent="p-jenkins" source="p-validate" target="p-test" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b7791f;" parent="p-jenkins" source="p-test" target="p-repo" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#2f6690;" parent="p-jenkins" source="p-repo" target="p-build" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b7791f;" parent="p-jenkins" source="p-build" target="p-image" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#2f6690;" parent="p-jenkins" source="p-image" target="p-push" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-e8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#2f6690;" parent="p-jenkins" source="p-push" target="p-deploy" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-e9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#3f7f5f;" parent="p-jenkins" source="p-deploy" target="p-health" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#3f7f5f;" parent="p-jenkins" source="p-health" target="p-cleanup" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-app" value="Application EC2&#xa;Healthy service on port 80" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f3ec;strokeColor=#3f7f5f;fontColor=#1f2937;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="910" y="610" width="210" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-artifacts" value="Artifacts&#xa;JUnit, metadata, non-secret reports" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="610" width="215" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#24292f;" parent="1" source="p-github" target="p-checkout" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-e11" value="healthy image" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#3f7f5f;fontSize=11;" parent="1" source="p-health" target="p-app" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="p-e12" value="archive" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#666666;fontSize=11;" parent="1" source="p-test" target="p-artifacts" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
             </root>
