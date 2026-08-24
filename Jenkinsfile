@@ -189,7 +189,12 @@ pipeline {
     }
     stage('Deploy') {
       steps {
-        script { if (!params.DEPLOY_HOST?.trim()) { error('DEPLOY_HOST is required before deployment.') } }
+        script {
+          env.DEPLOY_HOST = params.DEPLOY_HOST?.trim() ?: env.APPLICATION_DEPLOY_HOST?.trim()
+          if (!env.DEPLOY_HOST) {
+            error('Set DEPLOY_HOST for a manual run or APPLICATION_DEPLOY_HOST in Jenkins Global properties.')
+          }
+        }
         withCredentials([usernamePassword(credentialsId: 'registry_creds', usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_TOKEN')]) {
           sshagent(credentials: ['ec2_ssh']) {
             sh '''#!/usr/bin/env bash
@@ -248,7 +253,12 @@ REMOTE
     }
     stage('Runtime Cleanup') {
       steps {
-        script { if (!params.DEPLOY_HOST?.trim()) { error('DEPLOY_HOST is required before runtime cleanup.') } }
+        script {
+          env.DEPLOY_HOST = params.DEPLOY_HOST?.trim() ?: env.APPLICATION_DEPLOY_HOST?.trim()
+          if (!env.DEPLOY_HOST) {
+            error('Set DEPLOY_HOST for a manual run or APPLICATION_DEPLOY_HOST in Jenkins Global properties.')
+          }
+        }
         sshagent(credentials: ['ec2_ssh']) {
           sh '''#!/usr/bin/env bash
             set -Eeuo pipefail
