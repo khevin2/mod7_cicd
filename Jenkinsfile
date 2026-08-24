@@ -8,6 +8,9 @@ pipeline {
     timeout(time: 30, unit: 'MINUTES')
     disableConcurrentBuilds()
   }
+  triggers {
+    githubPush()
+  }
   parameters {
     string(name: 'DEPLOY_HOST', defaultValue: '', trim: true, description: 'Required EC2 host.')
     string(name: 'DEPLOY_USER', defaultValue: 'ec2-user', trim: true, description: 'SSH user.')
