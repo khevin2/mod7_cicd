@@ -47,6 +47,10 @@ data "aws_ec2_managed_prefix_list" "instance_connect" {
   name  = format("com.amazonaws.%s.ec2-instance-connect", data.aws_region.current.region)
 }
 
+# Egress is restricted by protocol and port, but public registries, package
+# repositories, DNS, and NTP do not provide stable destination CIDRs.
+# Review this exception if a controlled egress proxy or VPC endpoints are added.
+#trivy:ignore:AVD-AWS-0104:exp:2027-08-22
 resource "aws_security_group" "jenkins" {
   name_prefix = format("%s-%s-jenkins-", var.tags["Project"], var.tags["Environment"])
   description = "Restricted administrative access and controlled webhook ingress for Jenkins."
@@ -158,10 +162,6 @@ resource "aws_security_group" "jenkins" {
   tags = merge(var.tags, { Name = format("%s-%s-jenkins", var.tags["Project"], var.tags["Environment"]) })
 }
 
-# Egress is restricted by protocol and port, but public registries, package
-# repositories, DNS, and NTP do not provide stable destination CIDRs.
-# Review this exception if a controlled egress proxy or VPC endpoints are added.
-#trivy:ignore:AVD-AWS-0104:exp:2027-08-22
 resource "aws_security_group" "deployment" {
   name_prefix = format("%s-%s-deployment-", var.tags["Project"], var.tags["Environment"])
   description = "Ingress restricted to approved SSH sources and public HTTP verification."
