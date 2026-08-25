@@ -50,10 +50,12 @@ terraform plan -out=live.tfplan
 terraform apply live.tfplan
 ```
 
-The application security group exposes public TCP 80 and limits SSH to approved
-sources. The Jenkins security group restricts UI access to administrator CIDRs.
-When webhooks are enabled, AWS permits TCP 443 to Nginx; Nginx then permits only
-GitHub webhook source ranges on `/github-webhook/`.
+The application security group exposes public TCP 80, permits TCP 22 only from
+the Jenkins controller security group or the EC2 Instance Connect service, and
+allows outbound TCP 443 only for registry pulls and package repositories. The
+Jenkins security group separately restricts UI access to administrator CIDRs.
+When webhooks are enabled, AWS permits TCP 443 to Nginx; Nginx then permits
+only GitHub webhook source ranges on `/github-webhook/`.
 
 ## Configure application and Jenkins hosts
 
@@ -138,8 +140,11 @@ container.
 
 Terraform egress exceptions are narrowly scoped to the two required security-group
 resources, documented inline, and expire on 2027-08-22. They cover required
-HTTP/HTTPS, DNS, NTP, and private-VPC SSH traffic; do not replace them with global
+traffic without a global allow-all rule. The application host permits HTTPS only;
+AmazonProvidedDNS and the Amazon Time Sync Service are not filtered by security
 ignore files.
+groups. The Jenkins controller retains separately scoped HTTPS, HTTP, DNS, NTP,
+and private-VPC SSH rules. Do not replace the documented exceptions with global
 
 ## Verify a deployment
 

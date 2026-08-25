@@ -41,8 +41,9 @@ terraform apply live.tfplan
 ```
 
 The application host exposes HTTP 80 for service verification. Its SSH ingress is
-limited to approved administrator and Jenkins sources. The Jenkins host limits its
-UI to administrator CIDRs and keeps Jenkins itself on loopback behind Nginx TLS.
+limited to the Jenkins controller security group and EC2 Instance Connect. Its
+egress permits HTTPS only for registry pulls and package repositories. The Jenkins
+host limits its UI to administrator CIDRs and keeps Jenkins itself on loopback behind Nginx TLS.
 
 The direct HTTPS webhook route is intentionally opt-in:
 

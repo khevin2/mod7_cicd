@@ -148,4 +148,3 @@ Terraform, Ansible, Jenkins, webhook, verification, rollback, cleanup, and
 recovery steps are in the [runbook](docs/RUNBOOK.md). Every reviewer-facing claim
 should be backed by sanitized evidence in [the evidence index](evidence/README.md).
 Never commit credentials, tokens, private keys, or unredacted endpoint captures.
-nn

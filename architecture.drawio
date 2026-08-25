@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="jenkins-cicd-simple" name="Jenkins CI/CD Architecture">
-        <mxGraphModel dx="932" dy="597" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="700" math="0" shadow="0">
+        <mxGraphModel dx="1616" dy="812" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="700" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -25,8 +25,11 @@
                 <mxCell id="ec2" value="Application EC2" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ec2;outlineConnect=0;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontColor=#232f3e;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="825" y="265" width="75" height="75" as="geometry"/>
                 </mxCell>
-                <mxCell id="app" value="&lt;b&gt;Docker app&lt;/b&gt;&lt;br&gt;Express service on port 80" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfdf3;strokeColor=#248814;fontColor=#1f2937;fontSize=13;spacing=8;" parent="1" vertex="1">
+                <mxCell id="app" value="&lt;b&gt;Docker app&lt;/b&gt;&lt;br&gt;Host 80 to Express 3000" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfdf3;strokeColor=#248814;fontColor=#1f2937;fontSize=13;spacing=8;" parent="1" vertex="1">
                     <mxGeometry x="945" y="265" width="110" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="app-sg" value="&lt;b&gt;Application security group&lt;/b&gt;&lt;br&gt;Inbound: HTTP 80 public; SSH 22 from Jenkins or EC2 Instance Connect&lt;br&gt;Outbound: HTTPS 443 only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#2f6690;dashed=1;fontColor=#1f2937;fontSize=10;spacing=5;" parent="1" vertex="1">
+                    <mxGeometry x="770" y="355" width="300" height="45" as="geometry"/>
                 </mxCell>
                 <mxCell id="browser" value="&lt;b&gt;Public user&lt;/b&gt;&lt;br&gt;Browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#64748b;fontColor=#1f2937;fontSize=14;spacing=8;" parent="1" vertex="1">
                     <mxGeometry x="430" y="500" width="150" height="70" as="geometry"/>
@@ -56,7 +59,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="jenkins-pipeline-execution-v2" name="Pipeline execution">
-        <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1200" pageHeight="700" math="0" shadow="0">
+        <mxGraphModel dx="1296" dy="632" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="700" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>

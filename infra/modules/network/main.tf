@@ -171,17 +171,6 @@ resource "aws_security_group" "deployment" {
   description = "Ingress restricted to approved SSH sources and public HTTP verification."
   vpc_id      = aws_vpc.this.id
 
-  dynamic "ingress" {
-    for_each = var.ssh_ingress_cidrs
-    content {
-      description = "SSH from approved Jenkins or administrator egress address"
-      from_port   = 22
-      to_port     = 22
-      protocol    = "tcp"
-      cidr_blocks = [ingress.value]
-    }
-  }
-
   ingress {
     description     = "SSH deployment access from the Jenkins controller security group"
     from_port       = 22
@@ -214,38 +203,6 @@ resource "aws_security_group" "deployment" {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    description = "HTTP for Amazon Linux package repositories"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    description = "DNS resolution"
-    from_port   = 53
-    to_port     = 53
-    protocol    = "udp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    description = "DNS resolution over TCP"
-    from_port   = 53
-    to_port     = 53
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    description = "Network time synchronization"
-    from_port   = 123
-    to_port     = 123
-    protocol    = "udp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 

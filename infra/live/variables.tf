@@ -50,16 +50,6 @@ variable "availability_zone" {
   nullable    = true
 }
 
-variable "jenkins_ssh_cidr" {
-  description = "Public /32 CIDR of the approved Jenkins egress address."
-  type        = string
-
-  validation {
-    condition     = can(cidrhost(var.jenkins_ssh_cidr, 0)) && endswith(var.jenkins_ssh_cidr, "/32") && !can(regex("^(10\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[0-1])\\.)", split("/", var.jenkins_ssh_cidr)[0]))
-    error_message = "jenkins_ssh_cidr must be a non-private public IPv4 /32; 0.0.0.0/0 and private ranges are not allowed."
-  }
-}
-
 variable "administrator_ssh_cidr" {
   description = "Public /32 CIDR of the approved administrator egress address."
   type        = string

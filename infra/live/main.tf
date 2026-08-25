@@ -13,7 +13,6 @@ module "network" {
   vpc_cidr                       = var.vpc_cidr
   public_subnet_cidr             = var.public_subnet_cidr
   availability_zone              = var.availability_zone
-  ssh_ingress_cidrs              = [var.jenkins_ssh_cidr, var.administrator_ssh_cidr]
   jenkins_admin_ingress_cidrs    = [var.administrator_ssh_cidr]
   enable_jenkins_http_ingress    = var.enable_jenkins_http_ingress
   enable_jenkins_webhook_ingress = var.enable_jenkins_webhook_ingress

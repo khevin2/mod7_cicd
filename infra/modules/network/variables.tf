@@ -15,11 +15,6 @@ variable "availability_zone" {
   nullable    = true
 }
 
-variable "ssh_ingress_cidrs" {
-  description = "Approved public /32 CIDRs allowed to SSH to the deployment host."
-  type        = set(string)
-}
-
 variable "jenkins_admin_ingress_cidrs" {
   description = "Approved public /32 CIDRs allowed to administer the Jenkins controller over SSH and HTTPS."
   type        = set(string)
