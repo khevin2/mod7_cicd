@@ -1,0 +1,20 @@
+Phase 7 Jenkins build #4 sanitized execution evidence
+Date: 2026-08-21
+Scope: Jenkins console, build metadata, and persisted JUnit result. Credential values, host addresses, keys, and tokens are omitted.
+
+Source and stages
+- Revision: 6a6279f373b07dad32011a0e2b13518f4c45f08e.
+- Checkout, Install and Validate, Test, Docker Build, Push Image, and Deploy each completed successfully.
+
+Tests
+- Jenkins persisted one Jest suite containing four passing cases and no failures.
+
+Image traceability
+- The Push Image stage recorded immutable digest sha256:c1c44a2ba4737f92edf4c08c1f34ed1dcce0b8a03b7275d7b4faeacbd3033bf8.
+- The Deploy stage authenticated to the registry and pulled that same digest reference.
+
+Deployment result
+- The candidate container passed its bounded health check.
+- The named application container was replaced with the immutable digest reference and passed the host-local health check.
+- One transient connection reset occurred during the host-local health poll; the bounded retry succeeded.
+- Jenkins recorded Finished: SUCCESS and persisted the JUnit report and build metadata.

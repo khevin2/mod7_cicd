@@ -1,0 +1,21 @@
+Phase 2 image configuration evidence
+Date: 2026-08-20
+Image: jenkins-webapp:phase2-local
+Image ID: sha256:2f88ca43cdd7bc6b9804cddf9784096e91f10dd4174b446f00f25e076a221afa
+
+docker image inspect summary:
+User=10001:10001
+ExposedPorts={"3000/tcp":{}}
+StopSignal=SIGTERM
+HealthIntervalNs=5000000000
+HealthTimeoutNs=3000000000
+HealthStartPeriodNs=5000000000
+HealthRetries=3
+HealthCommand=node -e fetch("http://127.0.0.1:<PORT>/health") and fail on a non-OK response
+
+Runtime identity check:
+uid=10001(appuser) gid=10001(appgroup) groups=10001(appgroup)
+
+Production dependency check:
+jenkins-webapp@1.0.0 /app
+`-- express@5.2.1

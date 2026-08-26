@@ -1,0 +1,34 @@
+Phase 5 Jenkins LTS readiness preflight
+Date: 2026-08-21
+Scope: Local Jenkins controller configuration only. No credentials were read, created, or displayed.
+
+Jenkins service and HTTP health
+- systemctl is-active jenkins: active
+- GET http://127.0.0.1:8080/login: HTTP 200
+- Response header X-Jenkins: 2.568.2
+- No restart was required for the verified installed plugin state.
+
+Installed required plugins (manifest versions)
+- Pipeline (workflow-aggregator): 608.v67378e9d3db_1
+- Git: 5.10.1
+- Credentials Binding: 728.v902a_273b_8947
+- Docker plugin: 1327.v9524f1ee134e
+- Docker Pipeline (docker-workflow): 653.v2f2c08eff0ec
+- SSH Agent: 424.vfc0ff25503b_4
+
+Configured tool
+- NodeJS plugin: 1.6.6
+- NodeJS24 automatic installer: Node.js 24.18.0
+
+Execution-environment observations
+- The current Linux session has Git 2.43.0, Docker client/server 29.7.2, and OpenSSH 9.6p1.
+- The Jenkins Unix account belongs to the docker group.
+- Disk space at /var/lib/jenkins: 925G available (4% used on the mounted filesystem).
+- These observations do not replace a Jenkins build execution. A Jenkins job is required to prove the NodeJS24 installer and service-account Git, Docker, and SSH access.
+
+Known blockers and next actions
+- Jenkins uses local authentication; credential IDs cannot be inspected or created anonymously.
+- A GLOBAL Jenkins username/password credential is saved as `ghcr-registry`.
+- No credential with the required ID `registry_creds` exists in the system store. The later Jenkinsfile must use the actual ID, or the credential must be renamed before implementation.
+- ec2_ssh and Jenkins known_hosts require the provisioned Amazon Linux 2023 host and its verified SSH host key.
+- /var/lib/jenkins/.ssh/known_hosts is currently absent, which is expected before the target host exists.

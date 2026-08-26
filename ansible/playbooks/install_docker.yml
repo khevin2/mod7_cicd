@@ -1,0 +1,30 @@
+---
+- name: Install and configure Docker on Amazon Linux 2023 deployment hosts
+  hosts: deployment_hosts
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Confirm the host uses Amazon Linux 2023
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Amazon"
+          - ansible_distribution_major_version == "2023"
+        fail_msg: "This playbook is intended only for Amazon Linux 2023 hosts."
+
+    - name: Install Docker Engine
+      ansible.builtin.dnf:
+        name: docker
+        state: present
+
+    - name: Enable and start Docker
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Allow the deployment user to use Docker
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ec2-user') }}"
+        groups: docker
+        append: true

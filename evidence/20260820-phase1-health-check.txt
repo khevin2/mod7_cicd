@@ -1,0 +1,20 @@
+Phase 1 local endpoint and shutdown evidence
+Date: 2026-08-20
+Environment: Linux x86_64, Node.js v24.19.0
+
+Server command: PORT=3210 HOST=127.0.0.1 node src/server.js
+
+GET /
+{"service":"jenkins-webapp","message":"Jenkins CI/CD lab service is running"}
+http_status=200
+
+GET /health
+{"service":"jenkins-webapp","status":"ok"}
+http_status=200
+
+Shutdown check: SIGTERM sent to the server process
+Server log:
+Server listening on http://127.0.0.1:3210
+Received SIGTERM; closing HTTP server
+HTTP server closed
+process_exit=0

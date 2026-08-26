@@ -1,0 +1,49 @@
+# Dependencies and test output
+node_modules/
+coverage/
+test-results/
+
+# Local configuration
+.env
+.env.*
+!.env.example
+npm-debug.log*
+
+# Private keys and certificates
+*.key
+*.pem
+id_rsa*
+id_ed25519*
+
+# Local SSH keys for infrastructure access
+keys/
+
+# Terraform state, generated backend configuration, and local variable values
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfplan.*
+crash.log
+crash.*.log
+infra/live/backend.hcl
+infra/live/*.tfvars
+infra/bootstrap/*.tfvars
+!infra/bootstrap/*.tfvars.example
+!infra/live/*.tfvars.example
+
+# Ansible inventory contains environment-specific host and key locations
+ansible/inventory/hosts.yml
+ansible/inventory/known_hosts
+
+# Raw or sensitive evidence must remain local
+evidence/raw/
+evidence/private/
+evidence/**/*-raw.*
+evidence/**/*-secret.*
+
+# Editor and operating-system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

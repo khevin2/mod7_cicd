@@ -1,0 +1,17 @@
+Phase 7 Jenkins pipeline readiness recheck
+Date: 2026-08-21
+Scope: Live, read-only checks. Credential values, host addresses, host keys, and private keys were not displayed.
+
+Jenkins job and credentials
+- The jenkins-webapp-pipeline job is enabled and uses the committed Jenkinsfile from SCM.
+- The Jenkins system credential store contains the required registry_creds and ec2_ssh IDs.
+- The committed Jenkinsfile requires strict SSH host-key checking against $HOME/.ssh/known_hosts for deployment.
+
+Deployment target
+- The trusted Ansible inventory connected with StrictHostKeyChecking=yes using its dedicated known-hosts file.
+- The target reported Amazon Linux 2023.
+- The user verified with privileged local access that Jenkins' runtime /var/lib/jenkins/.ssh/known_hosts file exists. The previously recorded absence was an unprivileged permission-check error and is withdrawn.
+
+Pipeline-launch status
+- Jenkins build #4 was triggered from the configured SCM revision and finished SUCCESS.
+- The build's six required stages completed and its deployment health check passed after one transient connection-reset retry.
