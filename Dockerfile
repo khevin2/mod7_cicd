@@ -12,7 +12,9 @@ FROM ${NODE_IMAGE} AS runtime
 
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
-    PORT=3000
+    PORT=3000 \
+    METRICS_HOST=0.0.0.0 \
+    METRICS_PORT=9464
 
 RUN addgroup -g 10001 -S appgroup \
     && adduser -u 10001 -S -D -H -G appgroup appuser
@@ -30,7 +32,7 @@ COPY --chown=10001:10001 src ./src
 
 USER 10001:10001
 
-EXPOSE 3000
+EXPOSE 3000 9464
 
 HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=3 \
   CMD ["node", "-e", "fetch('http://127.0.0.1:' + (process.env.PORT || '3000') + '/health').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1));"]
