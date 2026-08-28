@@ -1,0 +1,18 @@
+apiVersion: 1
+
+deleteContactPoints:
+  - orgId: 1
+    uid: project6-slack
+
+contactPoints:
+  - orgId: 1
+    name: project6-slack
+    receivers:
+      - uid: project6-slack
+        type: slack
+        disableResolveMessage: false
+        settings:
+          recipient: "#project6-observability-alerts"
+          title: "{{ '{{' }} template \"default.title\" . {{ '}}' }}"
+          text: "{{ '{{' }} template \"default.message\" . {{ '}}' }}"
+          url: {{ monitoring_slack_webhook_url | to_json }}

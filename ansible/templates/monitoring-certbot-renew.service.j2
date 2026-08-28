@@ -1,0 +1,13 @@
+[Unit]
+Description=Renew the Project 6 Grafana TLS certificate
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart={{ monitoring_certbot_root }}/bin/certbot renew --quiet --deploy-hook /etc/letsencrypt/renewal-hooks/deploy/reload-monitoring-proxy
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+NoNewPrivileges=true
+ReadWritePaths=/etc/letsencrypt /var/lib/letsencrypt /var/log/letsencrypt {{ monitoring_root }}/tls

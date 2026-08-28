@@ -1,0 +1,336 @@
+---
+- name: Install the hardened Project 6 monitoring stack
+  hosts: monitoring_hosts
+  become: true
+  gather_facts: true
+
+  vars:
+    monitoring_root: /opt/monitoring
+    monitoring_compose_root: "{{ monitoring_root }}/monitoring"
+    monitoring_compose_version: "5.5.0"
+    monitoring_compose_sha256: "c57ab918abd5b05ca7e7d0f275875dd1330a695074f309dc9eab1b49efafcd4b"
+    monitoring_certbot_version: "5.7.0"
+    monitoring_certbot_root: /opt/certbot
+    # Approved Phase 3 exception: use the newest official stable images pinned
+    # in compose.yml. Their known Trivy HIGH findings are recorded in the
+    # evidence and accepted for this lab; no CRITICAL findings were reported.
+    # Reassess this exception for every image update and before production use.
+    monitoring_image_gate_status: accepted_stable_image_exception
+
+  pre_tasks:
+    - name: Require the approved Phase 3 image-gate decision
+      ansible.builtin.assert:
+        that:
+          - monitoring_image_gate_status in ["passed", "accepted_stable_image_exception"]
+        fail_msg: >-
+          Set monitoring_image_gate_status to passed only after a clean scan,
+          or to accepted_stable_image_exception only with the documented
+          Project 6 stable-image exception.
+
+    - name: Confirm the host and architecture match the Terraform target
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Amazon"
+          - ansible_distribution_major_version == "2023"
+          - ansible_architecture == "x86_64"
+        fail_msg: "This playbook supports only the Project 6 x86_64 Amazon Linux 2023 host."
+
+    - name: Require approved DNS, contact, Region, and named secret inputs
+      ansible.builtin.assert:
+        that:
+          - monitoring_server_name == "grafana.kheven.me"
+          - monitoring_certbot_email is match('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+          - monitoring_aws_region is match('^[a-z]{2}-[a-z]+-[0-9]+$')
+          - monitoring_slack_secret_arn is match('^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:.+$')
+          - monitoring_cloudflare_secret_arn is match('^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:.+$')
+          - monitoring_slack_secret_arn != monitoring_cloudflare_secret_arn
+        fail_msg: >-
+          Set the approved Grafana name, certificate email, Region, and the two
+          distinct secret-container ARNs in the ignored inventory. Never put
+          either secret value in inventory.
+
+  tasks:
+    - name: Install monitoring host prerequisites
+      ansible.builtin.dnf:
+        name:
+          - docker
+          - openssl
+          - python3
+          - python3-pip
+        state: present
+        update_cache: true
+
+    - name: Verify the AMI-provided AWS CLI is available
+      ansible.builtin.command:
+        argv: [aws, --version]
+      changed_when: false
+
+    - name: Create the Docker CLI plugin directory
+      ansible.builtin.file:
+        path: /usr/local/lib/docker/cli-plugins
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install the integrity-pinned Docker Compose plugin
+      ansible.builtin.get_url:
+        url: >-
+          https://github.com/docker/compose/releases/download/v{{ monitoring_compose_version }}/docker-compose-linux-x86_64
+        dest: /usr/local/lib/docker/cli-plugins/docker-compose
+        owner: root
+        group: root
+        mode: "0755"
+        checksum: "sha256:{{ monitoring_compose_sha256 }}"
+
+    - name: Install matching Certbot and Cloudflare DNS plugin versions
+      ansible.builtin.pip:
+        name:
+          - "certbot=={{ monitoring_certbot_version }}"
+          - "certbot-dns-cloudflare=={{ monitoring_certbot_version }}"
+        virtualenv: "{{ monitoring_certbot_root }}"
+        virtualenv_command: "python3 -m venv"
+
+    - name: Enable Docker Engine
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Create private monitoring directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: root
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ monitoring_root }}", group: root, mode: "0755" }
+        - { path: "{{ monitoring_compose_root }}/grafana/provisioning/datasources", group: root, mode: "0755" }
+        - { path: "{{ monitoring_compose_root }}/grafana/provisioning/dashboards", group: root, mode: "0755" }
+        - { path: "{{ monitoring_compose_root }}/grafana/dashboards", group: root, mode: "0755" }
+        - { path: "{{ monitoring_compose_root }}/nginx", group: root, mode: "0755" }
+        - { path: "{{ monitoring_root }}/secrets", group: root, mode: "0700" }
+        - { path: "{{ monitoring_root }}/tls", group: "1901", mode: "0750" }
+        - { path: /etc/letsencrypt, group: root, mode: "0700" }
+
+    - name: Copy version-controlled monitoring configuration
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop:
+        - { src: ../../monitoring/compose.yml, dest: "{{ monitoring_compose_root }}/compose.yml" }
+        - { src: ../../prometheus.yml, dest: "{{ monitoring_root }}/prometheus.yml" }
+        - { src: ../../monitoring/nginx/grafana.conf, dest: "{{ monitoring_compose_root }}/nginx/grafana.conf" }
+        - { src: ../../monitoring/grafana/provisioning/datasources/prometheus.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/datasources/prometheus.yml" }
+        - { src: ../../monitoring/grafana/provisioning/dashboards/default.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/dashboards/default.yml" }
+
+    - name: Copy the version-controlled Grafana dashboard directory
+      ansible.builtin.copy:
+        src: ../../monitoring/grafana/dashboards/
+        dest: "{{ monitoring_compose_root }}/grafana/dashboards/"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Read the Slack webhook through the instance role
+      ansible.builtin.command:
+        argv:
+          - aws
+          - secretsmanager
+          - get-secret-value
+          - --region
+          - "{{ monitoring_aws_region }}"
+          - --secret-id
+          - "{{ monitoring_slack_secret_arn }}"
+          - --query
+          - SecretString
+          - --output
+          - text
+      register: monitoring_slack_secret
+      changed_when: false
+      no_log: true
+
+    - name: Validate the Slack secret shape without displaying it
+      ansible.builtin.assert:
+        that:
+          - monitoring_slack_secret.stdout is match('^https://hooks\\.slack\\.com/services/.+$')
+        fail_msg: "The named Slack secret must contain only the incoming-webhook URL."
+      no_log: true
+
+    - name: Render secret-bearing Grafana contact-point provisioning
+      ansible.builtin.template:
+        src: ../templates/grafana-contactpoints.yml.j2
+        dest: "{{ monitoring_root }}/secrets/grafana-contactpoints.yml"
+        owner: "472"
+        group: root
+        mode: "0400"
+      vars:
+        monitoring_slack_webhook_url: "{{ monitoring_slack_secret.stdout }}"
+      no_log: true
+
+    - name: Check whether a Grafana administrator password already exists
+      ansible.builtin.stat:
+        path: "{{ monitoring_root }}/secrets/grafana-admin-password"
+      register: monitoring_grafana_admin_password_file
+      no_log: true
+
+    - name: Generate the initial Grafana administrator password locally
+      ansible.builtin.command:
+        argv: [openssl, rand, -base64, "48"]
+      register: monitoring_generated_admin_password
+      when: not monitoring_grafana_admin_password_file.stat.exists
+      changed_when: true
+      no_log: true
+
+    - name: Store the Grafana administrator password as a file secret
+      ansible.builtin.copy:
+        dest: "{{ monitoring_root }}/secrets/grafana-admin-password"
+        content: "{{ monitoring_generated_admin_password.stdout }}\n"
+        owner: "472"
+        group: root
+        mode: "0400"
+      when: not monitoring_grafana_admin_password_file.stat.exists
+      no_log: true
+
+    - name: Read the Cloudflare token through the instance role
+      ansible.builtin.command:
+        argv:
+          - aws
+          - secretsmanager
+          - get-secret-value
+          - --region
+          - "{{ monitoring_aws_region }}"
+          - --secret-id
+          - "{{ monitoring_cloudflare_secret_arn }}"
+          - --query
+          - SecretString
+          - --output
+          - text
+      register: monitoring_cloudflare_secret
+      changed_when: false
+      no_log: true
+
+    - name: Reject an empty Cloudflare token without displaying it
+      ansible.builtin.assert:
+        that:
+          - monitoring_cloudflare_secret.stdout | trim | length >= 20
+          - "'\\n' not in monitoring_cloudflare_secret.stdout"
+        fail_msg: "The named Cloudflare secret must contain only the scoped API token."
+      no_log: true
+
+    - name: Write root-only Certbot Cloudflare credentials
+      ansible.builtin.copy:
+        dest: /etc/letsencrypt/cloudflare.ini
+        content: "dns_cloudflare_api_token = {{ monitoring_cloudflare_secret.stdout | trim }}\n"
+        owner: root
+        group: root
+        mode: "0600"
+      no_log: true
+
+    - name: Obtain or retain the Grafana DNS-01 certificate
+      ansible.builtin.command:
+        argv:
+          - "{{ monitoring_certbot_root }}/bin/certbot"
+          - certonly
+          - --dns-cloudflare
+          - --dns-cloudflare-credentials
+          - /etc/letsencrypt/cloudflare.ini
+          - --non-interactive
+          - --agree-tos
+          - --keep-until-expiring
+          - --email
+          - "{{ monitoring_certbot_email }}"
+          - --cert-name
+          - "{{ monitoring_server_name }}"
+          - -d
+          - "{{ monitoring_server_name }}"
+      register: monitoring_certificate
+      changed_when: "'Successfully received certificate' in monitoring_certificate.stdout"
+      no_log: true
+
+    - name: Install the proxy certificate with least-readable permissions
+      ansible.builtin.copy:
+        src: "/etc/letsencrypt/live/{{ monitoring_server_name }}/{{ item.name }}"
+        dest: "{{ monitoring_root }}/tls/{{ item.name }}"
+        remote_src: true
+        owner: root
+        group: "1901"
+        mode: "{{ item.mode }}"
+      loop:
+        - { name: fullchain.pem, mode: "0440" }
+        - { name: privkey.pem, mode: "0440" }
+      no_log: true
+
+    - name: Install the successful-renewal proxy reload hook
+      ansible.builtin.template:
+        src: ../templates/reload-monitoring-proxy.sh.j2
+        dest: /etc/letsencrypt/renewal-hooks/deploy/reload-monitoring-proxy
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Install the monitoring certificate renewal service
+      ansible.builtin.template:
+        src: ../templates/monitoring-certbot-renew.service.j2
+        dest: /etc/systemd/system/monitoring-certbot-renew.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install the monitoring certificate renewal timer
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/monitoring-certbot-renew.timer
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Daily Project 6 Grafana certificate renewal check
+
+          [Timer]
+          OnCalendar=daily
+          RandomizedDelaySec=1h
+          Persistent=true
+
+          [Install]
+          WantedBy=timers.target
+
+    - name: Enable the monitoring certificate renewal timer
+      ansible.builtin.systemd:
+        name: monitoring-certbot-renew.timer
+        daemon_reload: true
+        enabled: true
+        state: started
+
+    - name: Validate the deployed Compose model without rendering secrets
+      ansible.builtin.command:
+        argv: [docker, compose, --file, compose.yml, config, --quiet]
+        chdir: "{{ monitoring_compose_root }}"
+      environment:
+        GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+      changed_when: false
+
+    - name: Pull only the digest-pinned monitoring images
+      ansible.builtin.command:
+        argv: [docker, compose, --file, compose.yml, pull]
+        chdir: "{{ monitoring_compose_root }}"
+      environment:
+        GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+      register: monitoring_compose_pull
+      changed_when: "'Pulled' in monitoring_compose_pull.stdout or 'Downloaded' in monitoring_compose_pull.stderr"
+
+    - name: Reconcile and wait for the hardened monitoring stack
+      ansible.builtin.command:
+        argv: [docker, compose, --file, compose.yml, up, --detach, --remove-orphans, --wait]
+        chdir: "{{ monitoring_compose_root }}"
+      environment:
+        GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+      register: monitoring_compose_up
+      changed_when: >-
+        'Started' in monitoring_compose_up.stderr or
+        'Created' in monitoring_compose_up.stderr or
+        'Recreated' in monitoring_compose_up.stderr

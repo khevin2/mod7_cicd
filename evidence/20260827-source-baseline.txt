@@ -1,0 +1,40 @@
+Project 6 source baseline
+Evidence date: 2026-08-27
+Time zone: Africa/Johannesburg
+Evidence type: executed local and read-only GitHub checks
+Redaction: credential values and unrelated local content omitted
+
+Repository
+- Working branch: feature/project-6-observability-security (local only)
+- Local HEAD: 9662bf8835d19eed4e7f39ecc0a9b212c39db5c2
+- Cached origin/main: 9662bf8835d19eed4e7f39ecc0a9b212c39db5c2
+- GitHub main (fresh API check): 9662bf8835d19eed4e7f39ecc0a9b212c39db5c2
+- Remote: public khevin2/mod7_cicd repository over HTTPS
+- Default branch: main
+- Authenticated repository permission: admin
+- COMPLETION.md: excluded locally by .git/info/exclude
+
+Working-tree boundary
+- Existing user change preserved: architecture.drawio
+- Existing untracked user file preserved: project6_tools_anki.csv
+- No commit or push was performed.
+
+Tool preflight
+- Terraform v1.15.8
+- AWS CLI 2.35.23
+- GitHub CLI 2.83.2
+- Docker CLI 29.7.2
+- Node.js: unavailable in this shell
+- Trivy: unavailable on this host
+- Ansible is installed, but its default local temporary directory is outside the
+  writable sandbox; runtime playbook checks were not part of this read-only phase.
+- `terraform fmt -check -recursive`: passed.
+- `terraform validate` with backend-disabled initialization: passed for both
+  `infra/live` and `infra/bootstrap` using locked AWS provider v6.61.0.
+- Targeted evidence scan found no AWS account ID, access-key marker, private-key
+  marker, or GitHub token marker in the new baseline files.
+
+Conclusion
+The exact approved Project 6 baseline is retained with repository history. Local
+user work was not overwritten. Missing build/runtime tools are recorded as
+limitations and are not represented as successful checks.

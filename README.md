@@ -118,8 +118,16 @@ infra/               Terraform roots and child modules for app and Jenkins hosts
 ansible/             Docker and Jenkins-controller configuration playbooks
 docs/RUNBOOK.md      Provisioning, webhook, verification, rollback, and recovery
 architecture.drawio  Editable two-page architecture and pipeline diagram
+monitoring/          Hardened digest-pinned Prometheus/Grafana runtime
+prometheus.yml       Private Prometheus self and monitoring-host scrape baseline
 evidence/            Sanitized executed evidence
 ```
+
+Phase 3 monitoring-container and secret-delivery implementation is in progress.
+The current Compose model publishes only Grafana HTTPS through an unprivileged
+proxy; Prometheus, Grafana's native listener, and Node Exporter remain on internal
+networks. See [the monitoring security boundary](monitoring/README.md) and run
+`scripts/validate-phase3.sh` for daemon-free structural validation.
 
 ## Local quick start
 
@@ -133,14 +141,18 @@ npm start
 curl --fail http://127.0.0.1:3000/health
 
 docker build --tag jenkins-webapp:local .
-docker run --detach --rm --name jenkins-webapp-local -p 8081:3000 jenkins-webapp:local
+docker run --detach --rm --name jenkins-webapp-local \
+  -p 8081:3000 -p 127.0.0.1:9464:9464 jenkins-webapp:local
 curl --fail http://127.0.0.1:8081/health
+curl --fail http://127.0.0.1:9464/metrics
 docker stop jenkins-webapp-local
 ```
 
-The container runs as UID/GID 10001, listens on port 3000, and has a Docker health
-check. The deployed service maps host port 80 to 3000; do not expose port 3000
-directly.
+The container runs as UID/GID 10001, serves the application on port 3000, exposes
+Prometheus metrics on the separate port 9464, and has a Docker health check. The
+deployed service maps host port 80 to 3000 and host port 9464 to the metrics
+listener. AWS security-group rules must keep ports 3000 and 9464 off the public
+internet; only the future monitoring VPC may scrape `:9464/metrics`.
 
 ## Operations and evidence
 

@@ -30,6 +30,10 @@ Copy `live/terraform.tfvars.example` to ignored `live/terraform.tfvars`.
 Supply approved CIDRs, ownership metadata, public-key paths, and instance settings.
 Never provide private keys to Terraform.
 
+`administrator_ssh_cidr` is the approved public `/32` used for both Jenkins SSH
+administration and Jenkins HTTPS UI access. The application host continues to
+accept deployment SSH from the Jenkins security group, not from a public CIDR.
+
 ```bash
 cd infra/live
 terraform init -reconfigure -backend-config=backend.hcl
@@ -83,6 +87,18 @@ playbook configures Jenkins, Docker, Nginx, TLS, plugins, resource limits, the
 GitHub webhook allowlist refresher, and the Jenkins service user's trusted
 application-host key. Keep the actual inventory ignored because it contains local
 paths and trusted host entries.
+
+## Phase 3 monitoring security module
+
+`modules/monitoring_secrets` defines two encrypted, tagged Secrets Manager
+containers and the exact runtime read/decrypt policy: one container for the Slack
+incoming webhook and one for the Cloudflare DNS token. It intentionally defines
+no secret versions or values. A later monitoring root will compose this module
+with its customer-managed KMS key and EC2 role during Phase 4.
+
+After an approved apply creates those empty containers, set each `SecretString`
+out of band. Do not pass a value through Terraform variables, plans, or state.
+The ignored Ansible inventory stores only the returned ARNs.
 
 ## Safe teardown order
 

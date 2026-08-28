@@ -7,12 +7,13 @@
   "scripts": {
     "start": "node src/server.js",
     "test": "jest --testResultsProcessor=./test/junit-reporter.js",
-    "check": "node --check src/app.js && node --check src/server.js && node --check test/app.test.js"
+    "check": "node --check src/app.js && node --check src/metrics.js && node --check src/server.js && node --check test/app.test.js"
   },
   "engines": {
     "node": ">=24 <25"
   },
   "dependencies": {
+    "@prometheus-io/client": "0.16.0",
     "express": "5.2.1"
   },
   "devDependencies": {

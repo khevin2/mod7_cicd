@@ -19,6 +19,7 @@ pipeline {
   environment {
     APP_NAME = 'jenkins-webapp'
     APP_CONTAINER_PORT = '3000'
+    APP_METRICS_PORT = '9464'
     REGISTRY_HOST = 'ghcr.io'
     IMAGE_REPOSITORY = 'khevin2/jenkins-webapp'
     TRIVY_IMAGE = 'aquasec/trivy:0.73.0@sha256:7cced7cae583819fc7806d4cbc0dbbc7cad18b99f7d3e235192e6da8c091045c'
@@ -200,7 +201,7 @@ pipeline {
             sh '''#!/usr/bin/env bash
               set -Eeuo pipefail
               DEPLOY_IMAGE_REF="$(< build-metadata/image-digest.txt)"
-              remote_command=$(printf 'REGISTRY_HOST=%q DEPLOY_IMAGE_REF=%q APP_NAME=%q DEPLOY_PORT=%q APP_CONTAINER_PORT=%q bash -c %q' "$REGISTRY_HOST" "$DEPLOY_IMAGE_REF" "$APP_NAME" "$DEPLOY_PORT" "$APP_CONTAINER_PORT" 'IFS= read -r REGISTRY_USERNAME; IFS= read -r REGISTRY_TOKEN; export REGISTRY_USERNAME REGISTRY_TOKEN; exec bash -s')
+              remote_command=$(printf 'REGISTRY_HOST=%q DEPLOY_IMAGE_REF=%q APP_NAME=%q DEPLOY_PORT=%q APP_CONTAINER_PORT=%q APP_METRICS_PORT=%q bash -c %q' "$REGISTRY_HOST" "$DEPLOY_IMAGE_REF" "$APP_NAME" "$DEPLOY_PORT" "$APP_CONTAINER_PORT" "$APP_METRICS_PORT" 'IFS= read -r REGISTRY_USERNAME; IFS= read -r REGISTRY_TOKEN; export REGISTRY_USERNAME REGISTRY_TOKEN; exec bash -s')
               {
                 printf '%s\n%s\n' "$REGISTRY_USERNAME" "$REGISTRY_TOKEN"
                 cat <<'REMOTE'
@@ -215,7 +216,7 @@ recover() {
   if [[ "$rollback" == true && -n "$previous" ]]; then
     echo "Deployment failed; rolling back to ${previous}."
     docker rm -f "$APP_NAME" >/dev/null 2>&1 || true
-    docker run -d --name "$APP_NAME" --restart unless-stopped -p "${DEPLOY_PORT}:${APP_CONTAINER_PORT}" "$previous" >/dev/null
+    docker run -d --name "$APP_NAME" --restart unless-stopped -p "${DEPLOY_PORT}:${APP_CONTAINER_PORT}" -p "${APP_METRICS_PORT}:${APP_METRICS_PORT}" "$previous" >/dev/null
   elif [[ "$rollback" == true ]]; then docker rm -f "$APP_NAME" >/dev/null 2>&1 || true; fi
   cleanup
   exit "$status"
@@ -234,11 +235,11 @@ docker rm -f "$candidate" >/dev/null
 if docker container inspect "$APP_NAME" >/dev/null 2>&1; then
   previous="$(docker inspect --format='{{.Config.Image}}' "$APP_NAME")"
   docker tag "$previous" "${APP_NAME}:rollback"
-  echo "Rollback command: docker run -d --name ${APP_NAME} --restart unless-stopped -p ${DEPLOY_PORT}:${APP_CONTAINER_PORT} ${previous}"
+  echo "Rollback command: docker run -d --name ${APP_NAME} --restart unless-stopped -p ${DEPLOY_PORT}:${APP_CONTAINER_PORT} -p ${APP_METRICS_PORT}:${APP_METRICS_PORT} ${previous}"
 fi
 rollback=true
 docker rm -f "$APP_NAME" >/dev/null 2>&1 || true
-docker run -d --name "$APP_NAME" --restart unless-stopped -p "${DEPLOY_PORT}:${APP_CONTAINER_PORT}" "$DEPLOY_IMAGE_REF" >/dev/null
+docker run -d --name "$APP_NAME" --restart unless-stopped -p "${DEPLOY_PORT}:${APP_CONTAINER_PORT}" -p "${APP_METRICS_PORT}:${APP_METRICS_PORT}" "$DEPLOY_IMAGE_REF" >/dev/null
 for attempt in {1..12}; do
   if curl --fail --silent --show-error --max-time 3 "http://127.0.0.1:${DEPLOY_PORT}/health" >/dev/null; then rollback=false; exit 0; fi
   sleep 5

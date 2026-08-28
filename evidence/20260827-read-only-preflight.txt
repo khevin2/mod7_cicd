@@ -1,0 +1,64 @@
+Project 6 read-only preflight
+Evidence date: 2026-08-27
+Region: eu-north-1
+Evidence type: executed AWS, GitHub, local HTTP, and local runtime checks
+Redaction: account ID, principal ARN, resource IDs, bucket names, IP addresses,
+credential values, and secret values omitted
+
+Authentication and source
+- AWS STS accepted the current credentials; account and principal were not saved.
+- Configured and reachable Region: eu-north-1.
+- GitHub main still resolves to the approved baseline commit.
+- One active push webhook exists with SSL verification enabled.
+- Its most recent delivery status is hookshot_error, consistent with the absent
+  Jenkins controller; no webhook mutation or redelivery was attempted.
+
+Network and compute
+- VPCs: one default available VPC, 172.31.0.0/16; no Project or Environment tag.
+- Subnets: three default available subnets; no Project or Environment tags.
+- Active non-deleted VPC peerings: zero.
+- Active EC2 instances (pending/running/stopping/stopped): zero.
+- Allocated Elastic IP addresses: zero.
+- EBS volumes: zero.
+- Security groups: the default group plus two named, untagged legacy groups.
+- Network interfaces using either legacy group: zero.
+- No live resource tagged Project=jenkins-webapp was found.
+
+Logging, audit, detection, encryption, and IAM
+- CloudWatch Logs: two unrelated pre-existing groups, both without explicit
+  retention or a customer KMS key; neither is a Project 6 group.
+- CloudTrail: one pre-existing multi-Region AWS Control Tower trail whose home
+  Region is eu-west-1. It delivers to S3 and CloudWatch Logs, but the member
+  credentials cannot retrieve trail status and the trail has no configured KMS
+  key. It is not suitable for Project 6 mutation or teardown.
+- GuardDuty detectors in eu-north-1: zero.
+- Customer-managed KMS aliases in eu-north-1: zero.
+- Pre-existing role CloudWatchAgent has no ownership tags and is attached to an
+  instance profile. Its managed policies include broad EC2 and CloudWatch access,
+  so it must not be reused as the Project 6 least-privilege role.
+
+State/backend
+- No backend.hcl, terraform.tfvars, saved plan, or local Terraform state is
+  present in the repository.
+- Five S3 buckets exist. One untagged candidate has a state-like name; its name
+  is redacted. It contains one state-like object, versioning is not enabled,
+  default encryption is SSE-S3 (AES256), all four public-access-block controls
+  are enabled, and no lifecycle rule was found.
+- The candidate contains no object under the repository's expected mod7-cicd
+  prefix, but its existing state-like object makes the ownership boundary more
+  important. It must not be referenced, imported, read as Project 6 state,
+  emptied, or deleted without separate ownership proof.
+
+Application and Jenkins baseline
+- Local Jenkins login on 127.0.0.1:8080: connection failed (HTTP 000).
+- Local application health on 127.0.0.1:3000: connection failed (HTTP 000).
+- Remote app/Jenkins checks are not possible because no active EC2 instances exist.
+- Docker runtime inspection is unavailable to this user due to Docker socket
+  permission; this is not represented as a successful container check.
+- Jenkins job, plugins, tools, and credential IDs/types/scopes cannot be freshly
+  checked while the controller is absent. Historical evidence remains historical.
+
+Conclusion
+The previously destroyed application/Jenkins stack is confirmed absent. This
+preflight performed no AWS, GitHub, Jenkins, Docker, or DNS mutation. Repository
+changes are limited to the requested documentation and input-example correction.

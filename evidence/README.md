@@ -16,6 +16,10 @@ documents Jenkins build #4, GHCR, EC2 state, and public browser accessibility.
 
 | Requirement | Direct evidence | Current status |
 | --- | --- | --- |
+| Project 6 source and read-only baseline | 20260827-source-baseline.txt; 20260827-read-only-preflight.txt | Verified 2026-08-27; prior lab stack absent, no cloud mutation. |
+| Project 6 ownership and cleanup boundary | 20260827-resource-ownership.md | Pre-existing, referenced, rejected, and lab-created resources classified. |
+| Project 6 decisions and cost impact | 20260827-cost-and-decisions.md | Inputs resolved and fixed/usage-priced cost drivers documented. |
+| Phase 3 hardened Compose and secret-safe definitions | 20260827-phase3-static-validation.txt; current monitoring/, Ansible, and Terraform module | Static controls verified 2026-08-27; newest official stable images are approved for this lab with a documented exception for known fixable Trivy HIGH findings (no CRITICAL findings). |
 | Git/GitHub, Terraform, AWS CLI, Jenkins LTS, SSH readiness | 20260820-prerequisite-checklist.md | Verified 2026-08-20; identity details redacted. |
 | Jenkins LTS, plugins, NodeJS24, Docker/Git/SSH | 20260821-phase5-jenkins-readiness.txt | Jenkins 2.568.2 and required tools/plugins recorded. |
 | Amazon Linux 2023 target and credential IDs | 20260821-phase7-readiness.txt | Target and protected IDs registry_creds/ec2_ssh checked without values. |
@@ -39,6 +43,11 @@ documents Jenkins build #4, GHCR, EC2 state, and public browser accessibility.
 
 ## Captured files
 
+- 20260827-source-baseline.txt — exact source alignment and local tool limitations.
+- 20260827-read-only-preflight.txt — sanitized current AWS/GitHub/runtime absence checks.
+- 20260827-resource-ownership.md — resource ownership and teardown exclusions.
+- 20260827-cost-and-decisions.md — approved inputs and point-in-time AWS cost impact.
+- 20260827-phase3-static-validation.txt — daemon-free Compose/security structure and syntax checks; runtime limitations explicit.
 - 20260820-prerequisite-checklist.md — prerequisite and tool checks.
 - 20260820-phase1-tests.txt, 20260820-phase1-health-check.txt — app tests and local checks.
 - 20260820-phase2-docker-build.txt, 20260820-phase2-image-inspect.txt, 20260820-phase2-container-smoke.txt — container checks.

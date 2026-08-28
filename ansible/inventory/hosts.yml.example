@@ -27,3 +27,21 @@ all:
           - "203.0.113.10/32"
         # Populate only after verifying the application-host ED25519 fingerprint.
         jenkins_known_hosts_entries: []
+    monitoring_hosts:
+      hosts:
+        monitoring_host:
+          ansible_host: "<MONITORING_ELASTIC_IP>"
+          ansible_user: ec2-user
+          ansible_ssh_private_key_file: "/absolute/path/to/monitoring-private-key"
+          ansible_ssh_common_args: >-
+            -o UserKnownHostsFile=ansible/inventory/known_hosts
+            -o StrictHostKeyChecking=yes
+            -o IdentitiesOnly=yes
+      vars:
+        monitoring_server_name: "grafana.kheven.me"
+        monitoring_certbot_email: "replace-with-admin-email@example.com"
+        monitoring_aws_region: "eu-north-1"
+        # ARNs identify empty Terraform-created secret containers. Set each
+        # SecretString value out of band; never put a value in this inventory.
+        monitoring_slack_secret_arn: "arn:aws:secretsmanager:eu-north-1:000000000000:secret:replace-slack"
+        monitoring_cloudflare_secret_arn: "arn:aws:secretsmanager:eu-north-1:000000000000:secret:replace-cloudflare"

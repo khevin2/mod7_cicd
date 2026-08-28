@@ -1,0 +1,162 @@
+name: jenkins-webapp-monitoring
+
+x-runtime-defaults: &runtime-defaults
+  init: true
+  restart: unless-stopped
+  read_only: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  logging:
+    driver: local
+    options:
+      max-size: 10m
+      max-file: "3"
+
+services:
+  prometheus:
+    <<: *runtime-defaults
+    image: prom/prometheus:v3.14.0-distroless@sha256:50c707e96da5ade383cb1707790576480485e93de06aa60ad8802cb5f744bd0a
+    user: "65532:65532"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=14d
+      - --storage.tsdb.retention.size=4GB
+      - --web.listen-address=0.0.0.0:9090
+    expose:
+      - "9090"
+    volumes:
+      - ../prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m,uid=65532,gid=65532
+    networks:
+      - telemetry
+    healthcheck:
+      test: ["CMD", "/bin/promtool", "check", "ready", "--url=http://127.0.0.1:9090"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    pids_limit: 128
+    mem_limit: 384m
+    mem_reservation: 192m
+    cpus: 0.50
+
+  grafana:
+    <<: *runtime-defaults
+    image: grafana/grafana:13.2.0-distroless@sha256:08e6ab6d67a5e21e6540724d3673a572840a43b1ba02d03922d0a21a7dbb38f9
+    user: "472"
+    environment:
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_LOG_MODE: console
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_admin_password
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SERVER_DOMAIN: ${GRAFANA_SERVER_NAME:-grafana.kheven.me}
+      GF_SERVER_ENFORCE_DOMAIN: "true"
+      GF_SERVER_ROOT_URL: https://${GRAFANA_SERVER_NAME:-grafana.kheven.me}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    expose:
+      - "3000"
+    secrets:
+      - grafana_admin_password
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+      - /opt/monitoring/secrets/grafana-contactpoints.yml:/etc/grafana/provisioning/alerting/contactpoints.yml:ro
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=32m,uid=472
+    networks:
+      - frontend
+      - telemetry
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/share/grafana/bin/grafana", "cli", "--version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    pids_limit: 256
+    mem_limit: 448m
+    mem_reservation: 256m
+    cpus: 0.75
+
+  node-exporter:
+    <<: *runtime-defaults
+    image: prom/node-exporter:v1.12.1@sha256:1b4e4438faca4dd7e001dd445d161a4a2091b0fededa84093b3a8dfeae1f1be0
+    user: "65534:65534"
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --web.listen-address=0.0.0.0:9100
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/containers/storage/.+)($|/)
+      - --collector.netclass.ignored-devices=^(veth.*|docker.*|br-.*)$
+    expose:
+      - "9100"
+    volumes:
+      - /:/host:ro,rslave
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=8m,uid=65534,gid=65534
+    networks:
+      - telemetry
+    healthcheck:
+      test: ["CMD", "/bin/node_exporter", "--version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    pids_limit: 64
+    mem_limit: 96m
+    mem_reservation: 32m
+    cpus: 0.20
+
+  edge-proxy:
+    <<: *runtime-defaults
+    image: nginxinc/nginx-unprivileged:1.30.4-alpine3.24@sha256:93722936b82ec8a1178d48448e619226680d2de3706a1640800e186cd5fa7fd3
+    user: "101:1901"
+    ports:
+      - "${GRAFANA_HTTPS_BIND_ADDRESS:-0.0.0.0}:443:8443"
+    volumes:
+      - ./nginx/grafana.conf:/etc/nginx/conf.d/default.conf:ro
+      - /opt/monitoring/tls:/run/tls:ro
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m,uid=101,gid=1901
+      - /var/cache/nginx:rw,noexec,nosuid,nodev,size=16m,uid=101,gid=1901
+      - /var/run:rw,noexec,nosuid,nodev,size=4m,uid=101,gid=1901
+    networks:
+      - frontend
+    depends_on:
+      grafana:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "--no-check-certificate", "https://127.0.0.1:8443/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    pids_limit: 64
+    mem_limit: 64m
+    mem_reservation: 16m
+    cpus: 0.20
+
+networks:
+  frontend:
+    internal: true
+  telemetry:
+    internal: true
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
+secrets:
+  grafana_admin_password:
+    file: /opt/monitoring/secrets/grafana-admin-password

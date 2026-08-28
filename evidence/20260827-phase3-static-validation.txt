@@ -1,0 +1,77 @@
+Project 6 Phase 3 static validation and security-gate status
+Evidence date: 2026-08-27
+Evidence type: executed local validation plus read-only official registry scans
+Cloud/runtime mutation: none
+
+Selected official image references
+- Prometheus 3.14.0 distroless:
+  sha256:50c707e96da5ade383cb1707790576480485e93de06aa60ad8802cb5f744bd0a
+- Grafana OSS 13.2.0 distroless:
+  sha256:08e6ab6d67a5e21e6540724d3673a572840a43b1ba02d03922d0a21a7dbb38f9
+- Node Exporter 1.12.1:
+  sha256:1b4e4438faca4dd7e001dd445d161a4a2091b0fededa84093b3a8dfeae1f1be0
+- Nginx unprivileged 1.30.4 Alpine 3.24:
+  sha256:93722936b82ec8a1178d48448e619226680d2de3706a1640800e186cd5fa7fd3
+
+Registry image-configuration inspection confirmed these non-root runtime users:
+Prometheus 65532, Grafana 472, Node Exporter nobody/65534, and Nginx 101.
+
+Executed structural checks
+- Docker Compose CLI v5.4.0 parsed monitoring/compose.yml successfully.
+- scripts/validate-phase3.sh passed all assertions:
+  - four versioned and digest-pinned service images;
+  - explicit non-root users, read-only roots, cap-drop ALL, and
+    no-new-privileges;
+  - no privileged containers or Docker socket mounts;
+  - health, restart, PID, CPU, memory, and bounded local-log controls;
+  - internal frontend and telemetry networks;
+  - edge-proxy TCP 443 is the only published port;
+  - no Terraform aws_secretsmanager_secret_version or secret_string value.
+- Ansible syntax check passed using a temporary hosts.yml copy of the example.
+- All three new Jinja templates rendered with synthetic values; no real secret
+  was used or printed.
+- terraform fmt -check passed for infra/modules/monitoring_secrets.
+- terraform validate passed for that module with Terraform 1.15.8 and AWS
+  provider 6.62.0. No Terraform plan or apply was run.
+- git diff --check passed; existing line-ending warnings are not whitespace
+  errors.
+
+Trivy 0.73.0 gates
+- The official Linux binary tarball passed its published SHA-256 checksum.
+- Configuration scan: zero HIGH/CRITICAL findings across six detected Dockerfile
+  and Terraform targets. The online checks-bundle mirror was unavailable, so
+  Trivy explicitly fell back to its embedded checks.
+- Repository vulnerability/secret scan used the local database updated at
+  2026-08-27T02:16:59Z: package-lock.json had zero HIGH/CRITICAL findings and no
+  secret finding was reported.
+- Prometheus exact digest: zero fixable HIGH/CRITICAL OS or Go-binary findings.
+- Grafana exact digest: zero OS/core-Grafana-binary findings, but fixable HIGH
+  findings exist in multiple bundled backend plugin Go binaries. A concise recount
+  was interrupted by a registry connection reset, so this file intentionally does
+  not claim an aggregate count.
+- Node Exporter exact digest: eight fixable HIGH and zero CRITICAL findings in
+  Go 1.26.5 stdlib; Trivy lists fixed Go releases including 1.26.6.
+- Nginx exact digest: two fixable HIGH and zero CRITICAL package findings for
+  libcrypto3/libssl3 3.5.7-r0; Trivy lists 3.5.8-r0 as fixed.
+
+Read-only alternatives checked
+- Grafana 13.1.4 distroless: 22 fixable HIGH, zero CRITICAL; not an improvement.
+- Node Exporter 1.12.1 distroless: eight fixable HIGH, zero CRITICAL; same binary
+  issue as the default variant.
+- Nginx unprivileged 1.30.4 Debian: 39 fixable HIGH, zero CRITICAL OS findings;
+  materially worse than the selected Alpine variant.
+
+Gate decision and limitations
+- On 2026-08-27, the project owner explicitly approved use of the selected
+  newest official stable image digests despite the recorded Trivy HIGH findings.
+  This approval does not apply to CRITICAL findings, a different digest, or a
+  production deployment.
+- The Ansible playbook defaults monitoring_image_gate_status to
+  accepted_stable_image_exception, allowing this lab deployment. The exact
+  digests must be rescanned for every image update and replaced with clean
+  official stable images when available.
+- Local Docker daemon access is denied to this user, so compose up, container
+  health, runtime mount/capability inspection, and promtool-in-container checks
+  were not run or claimed.
+- npm could not execute in this WSL shell ("WSL 1 is not supported"), so the
+  existing Phase 2 application tests were not rerun in this evidence session.

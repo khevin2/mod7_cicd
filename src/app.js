@@ -1,11 +1,14 @@
 const express = require('express');
 
+const { createMetrics } = require('./metrics');
+
 const SERVICE_NAME = 'jenkins-webapp';
 
-function createApp() {
+function createApp(metrics = createMetrics()) {
   const app = express();
 
   app.disable('x-powered-by');
+  app.use(metrics.middleware);
 
   app.get('/', (_request, response) => {
     response.status(200).json({
@@ -21,6 +24,7 @@ function createApp() {
     });
   });
 
+  app.metrics = metrics;
   return app;
 }
 

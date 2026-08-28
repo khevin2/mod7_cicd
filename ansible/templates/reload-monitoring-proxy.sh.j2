@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+install -o root -g 1901 -m 0440 \
+  "/etc/letsencrypt/live/{{ monitoring_server_name }}/fullchain.pem" \
+  "{{ monitoring_root }}/tls/fullchain.pem"
+install -o root -g 1901 -m 0440 \
+  "/etc/letsencrypt/live/{{ monitoring_server_name }}/privkey.pem" \
+  "{{ monitoring_root }}/tls/privkey.pem"
+
+docker compose --file "{{ monitoring_compose_root }}/compose.yml" exec --no-TTY edge-proxy nginx -t
+docker compose --file "{{ monitoring_compose_root }}/compose.yml" exec --no-TTY edge-proxy nginx -s reload
