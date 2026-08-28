@@ -2,6 +2,7 @@ const request = require('supertest');
 
 const { createApp, SERVICE_NAME } = require('../src/app');
 const { createMetricsApp } = require('../src/metrics');
+const { createLogger } = require('../src/logger');
 
 describe('Express service', () => {
   const app = createApp();
@@ -40,6 +41,32 @@ describe('Express service', () => {
         service: SERVICE_NAME,
         status: 'ok'
       });
+    });
+  });
+
+  describe('structured application logs', () => {
+    test('write only the approved request fields without sensitive request data', async () => {
+      const lines = [];
+      const logger = createLogger({ log: (line) => lines.push(JSON.parse(line)) }, () => '2026-08-28T00:00:00.000Z');
+      const loggedApp = createApp(undefined, logger);
+
+      await request(loggedApp)
+        .get('/not-found?token=not-for-logs')
+        .set('Authorization', 'Bearer not-for-logs')
+        .set('Cookie', 'session=not-for-logs');
+
+      expect(lines).toHaveLength(1);
+      expect(lines[0]).toMatchObject({
+        timestamp: '2026-08-28T00:00:00.000Z',
+        level: 'info',
+        event: 'http_request_completed',
+        method: 'GET',
+        route: 'unmatched',
+        status_code: 404
+      });
+      expect(lines[0]).not.toHaveProperty('headers');
+      expect(lines[0]).not.toHaveProperty('body');
+      expect(JSON.stringify(lines[0])).not.toContain('not-for-logs');
     });
   });
 

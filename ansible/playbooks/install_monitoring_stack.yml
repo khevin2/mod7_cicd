@@ -10,7 +10,13 @@
     monitoring_compose_version: "5.5.0"
     monitoring_compose_sha256: "c57ab918abd5b05ca7e7d0f275875dd1330a695074f309dc9eab1b49efafcd4b"
     monitoring_certbot_version: "5.7.0"
-    monitoring_certbot_root: /opt/certbot
+    # Keep the supported Python 3.11 environment separate from a failed or
+    # previously created default-Python virtualenv at /opt/certbot.
+    monitoring_certbot_root: /opt/certbot-python311
+    monitoring_project_name: jenkins-webapp
+    monitoring_environment: lab
+    monitoring_container_log_group: "/{{ monitoring_project_name }}/{{ monitoring_environment }}/monitoring/containers"
+    monitoring_system_log_group: "/{{ monitoring_project_name }}/{{ monitoring_environment }}/monitoring/system"
     # Approved Phase 3 exception: use the newest official stable images pinned
     # in compose.yml. Their known Trivy HIGH findings are recorded in the
     # evidence and accepted for this lab; no CRITICAL findings were reported.
@@ -40,10 +46,13 @@
         that:
           - monitoring_server_name == "grafana.kheven.me"
           - monitoring_certbot_email is match('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+          - monitoring_certbot_email is not match('.*@example\\.com$')
           - monitoring_aws_region is match('^[a-z]{2}-[a-z]+-[0-9]+$')
           - monitoring_slack_secret_arn is match('^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:.+$')
           - monitoring_cloudflare_secret_arn is match('^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:.+$')
           - monitoring_slack_secret_arn != monitoring_cloudflare_secret_arn
+          - monitoring_container_log_group == "/jenkins-webapp/lab/monitoring/containers"
+          - monitoring_system_log_group == "/jenkins-webapp/lab/monitoring/system"
         fail_msg: >-
           Set the approved Grafana name, certificate email, Region, and the two
           distinct secret-container ARNs in the ignored inventory. Never put
@@ -57,6 +66,10 @@
           - openssl
           - python3
           - python3-pip
+          - python3.11
+          - python3.11-pip
+          - amazon-cloudwatch-agent
+          - rsyslog
         state: present
         update_cache: true
 
@@ -83,19 +96,69 @@
         mode: "0755"
         checksum: "sha256:{{ monitoring_compose_sha256 }}"
 
+    - name: Create the supported Python 3.11 Certbot virtual environment
+      ansible.builtin.command:
+        argv: [python3.11, -m, venv, "{{ monitoring_certbot_root }}"]
+        creates: "{{ monitoring_certbot_root }}/bin/python"
+
     - name: Install matching Certbot and Cloudflare DNS plugin versions
-      ansible.builtin.pip:
-        name:
+      # Do not use ansible.builtin.pip here: it imports packaging through the
+      # remote Ansible interpreter, which AL2023's Python 3.11 package does
+      # not provide by default. The virtualenv's pip resolves its own deps.
+      ansible.builtin.command:
+        argv:
+          - "{{ monitoring_certbot_root }}/bin/pip"
+          - install
           - "certbot=={{ monitoring_certbot_version }}"
           - "certbot-dns-cloudflare=={{ monitoring_certbot_version }}"
-        virtualenv: "{{ monitoring_certbot_root }}"
-        virtualenv_command: "python3 -m venv"
+      register: monitoring_certbot_packages
+      changed_when: >-
+        'Successfully installed' in monitoring_certbot_packages.stdout or
+        'Installing collected packages' in monitoring_certbot_packages.stdout
 
     - name: Enable Docker Engine
       ansible.builtin.service:
         name: docker
         enabled: true
         state: started
+
+    - name: Enable rsyslog for selected system and journal events
+      ansible.builtin.service:
+        name: rsyslog
+        enabled: true
+        state: started
+
+    - name: Create the CloudWatch Agent configuration directory
+      ansible.builtin.file:
+        path: /opt/aws/amazon-cloudwatch-agent/etc
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Render selected system-log CloudWatch Agent configuration
+      ansible.builtin.template:
+        src: ../../monitoring/cloudwatch-agent/amazon-cloudwatch-agent.json.j2
+        dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Start CloudWatch Agent with pre-created named log groups only
+      ansible.builtin.command:
+        argv:
+          - /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl
+          - -a
+          - fetch-config
+          - -m
+          - ec2
+          - -s
+          - -c
+          - file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+      register: monitoring_cloudwatch_agent
+      changed_when: >-
+        'Successfully fetched the config' in monitoring_cloudwatch_agent.stdout or
+        'start-amazon-cloudwatch-agent' in monitoring_cloudwatch_agent.stdout
 
     - name: Create private monitoring directories
       ansible.builtin.file:
@@ -312,6 +375,7 @@
         chdir: "{{ monitoring_compose_root }}"
       environment:
         GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+        AWS_REGION: "{{ monitoring_aws_region }}"
       changed_when: false
 
     - name: Pull only the digest-pinned monitoring images
@@ -320,15 +384,20 @@
         chdir: "{{ monitoring_compose_root }}"
       environment:
         GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+        AWS_REGION: "{{ monitoring_aws_region }}"
       register: monitoring_compose_pull
       changed_when: "'Pulled' in monitoring_compose_pull.stdout or 'Downloaded' in monitoring_compose_pull.stderr"
 
     - name: Reconcile and wait for the hardened monitoring stack
       ansible.builtin.command:
-        argv: [docker, compose, --file, compose.yml, up, --detach, --remove-orphans, --wait]
+        # TLS files are copied from Certbot immediately before this task. Force
+        # replacement so edge-proxy cannot retain a stale bind mount created
+        # before those files existed; named data volumes remain intact.
+        argv: [docker, compose, --file, compose.yml, up, --detach, --remove-orphans, --wait, --force-recreate]
         chdir: "{{ monitoring_compose_root }}"
       environment:
         GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+        AWS_REGION: "{{ monitoring_aws_region }}"
       register: monitoring_compose_up
       changed_when: >-
         'Started' in monitoring_compose_up.stderr or

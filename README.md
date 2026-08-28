@@ -123,11 +123,13 @@ prometheus.yml       Private Prometheus self and monitoring-host scrape baseline
 evidence/            Sanitized executed evidence
 ```
 
-Phase 3 monitoring-container and secret-delivery implementation is in progress.
-The current Compose model publishes only Grafana HTTPS through an unprivileged
-proxy; Prometheus, Grafana's native listener, and Node Exporter remain on internal
-networks. See [the monitoring security boundary](monitoring/README.md) and run
-`scripts/validate-phase3.sh` for daemon-free structural validation.
+Phase 4 monitoring infrastructure implementation is in progress; it remains
+plan- and approval-gated, with no cloud mutation authorized. The current Compose
+model publishes only Grafana HTTPS through an unprivileged proxy; Prometheus,
+Grafana's native listener, and Node Exporter remain on internal networks. See
+[the monitoring security boundary](monitoring/README.md), the single
+[`infra/live`](infra/live) Terraform root, and run `scripts/validate-phase3.sh` plus
+`scripts/validate-phase4.sh` for structural validation.
 
 ## Local quick start
 

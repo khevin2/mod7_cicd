@@ -1,0 +1,74 @@
+---
+- name: Configure Project 6 monitoring-host CloudWatch logging
+  hosts: monitoring_hosts
+  become: true
+  gather_facts: true
+
+  vars:
+    monitoring_project_name: jenkins-webapp
+    monitoring_environment: lab
+    monitoring_system_log_group: "/{{ monitoring_project_name }}/{{ monitoring_environment }}/monitoring/system"
+
+  pre_tasks:
+    - name: Confirm the Terraform-supported host platform and fixed log group
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Amazon"
+          - ansible_distribution_major_version == "2023"
+          - ansible_architecture == "x86_64"
+          - monitoring_system_log_group == "/jenkins-webapp/lab/monitoring/system"
+        fail_msg: >-
+          This playbook supports only the Project 6 x86_64 Amazon Linux 2023
+          monitoring host and its Terraform-pre-created system log group.
+
+  tasks:
+    - name: Install the CloudWatch Agent and rsyslog
+      ansible.builtin.dnf:
+        name:
+          - amazon-cloudwatch-agent
+          - rsyslog
+        state: present
+        update_cache: true
+
+    - name: Enable rsyslog for selected system and journal events
+      ansible.builtin.service:
+        name: rsyslog
+        enabled: true
+        state: started
+
+    - name: Create the CloudWatch Agent configuration directory
+      ansible.builtin.file:
+        path: /opt/aws/amazon-cloudwatch-agent/etc
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Render selected system-log CloudWatch Agent configuration
+      ansible.builtin.template:
+        src: ../../monitoring/cloudwatch-agent/amazon-cloudwatch-agent.json.j2
+        dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Start CloudWatch Agent with pre-created named log groups only
+      ansible.builtin.command:
+        argv:
+          - /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl
+          - -a
+          - fetch-config
+          - -m
+          - ec2
+          - -s
+          - -c
+          - file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+      register: monitoring_cloudwatch_agent
+      changed_when: >-
+        'Successfully fetched the config' in monitoring_cloudwatch_agent.stdout or
+        'start-amazon-cloudwatch-agent' in monitoring_cloudwatch_agent.stdout
+
+    - name: Confirm CloudWatch Agent is active
+      ansible.builtin.command:
+        argv: [systemctl, is-active, amazon-cloudwatch-agent]
+      changed_when: false

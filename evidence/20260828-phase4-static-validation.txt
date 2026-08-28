@@ -1,0 +1,33 @@
+Project 6 Phase 4 Terraform static validation
+Evidence date: 2026-08-28
+Evidence type: executed local structural validation
+Cloud/runtime mutation: none
+
+Executed checks
+- terraform fmt -check -recursive passed for all Terraform roots and modules.
+- scripts/validate-phase4.sh passed:
+  - monitoring secret values and EC2 user data are absent from Terraform;
+  - no Cloudflare Terraform provider is configured;
+  - the public monitoring security group has no TCP 9464 or 9100 rule;
+  - the separate peering module defines only application metrics and Node
+    Exporter ingress plus matching monitoring egress rules.
+- bash -n scripts/validate-phase4.sh passed.
+- git diff --check passed. Existing Git CRLF conversion notices are not
+  whitespace errors.
+
+Implemented, not applied
+- infra/live is the single S3-backend composition root for the approved
+  application/Jenkins VPC and 10.80.0.0/16 monitoring VPC. It creates their
+  peering, two routes, and private TCP 9464/9100 rules in the same saved plan,
+  alongside administrator-restricted Grafana HTTPS, SSM-managed AL2023 t3.micro,
+  encrypted gp3, IMDSv2, Elastic IP, KMS key, empty secret containers, and a
+  scoped runtime role.
+- No Terraform plan, apply, DNS change, secret value, state backend, or AWS
+  resource mutation was performed.
+
+Validation limitation
+- Terraform 1.15.8 began a backend-disabled initialization to fetch the AWS
+  provider (v6.62.0), but the provider was not available locally afterwards.
+  Therefore terraform validate and any plan have not been claimed. Before a
+  reviewed saved plan, run init with the approved backend, terraform validate,
+  the selected IaC scan, and terraform plan in each root.

@@ -9,10 +9,11 @@ x-runtime-defaults: &runtime-defaults
   security_opt:
     - no-new-privileges:true
   logging:
-    driver: local
+    driver: awslogs
     options:
-      max-size: 10m
-      max-file: "3"
+      awslogs-region: ${AWS_REGION:?AWS_REGION is required for CloudWatch logging}
+      awslogs-group: /jenkins-webapp/lab/monitoring/containers
+      awslogs-create-group: "false"
 
 services:
   prometheus:
@@ -34,6 +35,13 @@ services:
       - /tmp:rw,noexec,nosuid,nodev,size=16m,uid=65532,gid=65532
     networks:
       - telemetry
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:?AWS_REGION is required for CloudWatch logging}
+        awslogs-group: /jenkins-webapp/lab/monitoring/containers
+        awslogs-stream: prometheus
+        awslogs-create-group: "false"
     healthcheck:
       test: ["CMD", "/bin/promtool", "check", "ready", "--url=http://127.0.0.1:9090"]
       interval: 15s
@@ -75,6 +83,13 @@ services:
     networks:
       - frontend
       - telemetry
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:?AWS_REGION is required for CloudWatch logging}
+        awslogs-group: /jenkins-webapp/lab/monitoring/containers
+        awslogs-stream: grafana
+        awslogs-create-group: "false"
     depends_on:
       prometheus:
         condition: service_healthy
@@ -107,6 +122,13 @@ services:
       - /tmp:rw,noexec,nosuid,nodev,size=8m,uid=65534,gid=65534
     networks:
       - telemetry
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:?AWS_REGION is required for CloudWatch logging}
+        awslogs-group: /jenkins-webapp/lab/monitoring/containers
+        awslogs-stream: node-exporter
+        awslogs-create-group: "false"
     healthcheck:
       test: ["CMD", "/bin/node_exporter", "--version"]
       interval: 30s
@@ -126,13 +148,23 @@ services:
       - "${GRAFANA_HTTPS_BIND_ADDRESS:-0.0.0.0}:443:8443"
     volumes:
       - ./nginx/grafana.conf:/etc/nginx/conf.d/default.conf:ro
-      - /opt/monitoring/tls:/run/tls:ro
+      # /run resolves through /var/run in Alpine. The writable /var/run tmpfs
+      # would mask a /run/tls bind mount, so keep certificate files below the
+      # read-only Nginx configuration directory instead.
+      - /opt/monitoring/tls:/etc/nginx/tls:ro
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=16m,uid=101,gid=1901
       - /var/cache/nginx:rw,noexec,nosuid,nodev,size=16m,uid=101,gid=1901
       - /var/run:rw,noexec,nosuid,nodev,size=4m,uid=101,gid=1901
     networks:
       - frontend
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:?AWS_REGION is required for CloudWatch logging}
+        awslogs-group: /jenkins-webapp/lab/monitoring/containers
+        awslogs-stream: edge-proxy
+        awslogs-create-group: "false"
     depends_on:
       grafana:
         condition: service_healthy

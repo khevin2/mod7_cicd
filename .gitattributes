@@ -1,0 +1,4 @@
+# Scripts copied to Linux hosts must retain POSIX LF line endings, regardless
+# of a contributor's local Git autocrlf setting.
+*.sh text eol=lf
+ansible/files/refresh-github-webhook-allowlist text eol=lf

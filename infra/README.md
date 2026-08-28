@@ -93,12 +93,46 @@ paths and trusted host entries.
 `modules/monitoring_secrets` defines two encrypted, tagged Secrets Manager
 containers and the exact runtime read/decrypt policy: one container for the Slack
 incoming webhook and one for the Cloudflare DNS token. It intentionally defines
-no secret versions or values. A later monitoring root will compose this module
-with its customer-managed KMS key and EC2 role during Phase 4.
+no secret versions or values. The `live` root composes this module with its
+customer-managed KMS key and monitoring EC2 role.
 
 After an approved apply creates those empty containers, set each `SecretString`
 out of band. Do not pass a value through Terraform variables, plans, or state.
 The ignored Ansible inventory stores only the returned ARNs.
+
+## Phase 4 monitoring infrastructure
+
+The existing `live/` root is the single reproducible plan and state for the
+application, Jenkins, and monitoring resources. It creates both non-overlapping
+VPCs—application/Jenkins `10.70.0.0/16` and monitoring `10.80.0.0/16`—then
+links them with one VPC peering connection, routes in both public route tables,
+and narrowly scoped private TCP 9464/9100 monitoring rules. It also creates the
+monitoring-only security group, SSM-managed Amazon Linux 2023 `t3.micro`,
+encrypted gp3 root volume, IMDSv2, Elastic IP, customer-managed KMS key, empty
+monitoring secret containers, and a scoped runtime role. It intentionally
+contains no Cloudflare provider, DNS record, or secret values.
+
+Copy the existing example to an ignored local file, set the current Jenkins and
+Grafana administrator `/32` values, then validate and save one plan. The
+monitoring Elastic IP output is the hand-off for the user-managed DNS-only
+`grafana.kheven.me` A record; verify that record before running the TLS Ansible
+playbook.
+
+```bash
+cd infra/live
+terraform init -reconfigure -backend-config=backend.hcl
+terraform fmt -check -recursive
+terraform validate
+terraform plan -out=live.tfplan
+terraform show -no-color live.tfplan
+```
+
+Do not apply until the exact saved plan, resource counts, ownership, and costs
+are reviewed and approved. SSM Session Manager is the default monitoring-host
+administration path. Monitoring SSH is disabled unless
+`monitoring_enable_ssh = true` and an existing Ed25519 public-key path is
+provided. Keep `enable_cross_vpc_private_dns = false` unless private-name
+resolution is explicitly validated and needed.
 
 ## Safe teardown order
 

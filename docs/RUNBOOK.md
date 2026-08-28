@@ -173,7 +173,11 @@ For a manual rollback, connect with strict host verification and run:
 
 ```bash
 docker rm -f jenkins-webapp
-docker run -d --name jenkins-webapp --restart unless-stopped -p 80:3000 jenkins-webapp:rollback
+docker run -d --name jenkins-webapp --restart unless-stopped \
+  --log-driver awslogs --log-opt awslogs-region=eu-north-1 \
+  --log-opt awslogs-group=/jenkins-webapp/lab/application/containers \
+  --log-opt awslogs-stream=active --log-opt awslogs-create-group=false \
+  -p 80:3000 -p 9464:9464 jenkins-webapp:rollback
 curl --fail --silent --show-error --max-time 10 http://127.0.0.1:80/health
 ```
 

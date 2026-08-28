@@ -1,0 +1,27 @@
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "run_as_user": "root"
+  },
+  "logs": {
+    "force_flush_interval": 5,
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/messages",
+            "log_group_name": "{{ monitoring_system_log_group }}",
+            "log_stream_name": "{instance_id}/messages",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/secure",
+            "log_group_name": "{{ monitoring_system_log_group }}",
+            "log_stream_name": "{instance_id}/secure",
+            "timezone": "UTC"
+          }
+        ]
+      }
+    }
+  }
+}

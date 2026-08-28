@@ -20,6 +20,8 @@ pipeline {
     APP_NAME = 'jenkins-webapp'
     APP_CONTAINER_PORT = '3000'
     APP_METRICS_PORT = '9464'
+    AWS_REGION = 'eu-north-1'
+    APP_CLOUDWATCH_LOG_GROUP = '/jenkins-webapp/lab/application/containers'
     REGISTRY_HOST = 'ghcr.io'
     IMAGE_REPOSITORY = 'khevin2/jenkins-webapp'
     TRIVY_IMAGE = 'aquasec/trivy:0.73.0@sha256:7cced7cae583819fc7806d4cbc0dbbc7cad18b99f7d3e235192e6da8c091045c'
@@ -201,7 +203,7 @@ pipeline {
             sh '''#!/usr/bin/env bash
               set -Eeuo pipefail
               DEPLOY_IMAGE_REF="$(< build-metadata/image-digest.txt)"
-              remote_command=$(printf 'REGISTRY_HOST=%q DEPLOY_IMAGE_REF=%q APP_NAME=%q DEPLOY_PORT=%q APP_CONTAINER_PORT=%q APP_METRICS_PORT=%q bash -c %q' "$REGISTRY_HOST" "$DEPLOY_IMAGE_REF" "$APP_NAME" "$DEPLOY_PORT" "$APP_CONTAINER_PORT" "$APP_METRICS_PORT" 'IFS= read -r REGISTRY_USERNAME; IFS= read -r REGISTRY_TOKEN; export REGISTRY_USERNAME REGISTRY_TOKEN; exec bash -s')
+              remote_command=$(printf 'REGISTRY_HOST=%q DEPLOY_IMAGE_REF=%q APP_NAME=%q DEPLOY_PORT=%q APP_CONTAINER_PORT=%q APP_METRICS_PORT=%q AWS_REGION=%q APP_CLOUDWATCH_LOG_GROUP=%q bash -c %q' "$REGISTRY_HOST" "$DEPLOY_IMAGE_REF" "$APP_NAME" "$DEPLOY_PORT" "$APP_CONTAINER_PORT" "$APP_METRICS_PORT" "$AWS_REGION" "$APP_CLOUDWATCH_LOG_GROUP" 'IFS= read -r REGISTRY_USERNAME; IFS= read -r REGISTRY_TOKEN; export REGISTRY_USERNAME REGISTRY_TOKEN; exec bash -s')
               {
                 printf '%s\n%s\n' "$REGISTRY_USERNAME" "$REGISTRY_TOKEN"
                 cat <<'REMOTE'
@@ -211,12 +213,24 @@ candidate="${APP_NAME}-candidate"
 previous=''
 rollback=false
 cleanup() { docker rm -f "$candidate" >/dev/null 2>&1 || true; docker logout "$REGISTRY_HOST" >/dev/null 2>&1 || true; unset REGISTRY_TOKEN; }
+run_logged_container() {
+  local name="$1"
+  local stream="$2"
+  local image="$3"
+  docker run -d --name "$name" --restart unless-stopped \
+    --log-driver awslogs \
+    --log-opt "awslogs-region=${AWS_REGION}" \
+    --log-opt "awslogs-group=${APP_CLOUDWATCH_LOG_GROUP}" \
+    --log-opt "awslogs-stream=${stream}" \
+    --log-opt awslogs-create-group=false \
+    -p "${DEPLOY_PORT}:${APP_CONTAINER_PORT}" -p "${APP_METRICS_PORT}:${APP_METRICS_PORT}" "$image" >/dev/null
+}
 recover() {
   status="$1"
   if [[ "$rollback" == true && -n "$previous" ]]; then
     echo "Deployment failed; rolling back to ${previous}."
     docker rm -f "$APP_NAME" >/dev/null 2>&1 || true
-    docker run -d --name "$APP_NAME" --restart unless-stopped -p "${DEPLOY_PORT}:${APP_CONTAINER_PORT}" -p "${APP_METRICS_PORT}:${APP_METRICS_PORT}" "$previous" >/dev/null
+    run_logged_container "$APP_NAME" active "$previous"
   elif [[ "$rollback" == true ]]; then docker rm -f "$APP_NAME" >/dev/null 2>&1 || true; fi
   cleanup
   exit "$status"
@@ -225,7 +239,13 @@ trap 'status=$?; if (( status != 0 )); then recover "$status"; else cleanup; fi'
 printf '%s' "$REGISTRY_TOKEN" | docker login "$REGISTRY_HOST" --username "$REGISTRY_USERNAME" --password-stdin
 docker pull "$DEPLOY_IMAGE_REF"
 docker rm -f "$candidate" >/dev/null 2>&1 || true
-docker run -d --rm --name "$candidate" "$DEPLOY_IMAGE_REF" >/dev/null
+docker run -d --rm --name "$candidate" \
+  --log-driver awslogs \
+  --log-opt "awslogs-region=${AWS_REGION}" \
+  --log-opt "awslogs-group=${APP_CLOUDWATCH_LOG_GROUP}" \
+  --log-opt awslogs-stream=candidate \
+  --log-opt awslogs-create-group=false \
+  "$DEPLOY_IMAGE_REF" >/dev/null
 for attempt in {1..12}; do
   [[ "$(docker inspect --format='{{.State.Health.Status}}' "$candidate")" == healthy ]] && break
   sleep 5
@@ -235,11 +255,11 @@ docker rm -f "$candidate" >/dev/null
 if docker container inspect "$APP_NAME" >/dev/null 2>&1; then
   previous="$(docker inspect --format='{{.Config.Image}}' "$APP_NAME")"
   docker tag "$previous" "${APP_NAME}:rollback"
-  echo "Rollback command: docker run -d --name ${APP_NAME} --restart unless-stopped -p ${DEPLOY_PORT}:${APP_CONTAINER_PORT} -p ${APP_METRICS_PORT}:${APP_METRICS_PORT} ${previous}"
+  echo "Rollback image retained: ${previous}; use the runbook's awslogs-preserving rollback command."
 fi
 rollback=true
 docker rm -f "$APP_NAME" >/dev/null 2>&1 || true
-docker run -d --name "$APP_NAME" --restart unless-stopped -p "${DEPLOY_PORT}:${APP_CONTAINER_PORT}" -p "${APP_METRICS_PORT}:${APP_METRICS_PORT}" "$DEPLOY_IMAGE_REF" >/dev/null
+run_logged_container "$APP_NAME" active "$DEPLOY_IMAGE_REF"
 for attempt in {1..12}; do
   if curl --fail --silent --show-error --max-time 3 "http://127.0.0.1:${DEPLOY_PORT}/health" >/dev/null; then rollback=false; exit 0; fi
   sleep 5

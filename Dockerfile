@@ -1,4 +1,4 @@
-ARG NODE_IMAGE=node:24.19.0-alpine@sha256:d32cdf619f63fe0471182d08996dd516c6275bb5fd31ae06e55a570bd9e1ad43
+ARG NODE_IMAGE=node:24.20.0-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf
 
 FROM ${NODE_IMAGE} AS production-dependencies
 
@@ -15,6 +15,11 @@ ENV NODE_ENV=production \
     PORT=3000 \
     METRICS_HOST=0.0.0.0 \
     METRICS_PORT=9464
+
+# The upstream Node image is pinned for reproducibility. Upgrade the OpenSSL
+# packages from Alpine's signed stable repository so the runtime image includes
+# the available security remediation rather than inheriting a stale layer.
+RUN apk upgrade --no-cache openssl libcrypto3 libssl3
 
 RUN addgroup -g 10001 -S appgroup \
     && adduser -u 10001 -S -D -H -G appgroup appuser

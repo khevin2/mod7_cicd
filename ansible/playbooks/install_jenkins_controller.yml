@@ -22,6 +22,7 @@
       - timestamper
       - github
       - junit
+      - pipeline-stage-view
 
   pre_tasks:
     - name: Confirm the host uses Amazon Linux 2023

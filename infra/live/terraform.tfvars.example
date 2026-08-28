@@ -12,3 +12,10 @@ jenkins_root_volume_size_gib     = 20
 jenkins_allocate_elastic_ip      = false
 enable_jenkins_http_ingress      = true
 enable_jenkins_webhook_ingress   = false
+
+# Monitoring, peering, and the existing application/Jenkins topology share this
+# one Terraform state and are planned together.
+grafana_admin_cidr = "203.0.113.10/32"
+monitoring_enable_ssh = false
+# monitoring_ssh_public_key_path = "../../keys/monitoring.pub"
+enable_cross_vpc_private_dns = false

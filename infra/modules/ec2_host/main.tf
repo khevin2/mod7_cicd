@@ -38,6 +38,7 @@ resource "aws_instance" "deployment" {
   instance_type               = var.instance_type
   subnet_id                   = var.public_subnet_id
   vpc_security_group_ids      = [var.security_group_id]
+  iam_instance_profile        = var.instance_profile_name
   key_name                    = aws_key_pair.deployment.key_name
   associate_public_ip_address = true
 

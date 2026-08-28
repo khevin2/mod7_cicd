@@ -139,3 +139,83 @@ variable "enable_jenkins_http_ingress" {
   type        = bool
   default     = false
 }
+
+variable "monitoring_vpc_cidr" {
+  description = "Approved dedicated monitoring VPC CIDR."
+  type        = string
+  default     = "10.80.0.0/16"
+
+  validation {
+    condition     = var.monitoring_vpc_cidr == "10.80.0.0/16"
+    error_message = "The approved monitoring VPC CIDR is 10.80.0.0/16."
+  }
+}
+
+variable "monitoring_public_subnet_cidr" {
+  description = "Approved public subnet CIDR in the monitoring VPC."
+  type        = string
+  default     = "10.80.1.0/24"
+
+  validation {
+    condition     = var.monitoring_public_subnet_cidr == "10.80.1.0/24"
+    error_message = "The approved monitoring public subnet CIDR is 10.80.1.0/24."
+  }
+}
+
+variable "monitoring_availability_zone" {
+  description = "Optional monitoring host Availability Zone; align with the application host when approved."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
+variable "grafana_admin_cidr" {
+  description = "Approved non-private public IPv4 /32 for Grafana HTTPS."
+  type        = string
+}
+
+variable "monitoring_instance_type" {
+  description = "Cost-approved monitoring instance type."
+  type        = string
+  default     = "t3.micro"
+
+  validation {
+    condition     = var.monitoring_instance_type == "t3.micro"
+    error_message = "t3.micro is the approved monitoring size; measure headroom and obtain approval before resizing."
+  }
+}
+
+variable "monitoring_root_volume_size_gib" {
+  description = "Encrypted gp3 root volume size in GiB for the monitoring host."
+  type        = number
+  default     = 20
+
+  validation {
+    condition     = var.monitoring_root_volume_size_gib >= 20
+    error_message = "monitoring_root_volume_size_gib must be at least 20 GiB."
+  }
+}
+
+variable "monitoring_enable_ssh" {
+  description = "Enable emergency monitoring SSH from grafana_admin_cidr. SSM is preferred."
+  type        = bool
+  default     = false
+}
+
+variable "monitoring_ssh_public_key_path" {
+  description = "Existing Ed25519 public key path, required only when monitoring_enable_ssh is true."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.monitoring_ssh_public_key_path == null || can(regex("^ssh-ed25519 [A-Za-z0-9+/]+={0,3}( .*)?$", trimspace(file(var.monitoring_ssh_public_key_path))))
+    error_message = "monitoring_ssh_public_key_path must be null or reference a valid Ed25519 OpenSSH public-key file."
+  }
+}
+
+variable "enable_cross_vpc_private_dns" {
+  description = "Keep false unless private cross-VPC DNS has been validated and is required."
+  type        = bool
+  default     = false
+}

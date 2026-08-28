@@ -29,6 +29,13 @@ variable "security_group_id" {
   type        = string
 }
 
+variable "instance_profile_name" {
+  description = "Optional IAM instance-profile name. Set only for hosts that need a scoped AWS runtime role."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 variable "ssh_public_key" {
   description = "Existing Ed25519 public key content."
   type        = string
