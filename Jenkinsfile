@@ -65,6 +65,19 @@ pipeline {
         '''
       }
     }
+    stage('Observability and Infrastructure Validation') {
+      steps {
+        sh '''#!/usr/bin/env bash
+          set -Eeuo pipefail
+          # These checks are deliberately configuration-only. They do not
+          # initialize Terraform, contact AWS, apply, or destroy.
+          bash scripts/validate-phase3.sh
+          bash scripts/validate-phase8.sh
+          bash scripts/validate-phase9.sh
+          bash scripts/validate-phase11.sh
+        '''
+      }
+    }
     stage('Trivy Repository Scan') {
       steps {
         sh '''#!/usr/bin/env bash
@@ -218,6 +231,15 @@ run_logged_container() {
   local stream="$2"
   local image="$3"
   docker run -d --name "$name" --restart unless-stopped \
+    --user 10001:10001 \
+    --read-only \
+    --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m \
+    --cap-drop ALL \
+    --security-opt no-new-privileges:true \
+    --pids-limit 128 \
+    --memory 256m \
+    --memory-reservation 128m \
+    --cpus 0.50 \
     --log-driver awslogs \
     --log-opt "awslogs-region=${AWS_REGION}" \
     --log-opt "awslogs-group=${APP_CLOUDWATCH_LOG_GROUP}" \
@@ -240,6 +262,15 @@ printf '%s' "$REGISTRY_TOKEN" | docker login "$REGISTRY_HOST" --username "$REGIS
 docker pull "$DEPLOY_IMAGE_REF"
 docker rm -f "$candidate" >/dev/null 2>&1 || true
 docker run -d --rm --name "$candidate" \
+  --user 10001:10001 \
+  --read-only \
+  --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m \
+  --cap-drop ALL \
+  --security-opt no-new-privileges:true \
+  --pids-limit 128 \
+  --memory 256m \
+  --memory-reservation 128m \
+  --cpus 0.50 \
   --log-driver awslogs \
   --log-opt "awslogs-region=${AWS_REGION}" \
   --log-opt "awslogs-group=${APP_CLOUDWATCH_LOG_GROUP}" \
