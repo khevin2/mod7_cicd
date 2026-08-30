@@ -1,0 +1,16 @@
+Phase 7 GuardDuty synthetic sample finding (sanitized)
+Evidence date: 2026-08-28
+Region: eu-north-1
+
+Synthetic marker: {"sample":true}
+Type: Backdoor:EC2/DenialOfService.Tcp
+Severity: 8.0
+Title: The EC2 instance <synthetic-placeholder-instance-id> is behaving in a
+manner that may indicate it is being used to perform a Denial of Service (DoS)
+attack using the TCP protocol.
+CreatedAt: 2026-08-28T13:53:10.491Z
+UpdatedAt: 2026-08-28T13:53:10.491Z
+
+This finding was generated with GuardDuty CreateSampleFindings and is synthetic.
+It is not a real incident. Detector, finding, account, and resource identifiers
+are intentionally omitted.

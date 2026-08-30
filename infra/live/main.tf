@@ -119,14 +119,16 @@ resource "aws_cloudwatch_log_group" "monitoring_system" {
 module "network" {
   source = "../modules/network"
 
-  vpc_cidr                       = var.vpc_cidr
-  public_subnet_cidr             = var.public_subnet_cidr
-  availability_zone              = var.availability_zone
-  jenkins_admin_ingress_cidrs    = [var.administrator_ssh_cidr]
-  enable_jenkins_http_ingress    = var.enable_jenkins_http_ingress
-  enable_jenkins_webhook_ingress = var.enable_jenkins_webhook_ingress
-  enable_ec2_instance_connect    = var.enable_ec2_instance_connect
-  tags                           = local.common_tags
+  vpc_cidr                             = var.vpc_cidr
+  public_subnet_cidr                   = var.public_subnet_cidr
+  availability_zone                    = var.availability_zone
+  jenkins_admin_ingress_cidrs          = [var.administrator_ssh_cidr]
+  enable_jenkins_http_ingress          = var.enable_jenkins_http_ingress
+  enable_jenkins_webhook_ingress       = var.enable_jenkins_webhook_ingress
+  enable_ec2_instance_connect          = var.enable_ec2_instance_connect
+  monitoring_vpc_cidr                  = var.monitoring_vpc_cidr
+  app_monitoring_peering_connection_id = module.app_monitoring_peering.connection_id
+  tags                                 = local.common_tags
 }
 
 module "ec2_host" {
@@ -162,12 +164,14 @@ module "jenkins_host" {
 module "monitoring_network" {
   source = "../modules/monitoring_network"
 
-  vpc_cidr           = var.monitoring_vpc_cidr
-  public_subnet_cidr = var.monitoring_public_subnet_cidr
-  availability_zone  = var.monitoring_availability_zone
-  grafana_admin_cidr = var.grafana_admin_cidr
-  enable_ssh         = var.monitoring_enable_ssh
-  tags               = local.common_tags
+  vpc_cidr                             = var.monitoring_vpc_cidr
+  public_subnet_cidr                   = var.monitoring_public_subnet_cidr
+  availability_zone                    = var.monitoring_availability_zone
+  grafana_admin_cidr                   = var.grafana_admin_cidr
+  enable_ssh                           = var.monitoring_enable_ssh
+  application_vpc_cidr                 = var.vpc_cidr
+  app_monitoring_peering_connection_id = module.app_monitoring_peering.connection_id
+  tags                                 = local.common_tags
 }
 
 module "monitoring_secrets" {
@@ -206,6 +210,27 @@ module "application_logging_identity" {
   tags = local.common_tags
 }
 
+module "cloudtrail_archive" {
+  source = "../modules/cloudtrail_archive"
+
+  enabled      = var.enable_cloudtrail_archive
+  aws_region   = var.aws_region
+  partition    = data.aws_partition.current.partition
+  account_id   = data.aws_caller_identity.current.account_id
+  project_name = var.project_name
+  environment  = var.environment
+  trail_name   = format("%s-%s-management", var.project_name, var.environment)
+  bucket_name  = var.cloudtrail_archive_bucket_name
+  tags         = local.common_tags
+}
+
+module "guardduty_detector" {
+  source = "../modules/guardduty_detector"
+
+  enabled = var.enable_guardduty_detector
+  tags    = local.common_tags
+}
+
 module "monitoring_host" {
   source = "../modules/monitoring_host"
 
@@ -224,14 +249,10 @@ module "monitoring_host" {
 module "app_monitoring_peering" {
   source = "../modules/vpc_peering"
 
-  application_vpc_id            = module.network.vpc_id
-  application_vpc_cidr          = var.vpc_cidr
-  application_route_table_id    = module.network.public_route_table_id
-  application_security_group_id = module.network.deployment_security_group_id
-  monitoring_vpc_id             = module.monitoring_network.vpc_id
-  monitoring_vpc_cidr           = var.monitoring_vpc_cidr
-  monitoring_route_table_id     = module.monitoring_network.public_route_table_id
-  monitoring_security_group_id  = module.monitoring_network.security_group_id
-  enable_cross_vpc_private_dns  = var.enable_cross_vpc_private_dns
-  tags                          = local.common_tags
+  application_vpc_id           = module.network.vpc_id
+  application_vpc_cidr         = var.vpc_cidr
+  monitoring_vpc_id            = module.monitoring_network.vpc_id
+  monitoring_vpc_cidr          = var.monitoring_vpc_cidr
+  enable_cross_vpc_private_dns = var.enable_cross_vpc_private_dns
+  tags                         = local.common_tags
 }

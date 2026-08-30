@@ -17,5 +17,15 @@ enable_jenkins_webhook_ingress   = false
 # one Terraform state and are planned together.
 grafana_admin_cidr = "203.0.113.10/32"
 monitoring_enable_ssh = false
+monitoring_instance_type = "t3.small"
 # monitoring_ssh_public_key_path = "../../keys/monitoring.pub"
 enable_cross_vpc_private_dns = false
+
+# Keep disabled until trail/bucket/KMS discovery is refreshed and the exact
+# saved plan is approved. This must be a new, globally unique lab bucket.
+enable_cloudtrail_archive      = false
+# cloudtrail_archive_bucket_name = "replace-with-approved-globally-unique-name"
+
+# Keep disabled unless current regional discovery shows no detector and the
+# exact saved plan has been approved. This does not enable paid protection plans.
+enable_guardduty_detector = false

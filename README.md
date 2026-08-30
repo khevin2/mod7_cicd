@@ -38,8 +38,9 @@ approved administrator CIDRs.
 
 ```text
 GitHub push -> webhook -> Jenkins
-  -> checkout -> install/check -> Jest + JUnit
-  -> Trivy repository gate -> Docker build -> Trivy image gate
+  -> checkout -> install/check -> Jest metric tests + JUnit
+  -> observability/infrastructure static gates -> Trivy repository gate
+  -> Docker build -> Trivy image gate
   -> immutable GHCR digest -> SSH deployment -> health check
   -> retain rollback tag -> bounded runtime cleanup
 ```
@@ -54,8 +55,9 @@ candidate and dangling layers, leaving the active image and
 
 Install Pipeline, Git, Credentials Binding, Docker Pipeline, SSH Agent, NodeJS,
 GitHub, JUnit, and Timestamper plugins. Configure the NodeJS installation named
-`NodeJS24`. Trivy runs from a digest-pinned container image and needs no Jenkins
-plugin or host installation.
+`NodeJS24`. The controller-runner also needs Docker and `jq` for the
+non-mutating configuration gates. Trivy and pinned `promtool` run in
+digest-pinned containers and need no Jenkins plugins or separate host installs.
 
 Create a Pipeline-from-SCM job using this repository and create only these
 credential IDs:
@@ -119,7 +121,7 @@ ansible/             Docker and Jenkins-controller configuration playbooks
 docs/RUNBOOK.md      Provisioning, webhook, verification, rollback, and recovery
 architecture.drawio  Editable two-page architecture and pipeline diagram
 monitoring/          Hardened digest-pinned Prometheus/Grafana runtime
-prometheus.yml       Private Prometheus self and monitoring-host scrape baseline
+prometheus.yml       Private Prometheus scrape, recording, and alert-rule configuration
 evidence/            Sanitized executed evidence
 ```
 
@@ -128,8 +130,8 @@ plan- and approval-gated, with no cloud mutation authorized. The current Compose
 model publishes only Grafana HTTPS through an unprivileged proxy; Prometheus,
 Grafana's native listener, and Node Exporter remain on internal networks. See
 [the monitoring security boundary](monitoring/README.md), the single
-[`infra/live`](infra/live) Terraform root, and run `scripts/validate-phase3.sh` plus
-`scripts/validate-phase4.sh` for structural validation.
+[`infra/live`](infra/live) Terraform root, and run `scripts/validate-phase3.sh`,
+`scripts/validate-phase4.sh`, and `scripts/validate-phase8.sh` for structural validation.
 
 ## Local quick start
 

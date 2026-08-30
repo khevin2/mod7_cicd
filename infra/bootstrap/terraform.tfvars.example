@@ -1,0 +1,7 @@
+# Copy to bootstrap.tfvars and replace the placeholders with approved values.
+# state_bucket_name must be globally unique and S3-compatible.
+aws_region        = "eu-north-1"
+state_bucket_name = "replace-with-globally-unique-state-bucket-name"
+project_name      = "jenkins-webapp"
+environment       = "lab"
+owner             = "replace-with-owner"

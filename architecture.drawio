@@ -206,7 +206,7 @@
                 <mxCell id="td-prometheus" value="&lt;b&gt;Prometheus&lt;/b&gt;&#xa;private; no public port&#xa;scrapes app + both hosts&#xa;alert: &gt;5% 5xx for 5m + traffic guard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdebea;strokeColor=#c0392b;fontColor=#5c1f18;fontSize=11;" parent="td-1" vertex="1">
                     <mxGeometry x="765" y="365" width="175" height="95" as="geometry"/>
                 </mxCell>
-                <mxCell id="td-monitor-host" value="&lt;b&gt;Monitoring Node Exporter&lt;/b&gt;&#xa;private host metrics&#xa;&#xa;t3.micro AL2023 EC2 - encrypted gp3&#xa;IMDSv2 - hardened containers - scoped role" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2f8;strokeColor=#2f6690;fontColor=#1d4f73;fontSize=10;" parent="td-1" vertex="1">
+                <mxCell id="td-monitor-host" value="&lt;b&gt;Monitoring Node Exporter&lt;/b&gt;&#xa;private host metrics&#xa;&#xa;t3.small AL2023 EC2 - encrypted gp3&#xa;IMDSv2 - hardened containers - scoped role" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2f8;strokeColor=#2f6690;fontColor=#1d4f73;fontSize=10;" parent="td-1" vertex="1">
                     <mxGeometry x="970" y="360" width="160" height="110" as="geometry"/>
                 </mxCell>
                 <mxCell id="td-cloudwatch" value="&lt;b&gt;CloudWatch Logs&lt;/b&gt;&#xa;app/container + system&#xa;encrypted - 14 days" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6effb;strokeColor=#7b2f8e;fontColor=#3f1d49;fontSize=10;" parent="td-1" vertex="1">

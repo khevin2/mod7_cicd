@@ -2,8 +2,11 @@
 
 `compose.yml` is the Phase 3 runtime boundary for Prometheus, Grafana, the
 monitoring host's Node Exporter, and an unprivileged Nginx TLS edge. Only host
-TCP 443 is published. Prometheus, Grafana's native listener, and Node Exporter
-exist only on Docker internal networks.
+TCP 443 is published. The edge proxy alone joins a non-internal edge bridge;
+the frontend bridge between Nginx and Grafana is Docker-internal. The telemetry
+bridge has no published ports but permits Prometheus to reach the application
+metrics and Node Exporter through the private VPC peering route. Grafana's
+native listener and both exporters remain inaccessible from the public network.
 
 All four image references include both a version tag and an immutable
 multi-platform digest resolved from their official registries on 2026-08-27.
@@ -32,8 +35,11 @@ The deployment playbook creates these untracked, EBS-backed paths:
 
 - `/opt/monitoring/secrets/grafana-admin-password`, generated locally and
   exposed to Grafana through a file-backed Compose secret.
-- `/opt/monitoring/secrets/grafana-contactpoints.yml`, rendered with the Slack
-  incoming webhook fetched from its one named Secrets Manager container.
+- `/opt/monitoring/monitoring/grafana/provisioning/alerting/contactpoints.yml`,
+  rendered with the Slack incoming webhook fetched from its one named Secrets
+  Manager container. It is runtime-only, owned by Grafana, mode `0400`, and
+  shares the single read-only provisioning-directory mount with non-secret
+  alert-rule configuration.
 - `/etc/letsencrypt/cloudflare.ini`, containing only the scoped Cloudflare DNS
   token fetched from its one named Secrets Manager container.
 - `/opt/monitoring/tls`, a least-readable copy of the issued certificate and
@@ -64,3 +70,26 @@ Grafana's container-local health command proves its binary remains executable;
 Nginx performs the network liveness check at the only published endpoint. Phase
 10 must additionally verify `https://grafana.kheven.me/api/health` through the
 proxy and all Prometheus targets before runtime readiness is claimed.
+
+## Observability and alerting
+
+`prometheus.yml` evaluates every 15 seconds, with explicit 15-second scrape
+intervals and 10-second timeouts. It scrapes Prometheus itself, the monitoring
+host Node Exporter, and two application-host endpoints: `/metrics` on 9464 and
+Node Exporter on 9100. The application endpoints are rendered from approved
+private `host:port` values in the ignored Ansible inventory into file-SD target
+files; neither endpoint is committed or exposed publicly.
+
+`alert-rules.yml` records request rate, p95 latency, and 5xx percentage. Its
+high-error rule requires more than 5% 5xx responses for five minutes and at
+least 20 requests in the same five-minute window. Grafana provisions the same
+condition as its managed alert, routing it through the runtime-injected Slack
+contact point. Resolve notifications are enabled. The 20-request guard avoids
+noise from a tiny traffic sample. The contact point has a stable provisioning
+UID and is reconciled in place; it is not deleted during startup because an
+existing alert rule may already reference it.
+
+Run `bash scripts/validate-phase8.sh` to validate the Prometheus configuration
+and rules with the exact pinned Prometheus image and to check the provisioned
+dashboard and alert metadata. Runtime target, panel, Slack, and alert-state
+proof remains Phase 10/11 work.

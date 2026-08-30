@@ -112,3 +112,28 @@ output "monitoring_system_log_group_name" {
   description = "Pre-created encrypted 14-day CloudWatch log group for selected monitoring-host system logs."
   value       = aws_cloudwatch_log_group.monitoring_system.name
 }
+
+output "cloudtrail_archive_trail_arn" {
+  description = "Dedicated lab trail ARN; null until the archive is explicitly enabled and applied."
+  value       = module.cloudtrail_archive.trail_arn
+}
+
+output "cloudtrail_archive_bucket_name" {
+  description = "Dedicated lab archive bucket; null until the archive is explicitly enabled and applied."
+  value       = module.cloudtrail_archive.bucket_name
+}
+
+output "cloudtrail_archive_kms_key_arn" {
+  description = "Dedicated lab archive KMS key; null until the archive is explicitly enabled and applied."
+  value       = module.cloudtrail_archive.kms_key_arn
+}
+
+output "guardduty_detector_id" {
+  description = "New lab GuardDuty detector ID; null until explicitly enabled and applied."
+  value       = module.guardduty_detector.detector_id
+}
+
+output "guardduty_detector_arn" {
+  description = "New lab GuardDuty detector ARN; null until explicitly enabled and applied."
+  value       = module.guardduty_detector.detector_arn
+}

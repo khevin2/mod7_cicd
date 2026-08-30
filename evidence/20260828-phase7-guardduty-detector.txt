@@ -1,0 +1,18 @@
+Phase 7 GuardDuty detector verification (sanitized)
+Evidence date: 2026-08-28
+Region: eu-north-1
+
+Detector status: ENABLED
+Finding publishing frequency: FIFTEEN_MINUTES
+Ownership tags: Project=jenkins-webapp; Environment=lab; Owner=Kheven;
+ManagedBy=Terraform; Role=guardduty-detector
+
+Optional protection plan status after Terraform remediation:
+- S3_DATA_EVENTS: DISABLED
+- EKS_AUDIT_LOGS: DISABLED
+- EBS_MALWARE_PROTECTION: DISABLED
+- RDS_LOGIN_EVENTS: DISABLED
+- LAMBDA_NETWORK_LOGS: DISABLED
+
+Foundational GuardDuty sources remain enabled. Detector, account, and resource
+identifiers are intentionally omitted.

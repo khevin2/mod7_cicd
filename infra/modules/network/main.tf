@@ -32,6 +32,14 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.this.id
   }
 
+  dynamic "route" {
+    for_each = var.monitoring_vpc_cidr == null || var.app_monitoring_peering_connection_id == null ? [] : [var.monitoring_vpc_cidr]
+    content {
+      cidr_block                = route.value
+      vpc_peering_connection_id = var.app_monitoring_peering_connection_id
+    }
+  }
+
   tags = merge(var.tags, { Name = format("%s-%s-public", var.tags["Project"], var.tags["Environment"]) })
 }
 
@@ -177,6 +185,20 @@ resource "aws_security_group" "deployment" {
     to_port         = 22
     protocol        = "tcp"
     security_groups = [aws_security_group.jenkins.id]
+  }
+
+  dynamic "ingress" {
+    for_each = var.monitoring_vpc_cidr == null ? [] : [
+      { port = 9464, description = "Private application metrics from the dedicated monitoring VPC" },
+      { port = 9100, description = "Private application Node Exporter scrape from the dedicated monitoring VPC" },
+    ]
+    content {
+      description = ingress.value.description
+      from_port   = ingress.value.port
+      to_port     = ingress.value.port
+      protocol    = "tcp"
+      cidr_blocks = [var.monitoring_vpc_cidr]
+    }
   }
 
   dynamic "ingress" {

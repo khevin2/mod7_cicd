@@ -30,6 +30,8 @@ services:
       - "9090"
     volumes:
       - ../prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - /opt/monitoring/prometheus-targets:/etc/prometheus/targets:ro
       - prometheus_data:/prometheus
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=16m,uid=65532,gid=65532
@@ -76,8 +78,8 @@ services:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/provisioning/alerting:/etc/grafana/provisioning/alerting:ro
       - ./grafana/dashboards:/etc/grafana/dashboards:ro
-      - /opt/monitoring/secrets/grafana-contactpoints.yml:/etc/grafana/provisioning/alerting/contactpoints.yml:ro
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=32m,uid=472
     networks:
@@ -157,6 +159,7 @@ services:
       - /var/cache/nginx:rw,noexec,nosuid,nodev,size=16m,uid=101,gid=1901
       - /var/run:rw,noexec,nosuid,nodev,size=4m,uid=101,gid=1901
     networks:
+      - edge
       - frontend
     logging:
       driver: awslogs
@@ -180,10 +183,15 @@ services:
     cpus: 0.20
 
 networks:
+  # Only the Nginx edge proxy joins this bridge. It must not be Docker-internal
+  # or Docker's published TCP 443 mapping is unreachable from the host.
+  edge:
   frontend:
     internal: true
   telemetry:
-    internal: true
+    # Prometheus needs egress to the application VPC over the peering route.
+    # No telemetry service publishes a host port, so this bridge does not make
+    # Prometheus or Node Exporter publicly reachable.
 
 volumes:
   prometheus_data:

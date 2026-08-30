@@ -1,0 +1,42 @@
+Phase 6 live CloudTrail archive verification — 2026-08-28
+
+Scope
+- Read-only Terraform and AWS CLI verification after the approved apply.
+- Resource identifiers, account identifiers, bucket name, KMS key identifier, and
+  individual object keys are intentionally omitted.
+
+Ownership and discovery
+- The Region contained two trails at verification time.
+- The dedicated lab trail is Terraform-managed and tagged Project=jenkins-webapp,
+  Environment=lab, Owner=Kheven, ManagedBy=Terraform, Role=cloudtrail.
+- Its dedicated archive bucket carries the same lab ownership tags with
+  Role=cloudtrail-archive.
+
+Trail and delivery
+- IsLogging: true.
+- A fresh successful log delivery was reported at 2026-08-28T15:30:53+02:00;
+  no latest log-delivery error was reported.
+- Log-file validation: enabled.
+- Multi-Region trail: enabled; global service events: enabled; organization trail:
+  false; CloudWatch Logs routing: not configured.
+- Event selector: management events included, read/write type All, with no data
+  resources or excluded management event sources.
+- Archive object check found 5 CloudTrail log objects and 1 log-file-validation
+  digest object under the managed archive prefix.
+
+Archive security
+- S3 ownership: BucketOwnerEnforced; versioning: Enabled.
+- All four S3 public-access-block settings: true; policy status: not public.
+- Default archive encryption: aws:kms.
+- Bucket policy contained the CloudTrail ACL and own-log-write statements, the
+  insecure-transport deny, and SourceArn/SourceAccount restrictions.
+- Customer-managed KMS key: Enabled, ENCRYPT_DECRYPT; key rotation: enabled.
+
+Lifecycle
+- Current and noncurrent archive objects transition to Standard-IA after 30 days,
+  Glacier after 90 days, and expire after 365 days.
+- Incomplete multipart uploads are aborted after 7 days.
+
+Limitations
+- This is execution evidence for the active lab archive. It is not a claim about
+  non-lab trails, and no CloudWatch Logs routing was enabled.

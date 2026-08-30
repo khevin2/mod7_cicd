@@ -32,6 +32,14 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.this.id
   }
 
+  dynamic "route" {
+    for_each = var.application_vpc_cidr == null || var.app_monitoring_peering_connection_id == null ? [] : [var.application_vpc_cidr]
+    content {
+      cidr_block                = route.value
+      vpc_peering_connection_id = var.app_monitoring_peering_connection_id
+    }
+  }
+
   tags = merge(var.tags, { Name = format("%s-%s-monitoring-public", var.tags["Project"], var.tags["Environment"]) })
 }
 
@@ -73,6 +81,20 @@ resource "aws_security_group" "monitoring" {
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  dynamic "egress" {
+    for_each = var.application_vpc_cidr == null ? [] : [
+      { port = 9464, description = "Prometheus application metrics over approved VPC peering" },
+      { port = 9100, description = "Prometheus application Node Exporter over approved VPC peering" },
+    ]
+    content {
+      description = egress.value.description
+      from_port   = egress.value.port
+      to_port     = egress.value.port
+      protocol    = "tcp"
+      cidr_blocks = [var.application_vpc_cidr]
+    }
   }
 
   egress {

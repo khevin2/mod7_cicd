@@ -5,7 +5,7 @@ const { createLogger } = require('./logger');
 
 const SERVICE_NAME = 'jenkins-webapp';
 
-function createApp(metrics = createMetrics(), logger = createLogger()) {
+function createApp(metrics = createMetrics(), logger = createLogger(), faultInjection) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -25,6 +25,18 @@ function createApp(metrics = createMetrics(), logger = createLogger()) {
     next();
   });
   app.use(metrics.middleware);
+
+  // This path returns an error only after the separate loopback-only control
+  // listener enables its in-memory switch. It has no request-controlled knobs
+  // and does not affect ordinary application routes.
+  app.get('/_phase11/fault', (_request, response, next) => {
+    if (!faultInjection?.isEnabled()) {
+      return next();
+    }
+
+    logger.warn('controlled_fault_injection', { status_code: 500 });
+    return response.status(500).json({ service: SERVICE_NAME, status: 'controlled-test-error' });
+  });
 
   app.get('/', (_request, response) => {
     response.status(200).json({

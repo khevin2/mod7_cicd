@@ -175,13 +175,13 @@ variable "grafana_admin_cidr" {
 }
 
 variable "monitoring_instance_type" {
-  description = "Cost-approved monitoring instance type."
+  description = "Approved monitoring instance type."
   type        = string
-  default     = "t3.micro"
+  default     = "t3.small"
 
   validation {
-    condition     = var.monitoring_instance_type == "t3.micro"
-    error_message = "t3.micro is the approved monitoring size; measure headroom and obtain approval before resizing."
+    condition     = var.monitoring_instance_type == "t3.small"
+    error_message = "t3.small is the approved monitoring size."
   }
 }
 
@@ -216,6 +216,25 @@ variable "monitoring_ssh_public_key_path" {
 
 variable "enable_cross_vpc_private_dns" {
   description = "Keep false unless private cross-VPC DNS has been validated and is required."
+  type        = bool
+  default     = false
+}
+
+variable "enable_cloudtrail_archive" {
+  description = "Create the dedicated lab CloudTrail archive only after refreshed discovery and exact saved-plan approval."
+  type        = bool
+  default     = false
+}
+
+variable "cloudtrail_archive_bucket_name" {
+  description = "Globally unique approved S3 bucket name for the dedicated lab CloudTrail archive; required only when enable_cloudtrail_archive is true."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
+variable "enable_guardduty_detector" {
+  description = "Create a new lab GuardDuty detector only if regional discovery confirms none exists and the exact saved plan is approved."
   type        = bool
   default     = false
 }

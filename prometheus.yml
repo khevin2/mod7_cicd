@@ -6,6 +6,9 @@ global:
     project: jenkins-webapp
     environment: lab
 
+rule_files:
+  - /etc/prometheus/alert-rules.yml
+
 scrape_configs:
   - job_name: prometheus
     static_configs:
@@ -13,6 +16,24 @@ scrape_configs:
           - 127.0.0.1:9090
 
   - job_name: monitoring-node
+    metrics_path: /metrics
     static_configs:
       - targets:
           - node-exporter:9100
+
+  # The application host is outside the monitoring Compose network. Ansible
+  # renders this file from the approved private target in ignored inventory;
+  # no endpoint, credential, or cloud identifier is committed here.
+  - job_name: application
+    metrics_path: /metrics
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/application.json
+        refresh_interval: 1m
+
+  - job_name: application-node
+    metrics_path: /metrics
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/application-node.json
+        refresh_interval: 1m

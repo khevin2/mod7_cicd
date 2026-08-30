@@ -129,8 +129,12 @@ other sources on that path, and proxies the permitted request to loopback Jenkin
 
 ## Pipeline and security gates
 
-The required order is Checkout, Install and Validate, Test, Trivy Repository
-Scan, Docker Build, Trivy Image Scan, Push Image, Deploy, and Runtime Cleanup.
+The required order is Checkout, Install and Validate, Test, Observability and
+Infrastructure Validation, Trivy Repository Scan, Docker Build, Trivy Image
+Scan, Push Image, Deploy, and Runtime Cleanup. The validation stage runs metric,
+Prometheus-rule, dashboard JSON, Compose, Ansible configuration, and
+committed-secret checks. Terraform formatting, validation, plans, and approved
+applies remain a local, reviewed workflow and are never run by Jenkins.
 
 The pipeline scans dependencies, Terraform, Dockerfile configuration, repository
 secrets, image vulnerabilities, and image secrets. Fixable HIGH or CRITICAL
@@ -163,6 +167,124 @@ ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=<VERIFIE
 Confirm HTTP 200, one running healthy application container, an immutable digest
 matching build metadata, and a retained `jenkins-webapp:rollback` image.
 
+## Configure and verify monitoring
+
+Before the monitoring playbook is run, set these ignored inventory values to
+the approved **private** application-host endpoints:
+
+```yaml
+monitoring_application_metrics_target: "<application-private-ip-or-dns>:9464"
+monitoring_application_node_exporter_target: "<application-private-ip-or-dns>:9100"
+```
+
+The playbook renders these values into Prometheus file-based service discovery;
+they do not enter Git, Terraform state, or the public edge. First run the local
+static gate:
+
+```bash
+bash scripts/validate-phase8.sh
+```
+
+### Phase 10 approved deployment procedure
+
+Run this procedure only after the exact Terraform plan has been reviewed and
+explicitly approved. It intentionally keeps Terraform, DNS, and Ansible as
+separate checkpoints: the permanent Cloudflare DNS-only record is user-managed,
+and neither secret value may appear in Terraform or inventory.
+
+```bash
+# Repository-only check; makes no cloud or host changes.
+bash scripts/validate-phase10.sh
+
+cd infra/live
+terraform init -reconfigure -backend-config=backend.hcl
+terraform fmt -check -recursive
+terraform validate
+terraform plan -out=phase10.tfplan
+terraform show -no-color phase10.tfplan
+# Confirm exact creates/changes, ownership tags, and no unapproved delete or replacement.
+# Apply only after explicit approval for this saved plan:
+terraform apply phase10.tfplan
+terraform output
+```
+
+Use the `monitoring_elastic_ip` output to create the DNS-only
+`grafana.kheven.me` A record manually. Verify it resolves to that address before
+certificate issuance. Populate the ignored `ansible/inventory/hosts.yml` only
+with the monitoring Elastic IP, verified ED25519 host key, private application
+metrics/exporter targets, certificate email, Region, and the two named secret
+**ARNs**. Set the Slack webhook and Cloudflare DNS token values separately in
+their named Secrets Manager containers; never add their values to inventory.
+
+```bash
+# Compare this result to an independently trusted fingerprint before adding it.
+ssh-keyscan -t ed25519 <MONITORING_ELASTIC_IP>
+
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/install_docker.yml
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/install_monitoring_stack.yml
+# The second run must be idempotent apart from expected service reconciliation.
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/install_monitoring_stack.yml
+
+cd infra/live
+terraform plan
+```
+
+### Diagnose the monitoring Compose stack over SSH
+
+The monitoring playbook passes `AWS_REGION` to every Docker Compose command so
+the `awslogs` logging driver can resolve its Region. An interactive SSH shell
+does not inherit that Ansible task environment. For manual status or recovery
+checks, supply the Region explicitly:
+
+```bash
+sudo env AWS_REGION=eu-north-1 \
+  docker compose -f /opt/monitoring/monitoring/compose.yml ps
+```
+
+If Compose reports that `AWS_REGION` is missing, use the command above rather
+than altering `compose.yml` or disabling CloudWatch logging. `sudo cd ...` does
+not change an interactive shell's directory; use `cd ...` without `sudo`, or
+continue specifying the Compose file with its absolute path.
+
+After the second playbook run, capture sanitized evidence for the applied
+resource inventory, container versions/health, `https://grafana.kheven.me/api/health`,
+Prometheus target state, dashboard, and fresh CloudWatch events. The final
+Terraform plan must show no changes, or each change must be explained before
+claiming Phase 10 complete.
+
+After the approved Phase 10 deployment, verify that Prometheus lists four
+healthy targets (itself, monitoring Node Exporter, application metrics, and
+application Node Exporter) and that the `Jenkins Webapp Observability` dashboard
+has data for RPS, p95, 5xx percentage, CPU, memory, disk, and scrape health.
+The high-error alert fires only after the ratio remains above 5% for five
+minutes and at least 20 requests occurred in the window. Test it only via the
+approved internal fault-injection path, then capture normal, pending, firing,
+and resolved states and the paired Slack messages without exposing the webhook.
+
+## Controlled Phase 11 fault test
+
+Do not perform this procedure until Phase 10 has completed, the exact deployed
+digest is recorded, and the operator has approval for the temporary test. The
+application keeps the mechanism disabled by default. The normal Jenkins
+deployment must never set `FAULT_INJECTION_ENABLED=true` or publish port 9465.
+
+For the approved test only, start the already-verified immutable application
+digest with `FAULT_INJECTION_ENABLED=true` while retaining every normal runtime
+hardening, log-driver, health-check, port, and resource option. The process then
+opens its control listener only on `127.0.0.1:9465` **inside the container**; it
+is not Docker-published and cannot be reached from the network. From the
+application host, use `docker exec` to POST to `/_phase11/enable`, then generate
+the controlled traffic only against `/_phase11/fault`. The route is a 404 until
+enabled and returns a bounded, deliberate 500 response only while enabled.
+
+Capture the baseline, Pending, Firing, and Resolved alert states with timestamps.
+Maintain more than 20 requests in the five-minute window and an error ratio above
+5% for more than five minutes. Stop traffic, POST to `/_phase11/disable` through
+the container-local control listener, and confirm that `/_phase11/fault` is 404
+before collecting recovery evidence. Restore the normal deployment without
+`FAULT_INJECTION_ENABLED` after the test. Never put a test-control endpoint,
+Docker socket, token, or temporary environment value in public evidence.
+
 ## Rollback and cleanup
 
 Candidate health is checked before cutover. If post-cutover health does not recover,
@@ -174,6 +296,10 @@ For a manual rollback, connect with strict host verification and run:
 ```bash
 docker rm -f jenkins-webapp
 docker run -d --name jenkins-webapp --restart unless-stopped \
+  --user 10001:10001 --read-only \
+  --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m \
+  --cap-drop ALL --security-opt no-new-privileges:true \
+  --pids-limit 128 --memory 256m --memory-reservation 128m --cpus 0.50 \
   --log-driver awslogs --log-opt awslogs-region=eu-north-1 \
   --log-opt awslogs-group=/jenkins-webapp/lab/application/containers \
   --log-opt awslogs-stream=active --log-opt awslogs-create-group=false \
@@ -195,6 +321,7 @@ without separate approval.
 | Trivy setup/download fails | Treat it as a failed security gate. Verify Docker Hub/GHCR egress and DNS, then rerun; never bypass the scan. |
 | Trivy finds HIGH/CRITICAL issues | Review non-secret reports, remediate the source or configuration, and rerun. Do not add broad ignores. |
 | SSH authentication or host verification fails | Stop. Check `ec2_ssh`, approved ingress, and the independently verified ED25519 entry. Do not weaken strict checking. |
+| Monitoring Compose says `AWS_REGION` is missing | Run Compose with `sudo env AWS_REGION=eu-north-1`; Ansible supplies this only during playbook tasks. Do not remove the `awslogs` configuration. |
 | Deployment health fails | Inspect application logs and health. Preserve the current/rollback images and use the rollback command only after diagnosis. |
 
 ## Evidence handling

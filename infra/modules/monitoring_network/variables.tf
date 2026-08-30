@@ -31,6 +31,20 @@ variable "enable_ssh" {
   default     = false
 }
 
+variable "application_vpc_cidr" {
+  description = "Optional peered application VPC CIDR reachable only for Prometheus scrapes."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
+variable "app_monitoring_peering_connection_id" {
+  description = "Optional approved application-to-monitoring VPC peering connection used for the private route."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 variable "tags" {
   description = "Ownership tags applied to monitoring network resources."
   type        = map(string)

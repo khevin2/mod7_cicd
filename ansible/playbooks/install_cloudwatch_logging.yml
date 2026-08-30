@@ -47,7 +47,9 @@
     - name: Render selected system-log CloudWatch Agent configuration
       ansible.builtin.template:
         src: ../../monitoring/cloudwatch-agent/amazon-cloudwatch-agent.json.j2
-        dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+        # The agent removes its reserved working filename during fetch-config;
+        # keep the Ansible-managed source under a distinct stable name.
+        dest: /opt/aws/amazon-cloudwatch-agent/etc/monitoring-system-logs.json
         owner: root
         group: root
         mode: "0644"
@@ -62,7 +64,7 @@
           - ec2
           - -s
           - -c
-          - file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+          - file:/opt/aws/amazon-cloudwatch-agent/etc/monitoring-system-logs.json
       register: monitoring_cloudwatch_agent
       changed_when: >-
         'Successfully fetched the config' in monitoring_cloudwatch_agent.stdout or

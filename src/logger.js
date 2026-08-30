@@ -15,6 +15,7 @@ function createLogger(output = console, clock = () => new Date().toISOString()) 
 
   return {
     info: (event, fields) => write('info', event, fields),
+    warn: (event, fields) => write('warn', event, fields),
     error: (event, fields) => write('error', event, fields)
   };
 }

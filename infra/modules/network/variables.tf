@@ -38,6 +38,20 @@ variable "enable_ec2_instance_connect" {
   default     = false
 }
 
+variable "monitoring_vpc_cidr" {
+  description = "Optional peered monitoring VPC CIDR allowed to scrape the application privately."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
+variable "app_monitoring_peering_connection_id" {
+  description = "Optional approved application-to-monitoring VPC peering connection used for the private route."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 variable "tags" {
   description = "Tags applied to network resources."
   type        = map(string)

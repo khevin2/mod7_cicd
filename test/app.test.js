@@ -3,6 +3,8 @@ const request = require('supertest');
 const { createApp, SERVICE_NAME } = require('../src/app');
 const { createMetricsApp } = require('../src/metrics');
 const { createLogger } = require('../src/logger');
+const { createFaultInjection } = require('../src/fault-injection');
+const { createFaultControlApp, readConfig } = require('../src/server');
 
 describe('Express service', () => {
   const app = createApp();
@@ -92,6 +94,31 @@ describe('Express service', () => {
       expect(response.status).toBe(200);
       expect(response.headers['content-type']).toContain('text/plain');
       expect(response.text).toContain('# HELP jenkins_webapp_http_requests_total');
+    });
+  });
+
+  describe('controlled Phase 11 fault injection', () => {
+    test('requires an explicit true environment value', () => {
+      expect(readConfig({}).faultInjectionEnabled).toBe(false);
+      expect(readConfig({ FAULT_INJECTION_ENABLED: 'true' }).faultInjectionEnabled).toBe(true);
+      expect(() => readConfig({ FAULT_INJECTION_ENABLED: 'yes' })).toThrow(
+        'FAULT_INJECTION_ENABLED must be either true or false'
+      );
+    });
+
+    test('is disabled by default and can only be enabled through its separate controller', async () => {
+      const faultInjection = createFaultInjection();
+      const faultApp = createApp(undefined, undefined, faultInjection);
+      const controlApp = createFaultControlApp(faultInjection);
+
+      expect((await request(faultApp).get('/_phase11/fault')).status).toBe(404);
+      expect((await request(controlApp).get('/_phase11/status')).body).toEqual({ enabled: false });
+      expect((await request(controlApp).post('/_phase11/enable')).status).toBe(204);
+      const faultResponse = await request(faultApp).get('/_phase11/fault');
+      expect(faultResponse.status).toBe(500);
+      expect(faultResponse.body).toEqual({ service: SERVICE_NAME, status: 'controlled-test-error' });
+      expect((await request(controlApp).post('/_phase11/disable')).status).toBe(204);
+      expect((await request(faultApp).get('/_phase11/fault')).status).toBe(404);
     });
   });
 });

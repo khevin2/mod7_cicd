@@ -1,0 +1,59 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: jenkins-webapp-alerts
+    folder: Project 6
+    # Grafana's default alert scheduler runs every 10 seconds; group intervals
+    # must be exact multiples of that scheduler interval.
+    interval: 10s
+    rules:
+      - uid: jenkins-webapp-high-error-rate
+        title: Jenkins web application high error rate
+        condition: C
+        for: 5m
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: Jenkins web application 5xx error rate is above 5%
+          description: The application has returned more than 5% HTTP 5xx responses for five minutes, with at least 20 requests in the evaluation window.
+          runbook_url: https://grafana.kheven.me/alerting/runbook
+          traffic_guard: The minimum-request guard avoids alerting on a small number of requests.
+        labels:
+          service: jenkins-webapp
+          severity: warning
+        notification_settings:
+          receiver: project6-slack
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: sum(rate(jenkins_webapp_http_requests_total{status_code=~"5.."}[5m])) / clamp_min(sum(rate(jenkins_webapp_http_requests_total[5m])), 0.001)
+              instant: true
+              range: false
+          - refId: B
+            queryType: ""
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: B
+              expr: sum(increase(jenkins_webapp_http_requests_total[5m]))
+              instant: true
+              range: false
+          - refId: C
+            queryType: ""
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: math
+              expression: $A > 0.05 && $B >= 20

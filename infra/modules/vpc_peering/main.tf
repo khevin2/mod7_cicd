@@ -25,50 +25,38 @@ resource "aws_vpc_peering_connection_options" "this" {
   }
 }
 
-resource "aws_route" "application_to_monitoring" {
-  route_table_id            = var.application_route_table_id
-  destination_cidr_block    = var.monitoring_vpc_cidr
-  vpc_peering_connection_id = aws_vpc_peering_connection.this.id
+
+# These resources were originally managed separately from the route tables and
+# security groups that also used inline rules. That mixed ownership makes a
+# refresh plan try to revoke the private monitoring paths. They are now owned
+# inline with their parent resources. The removed blocks forget only Terraform
+# state; they never destroy the already-applied remote routes/rules.
+removed {
+  from = aws_route.application_to_monitoring
+  lifecycle { destroy = false }
 }
 
-resource "aws_route" "monitoring_to_application" {
-  route_table_id            = var.monitoring_route_table_id
-  destination_cidr_block    = var.application_vpc_cidr
-  vpc_peering_connection_id = aws_vpc_peering_connection.this.id
+removed {
+  from = aws_route.monitoring_to_application
+  lifecycle { destroy = false }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "application_metrics" {
-  security_group_id = var.application_security_group_id
-  description       = "Private application metrics from the dedicated monitoring VPC"
-  cidr_ipv4         = var.monitoring_vpc_cidr
-  from_port         = 9464
-  to_port           = 9464
-  ip_protocol       = "tcp"
+removed {
+  from = aws_vpc_security_group_ingress_rule.application_metrics
+  lifecycle { destroy = false }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "application_node_exporter" {
-  security_group_id = var.application_security_group_id
-  description       = "Private application Node Exporter scrape from the dedicated monitoring VPC"
-  cidr_ipv4         = var.monitoring_vpc_cidr
-  from_port         = 9100
-  to_port           = 9100
-  ip_protocol       = "tcp"
+removed {
+  from = aws_vpc_security_group_ingress_rule.application_node_exporter
+  lifecycle { destroy = false }
 }
 
-resource "aws_vpc_security_group_egress_rule" "monitoring_metrics" {
-  security_group_id = var.monitoring_security_group_id
-  description       = "Prometheus application metrics over approved VPC peering"
-  cidr_ipv4         = var.application_vpc_cidr
-  from_port         = 9464
-  to_port           = 9464
-  ip_protocol       = "tcp"
+removed {
+  from = aws_vpc_security_group_egress_rule.monitoring_metrics
+  lifecycle { destroy = false }
 }
 
-resource "aws_vpc_security_group_egress_rule" "monitoring_node_exporter" {
-  security_group_id = var.monitoring_security_group_id
-  description       = "Prometheus application Node Exporter over approved VPC peering"
-  cidr_ipv4         = var.application_vpc_cidr
-  from_port         = 9100
-  to_port           = 9100
-  ip_protocol       = "tcp"
+removed {
+  from = aws_vpc_security_group_egress_rule.monitoring_node_exporter
+  lifecycle { destroy = false }
 }

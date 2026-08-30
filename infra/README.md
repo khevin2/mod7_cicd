@@ -107,7 +107,7 @@ application, Jenkins, and monitoring resources. It creates both non-overlapping
 VPCs—application/Jenkins `10.70.0.0/16` and monitoring `10.80.0.0/16`—then
 links them with one VPC peering connection, routes in both public route tables,
 and narrowly scoped private TCP 9464/9100 monitoring rules. It also creates the
-monitoring-only security group, SSM-managed Amazon Linux 2023 `t3.micro`,
+monitoring-only security group, SSM-managed Amazon Linux 2023 `t3.small`,
 encrypted gp3 root volume, IMDSv2, Elastic IP, customer-managed KMS key, empty
 monitoring secret containers, and a scoped runtime role. It intentionally
 contains no Cloudflare provider, DNS record, or secret values.
@@ -133,6 +133,28 @@ administration path. Monitoring SSH is disabled unless
 `monitoring_enable_ssh = true` and an existing Ed25519 public-key path is
 provided. Keep `enable_cross_vpc_private_dns = false` unless private-name
 resolution is explicitly validated and needed.
+
+## Phase 6 CloudTrail archive
+
+The shared live root also contains a disabled-by-default `cloudtrail_archive`
+module. It creates a new, dedicated lab trail only when
+`enable_cloudtrail_archive = true` and a separately approved globally unique
+`cloudtrail_archive_bucket_name` is provided. It never adopts an existing trail,
+bucket, or KMS key. The module adds multi-Region/global management-event
+collection, log-file validation, a scoped KMS key and CloudTrail bucket policy,
+versioning/public-access controls, TLS-only access, and the approved archive
+lifecycle. Follow [the CloudTrail archive procedure](../docs/CLOUDTRAIL_ARCHIVE.md)
+for fresh discovery, saved-plan review, and runtime verification.
+
+## Phase 7 GuardDuty
+
+The shared live root includes a disabled-by-default `guardduty_detector` module.
+It can create a new tagged detector only after current regional discovery shows
+that no detector exists and the exact saved plan is approved. It intentionally
+keeps optional GuardDuty protection plans disabled. Never import, alter, or
+teardown an existing/shared detector. Follow [the GuardDuty
+procedure](../docs/GUARDDUTY.md) for ownership checks, a synthetic sample
+finding, triage, and evidence redaction.
 
 ## Safe teardown order
 

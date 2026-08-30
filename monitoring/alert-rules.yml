@@ -1,0 +1,21 @@
+groups:
+  - name: jenkins-webapp-recording-and-alerts
+    interval: 15s
+    rules:
+      - record: jenkins_webapp:http_requests:rate5m
+        expr: sum(rate(jenkins_webapp_http_requests_total[5m]))
+      - record: jenkins_webapp:http_request_duration_seconds:p95_5m
+        expr: histogram_quantile(0.95, sum by (le) (rate(jenkins_webapp_http_request_duration_seconds_bucket[5m])))
+      - record: jenkins_webapp:http_5xx_percentage:rate5m
+        expr: 100 * sum(rate(jenkins_webapp_http_requests_total{status_code=~"5.."}[5m])) / clamp_min(sum(rate(jenkins_webapp_http_requests_total[5m])), 0.001)
+      - alert: JenkinsWebappHighErrorRate
+        expr: (sum(rate(jenkins_webapp_http_requests_total{status_code=~"5.."}[5m])) / clamp_min(sum(rate(jenkins_webapp_http_requests_total[5m])), 0.001)) > 0.05 and sum(increase(jenkins_webapp_http_requests_total[5m])) >= 20
+        for: 5m
+        labels:
+          service: jenkins-webapp
+          severity: warning
+        annotations:
+          summary: Jenkins web application 5xx error rate is above 5%
+          description: The application has returned more than 5% HTTP 5xx responses for five minutes, with at least 20 requests in the evaluation window.
+          runbook_url: https://grafana.kheven.me/alerting/runbook
+          traffic_guard: The minimum-request guard avoids alerting on a small number of requests.

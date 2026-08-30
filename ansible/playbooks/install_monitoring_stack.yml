@@ -51,12 +51,17 @@
           - monitoring_slack_secret_arn is match('^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:.+$')
           - monitoring_cloudflare_secret_arn is match('^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:.+$')
           - monitoring_slack_secret_arn != monitoring_cloudflare_secret_arn
+          - monitoring_application_metrics_target is match('^[A-Za-z0-9][A-Za-z0-9.-]*:[1-9][0-9]{0,4}$')
+          - not monitoring_application_metrics_target.startswith('0.0.0.0:')
+          - monitoring_application_node_exporter_target is match('^[A-Za-z0-9][A-Za-z0-9.-]*:[1-9][0-9]{0,4}$')
+          - not monitoring_application_node_exporter_target.startswith('0.0.0.0:')
           - monitoring_container_log_group == "/jenkins-webapp/lab/monitoring/containers"
           - monitoring_system_log_group == "/jenkins-webapp/lab/monitoring/system"
         fail_msg: >-
           Set the approved Grafana name, certificate email, Region, and the two
-          distinct secret-container ARNs in the ignored inventory. Never put
-          either secret value in inventory.
+          distinct secret-container ARNs plus the approved private application
+          metrics and Node Exporter host:port values in the ignored inventory.
+          Never put either secret value in inventory.
 
   tasks:
     - name: Install monitoring host prerequisites
@@ -139,7 +144,10 @@
     - name: Render selected system-log CloudWatch Agent configuration
       ansible.builtin.template:
         src: ../../monitoring/cloudwatch-agent/amazon-cloudwatch-agent.json.j2
-        dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+        # The agent's fetch-config action deletes its reserved
+        # amazon-cloudwatch-agent.json working file. Keep Ansible's source
+        # under a distinct name so a second run can remain idempotent.
+        dest: /opt/aws/amazon-cloudwatch-agent/etc/monitoring-system-logs.json
         owner: root
         group: root
         mode: "0644"
@@ -154,7 +162,7 @@
           - ec2
           - -s
           - -c
-          - file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+          - file:/opt/aws/amazon-cloudwatch-agent/etc/monitoring-system-logs.json
       register: monitoring_cloudwatch_agent
       changed_when: >-
         'Successfully fetched the config' in monitoring_cloudwatch_agent.stdout or
@@ -171,7 +179,9 @@
         - { path: "{{ monitoring_root }}", group: root, mode: "0755" }
         - { path: "{{ monitoring_compose_root }}/grafana/provisioning/datasources", group: root, mode: "0755" }
         - { path: "{{ monitoring_compose_root }}/grafana/provisioning/dashboards", group: root, mode: "0755" }
+        - { path: "{{ monitoring_compose_root }}/grafana/provisioning/alerting", group: root, mode: "0755" }
         - { path: "{{ monitoring_compose_root }}/grafana/dashboards", group: root, mode: "0755" }
+        - { path: "{{ monitoring_root }}/prometheus-targets", group: root, mode: "0755" }
         - { path: "{{ monitoring_compose_root }}/nginx", group: root, mode: "0755" }
         - { path: "{{ monitoring_root }}/secrets", group: root, mode: "0700" }
         - { path: "{{ monitoring_root }}/tls", group: "1901", mode: "0750" }
@@ -187,9 +197,45 @@
       loop:
         - { src: ../../monitoring/compose.yml, dest: "{{ monitoring_compose_root }}/compose.yml" }
         - { src: ../../prometheus.yml, dest: "{{ monitoring_root }}/prometheus.yml" }
+        - { src: ../../monitoring/alert-rules.yml, dest: "{{ monitoring_compose_root }}/alert-rules.yml" }
         - { src: ../../monitoring/nginx/grafana.conf, dest: "{{ monitoring_compose_root }}/nginx/grafana.conf" }
         - { src: ../../monitoring/grafana/provisioning/datasources/prometheus.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/datasources/prometheus.yml" }
         - { src: ../../monitoring/grafana/provisioning/dashboards/default.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/dashboards/default.yml" }
+        - { src: ../../monitoring/grafana/provisioning/alerting/webapp-alert-rules.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/alerting/webapp-alert-rules.yml" }
+
+    - name: Render the private application Prometheus target
+      ansible.builtin.copy:
+        dest: "{{ monitoring_root }}/prometheus-targets/application.json"
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [
+            {
+              "targets": ["{{ monitoring_application_metrics_target }}"],
+              "labels": {
+                "service": "jenkins-webapp",
+                "environment": "lab"
+              }
+            }
+          ]
+
+    - name: Render the private application Node Exporter target
+      ansible.builtin.copy:
+        dest: "{{ monitoring_root }}/prometheus-targets/application-node.json"
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [
+            {
+              "targets": ["{{ monitoring_application_node_exporter_target }}"],
+              "labels": {
+                "service": "jenkins-webapp",
+                "environment": "lab"
+              }
+            }
+          ]
 
     - name: Copy the version-controlled Grafana dashboard directory
       ansible.builtin.copy:
@@ -227,7 +273,10 @@
     - name: Render secret-bearing Grafana contact-point provisioning
       ansible.builtin.template:
         src: ../templates/grafana-contactpoints.yml.j2
-        dest: "{{ monitoring_root }}/secrets/grafana-contactpoints.yml"
+        # This file shares the host directory with the version-controlled alert
+        # rules. Mount the directory once in Compose: an additional file mount
+        # beneath that read-only container mount cannot create its mountpoint.
+        dest: "{{ monitoring_compose_root }}/grafana/provisioning/alerting/contactpoints.yml"
         owner: "472"
         group: root
         mode: "0400"
@@ -369,6 +418,27 @@
         enabled: true
         state: started
 
+    - name: Inspect the existing telemetry bridge before reconciliation
+      ansible.builtin.command:
+        argv: [docker, network, inspect, "{{ monitoring_project_name }}-monitoring_telemetry"]
+      register: monitoring_telemetry_network
+      changed_when: false
+      failed_when: false
+
+    - name: Recreate only the legacy internal monitoring network
+      # Docker cannot change a bridge's internal flag in place. Compose down
+      # removes containers and project networks but retains named data volumes.
+      ansible.builtin.command:
+        argv: [docker, compose, --file, compose.yml, down, --remove-orphans]
+        chdir: "{{ monitoring_compose_root }}"
+      environment:
+        GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+        AWS_REGION: "{{ monitoring_aws_region }}"
+      when:
+        - monitoring_telemetry_network.rc == 0
+        - "'\"Internal\": true' in monitoring_telemetry_network.stdout"
+      changed_when: true
+
     - name: Validate the deployed Compose model without rendering secrets
       ansible.builtin.command:
         argv: [docker, compose, --file, compose.yml, config, --quiet]
@@ -390,10 +460,10 @@
 
     - name: Reconcile and wait for the hardened monitoring stack
       ansible.builtin.command:
-        # TLS files are copied from Certbot immediately before this task. Force
-        # replacement so edge-proxy cannot retain a stale bind mount created
-        # before those files existed; named data volumes remain intact.
-        argv: [docker, compose, --file, compose.yml, up, --detach, --remove-orphans, --wait, --force-recreate]
+        # Compose creates/reconciles containers only when its model changes.
+        # The Certbot deploy hook reloads Nginx after later certificate renewal,
+        # so a forced recreation is neither necessary nor idempotent.
+        argv: [docker, compose, --file, compose.yml, up, --detach, --remove-orphans, --wait]
         chdir: "{{ monitoring_compose_root }}"
       environment:
         GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"

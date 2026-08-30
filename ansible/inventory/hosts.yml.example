@@ -45,3 +45,7 @@ all:
         # SecretString value out of band; never put a value in this inventory.
         monitoring_slack_secret_arn: "arn:aws:secretsmanager:eu-north-1:000000000000:secret:replace-slack"
         monitoring_cloudflare_secret_arn: "arn:aws:secretsmanager:eu-north-1:000000000000:secret:replace-cloudflare"
+        # Private application-host address only; ports must remain inaccessible
+        # from the public internet.
+        monitoring_application_metrics_target: "10.70.1.10:9464"
+        monitoring_application_node_exporter_target: "10.70.1.10:9100"

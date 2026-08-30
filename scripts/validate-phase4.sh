@@ -23,8 +23,12 @@ if rg -n 'from_port[[:space:]]*=[[:space:]]*(9464|9100)|to_port[[:space:]]*=[[:s
   exit 1
 fi
 
-for expected_rule in application_metrics application_node_exporter monitoring_metrics monitoring_node_exporter; do
-  rg -q "aws_vpc_security_group_.*_rule\" \"${expected_rule}" "$terraform_root/modules/vpc_peering/main.tf"
+for expected_rule in \
+  'Private application metrics from the dedicated monitoring VPC' \
+  'Private application Node Exporter scrape from the dedicated monitoring VPC' \
+  'Prometheus application metrics over approved VPC peering' \
+  'Prometheus application Node Exporter over approved VPC peering'; do
+  rg -Fq "$expected_rule" "$terraform_root/modules/network/main.tf" "$terraform_root/modules/monitoring_network/main.tf"
 done
 
 printf '%s\n' \
@@ -32,4 +36,4 @@ printf '%s\n' \
   "Monitoring secret values and user data: absent" \
   "Cloudflare Terraform provider: absent" \
   "Public monitoring security-group metrics/exporter rules: absent" \
-  "Peering security-group rules: application metrics and Node Exporter only"
+  "Peering routes and security-group rules: owned with their parent route tables and groups"

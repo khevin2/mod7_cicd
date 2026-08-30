@@ -19,7 +19,7 @@ discovery in `eu-north-1`; identifiers and addresses are intentionally omitted.
 | AWS Control Tower CloudTrail | Multi-Region, account-governed, inaccessible status | Pre-existing/referenced | Do not mutate or delete; it is not Project 6 runtime evidence |
 | Project 6 trail/archive | Absent | Proposed lab-created resource | Create only if duplicate-event cost and exact plan are approved |
 | Customer-managed KMS keys | No customer alias in `eu-north-1` | Approved target, lab-created | Create only the scoped key(s) required by approved plan |
-| GuardDuty detector | Absent in `eu-north-1` | Proposed lab-created resource | Enable only after cost/features and saved plan are approved |
+| GuardDuty detector | Tagged detector enabled in `eu-north-1` on 2026-08-28; optional protection plans disabled | Lab-created/Terraform-managed | Retain for the lab; eligible for teardown only in a separately approved exact destroy plan |
 | GitHub push webhook | Active; latest delivery failed | Pre-existing/referenced | Preserve; do not mutate until Jenkins endpoint is restored |
 | Cloudflare record and Slack webhook | Not queried; values remain outside AWS/Terraform | User-managed external resources | User owns DNS record; inject Slack secret out of band |
 

@@ -38,8 +38,10 @@ jq -e '
 ' >/dev/null <<<"$compose_json"
 
 jq -e '
+  (.networks.edge.internal != true) and
   (.networks.frontend.internal == true) and
-  (.networks.telemetry.internal == true) and
+  (.networks.telemetry.internal != true) and
+  ([.services | to_entries[] | select(.value.networks | index("edge")) | .key] == ["edge-proxy"]) and
   ([.services[].volumes[]? | select(.source == "/var/run/docker.sock")] | length == 0)
 ' >/dev/null <<<"$compose_json"
 
@@ -55,6 +57,6 @@ printf '%s\n' \
   "Hardening: read-only roots, cap-drop ALL, no-new-privileges, no privileged containers" \
   "Resources: health/restart/PID/CPU/memory/log controls present" \
   "Published ports: edge-proxy TCP 443 only" \
-  "Networks: frontend and telemetry are internal" \
+  "Networks: edge has only the published proxy; frontend is internal; telemetry has private-VPC scrape egress and no published port" \
   "Docker socket mounts: none" \
   "Terraform-managed secret values: none"
