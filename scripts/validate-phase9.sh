@@ -4,6 +4,8 @@ set -Eeuo pipefail
 repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 jenkinsfile="$repository_root/Jenkinsfile"
 
+command -v rg >/dev/null
+
 for script in validate-phase3.sh validate-phase8.sh validate-phase11.sh; do
   rg -Fq "bash scripts/$script" "$jenkinsfile"
 done

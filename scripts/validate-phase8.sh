@@ -6,6 +6,7 @@ prometheus_image='prom/prometheus:v3.14.0-distroless@sha256:50c707e96da5ade383cb
 
 command -v docker >/dev/null
 command -v jq >/dev/null
+command -v rg >/dev/null
 
 docker run --rm \
   --entrypoint /bin/promtool \

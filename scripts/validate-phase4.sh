@@ -4,6 +4,7 @@ set -Eeuo pipefail
 repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 terraform_root="$repository_root/infra"
 
+command -v rg >/dev/null
 terraform fmt -check -recursive "$terraform_root"
 
 if rg -n --glob '*.tf' 'aws_secretsmanager_secret_version|secret_string\s*=|user_data\s*=' \

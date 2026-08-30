@@ -6,6 +6,8 @@ set -Eeuo pipefail
 # the controlled procedure in docs/RUNBOOK.md.
 repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
+command -v rg >/dev/null
+
 for file in "$repository_root/src/fault-injection.js" "$repository_root/src/app.js" "$repository_root/src/server.js" "$repository_root/docs/RUNBOOK.md"; do
   test -f "$file"
 done

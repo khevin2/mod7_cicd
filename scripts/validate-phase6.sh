@@ -5,6 +5,7 @@ repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 terraform_root="$repository_root/infra"
 archive_module="$terraform_root/modules/cloudtrail_archive"
 
+command -v rg >/dev/null
 terraform fmt -check -recursive "$terraform_root"
 
 rg -Fq 'enable_cloudtrail_archive' "$terraform_root/live/main.tf" "$terraform_root/live/variables.tf"

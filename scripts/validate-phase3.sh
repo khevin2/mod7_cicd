@@ -6,6 +6,7 @@ compose_file="$repository_root/monitoring/compose.yml"
 
 command -v docker >/dev/null
 command -v jq >/dev/null
+command -v rg >/dev/null
 
 compose_json=$(docker compose --file "$compose_file" config --format json)
 

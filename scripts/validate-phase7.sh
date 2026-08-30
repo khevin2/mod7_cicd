@@ -5,6 +5,7 @@ repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 terraform_root="$repository_root/infra"
 detector_module="$terraform_root/modules/guardduty_detector"
 
+command -v rg >/dev/null
 terraform fmt -check -recursive "$terraform_root"
 
 rg -Fq 'enable_guardduty_detector' "$terraform_root/live/main.tf" "$terraform_root/live/variables.tf"

@@ -13,6 +13,12 @@
     # Engine alone does not provide that subcommand on Amazon Linux 2023.
     jenkins_compose_version: "5.5.0"
     jenkins_compose_sha256: "c57ab918abd5b05ca7e7d0f275875dd1330a695074f309dc9eab1b49efafcd4b"
+    # Amazon Linux 2023 does not provide ripgrep in its configured repositories.
+    # The static pipeline gates require rg, so install the official static
+    # x86_64 release with an integrity-pinned archive instead.
+    jenkins_ripgrep_version: "15.1.0"
+    jenkins_ripgrep_sha256: "1c9297be4a084eea7ecaedf93eb03d058d6faae29bbc57ecdaf5063921491599"
+    jenkins_ripgrep_archive: "ripgrep-{{ jenkins_ripgrep_version }}-x86_64-unknown-linux-musl.tar.gz"
     jenkins_plugin_manager_version: "2.15.0"
     jenkins_plugin_manager_url: "https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/{{ jenkins_plugin_manager_version }}/jenkins-plugin-manager-{{ jenkins_plugin_manager_version }}.jar"
     jenkins_required_plugins:
@@ -77,6 +83,51 @@
           - nginx
         state: present
         update_cache: true
+
+    - name: Create the local source archive directory
+      ansible.builtin.file:
+        path: /usr/local/src
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Download the integrity-pinned ripgrep archive for Jenkins validation
+      ansible.builtin.get_url:
+        url: >-
+          https://github.com/BurntSushi/ripgrep/releases/download/{{ jenkins_ripgrep_version }}/{{ jenkins_ripgrep_archive }}
+        dest: "/usr/local/src/{{ jenkins_ripgrep_archive }}"
+        owner: root
+        group: root
+        mode: "0644"
+        checksum: "sha256:{{ jenkins_ripgrep_sha256 }}"
+
+    - name: Extract ripgrep without replacing unrelated local binaries
+      ansible.builtin.unarchive:
+        src: "/usr/local/src/{{ jenkins_ripgrep_archive }}"
+        dest: /usr/local/lib
+        remote_src: true
+        creates: "/usr/local/lib/ripgrep-{{ jenkins_ripgrep_version }}-x86_64-unknown-linux-musl/rg"
+
+    - name: Install the pinned ripgrep executable for Jenkins builds
+      ansible.builtin.copy:
+        src: "/usr/local/lib/ripgrep-{{ jenkins_ripgrep_version }}-x86_64-unknown-linux-musl/rg"
+        dest: /usr/local/bin/rg
+        remote_src: true
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Verify ripgrep is available to the Jenkins service account
+      ansible.builtin.command:
+        argv: [/usr/local/bin/rg, --version]
+      become_user: jenkins
+      environment:
+        HOME: /var/lib/jenkins
+      register: jenkins_ripgrep_version_check
+      changed_when: false
+      failed_when: >-
+        'ripgrep ' ~ jenkins_ripgrep_version not in jenkins_ripgrep_version_check.stdout
 
     - name: Stop Jenkins while installing managed plugins
       ansible.builtin.service:

@@ -6,6 +6,8 @@ set -Eeuo pipefail
 # run Terraform/Ansible against an environment.
 repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
+command -v rg >/dev/null
+
 for script in validate-phase3.sh validate-phase4.sh validate-phase5.sh \
   validate-phase8.sh validate-phase9.sh; do
   # The region is a public, approved configuration value. Supplying it here
