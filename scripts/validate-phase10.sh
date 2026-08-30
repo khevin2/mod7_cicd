@@ -47,5 +47,5 @@ printf '%s\n' \
   'Phase 10 repository preflight: passed' \
   'Prior static gates (Phases 3, 4, 5, 8, and 9): passed' \
   'Monitoring playbook: requires ignored live inventory values and strict host-key checking' \
-  'Runtime: hardened Compose waits for healthy containers; Grafana remains the only public monitoring endpoint' \
-  'Next boundary: save/review an exact Terraform plan and obtain approval before apply; then verify DNS before TLS issuance'
+  'Runtime model: hardened Compose waits for healthy containers; Grafana remains the only public monitoring endpoint' \
+  'Scope: repository preflight only; current live status requires separate, sanitized Phase 10 evidence'

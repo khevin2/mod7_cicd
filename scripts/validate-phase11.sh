@@ -2,8 +2,8 @@
 set -Eeuo pipefail
 
 # This is deliberately a repository-only gate. It neither contacts AWS nor
-# starts a server; live verification remains dependent on the approved Phase 10
-# deployment and the controlled procedure in docs/RUNBOOK.md.
+# starts a server; it does not substitute for the live evidence collected using
+# the controlled procedure in docs/RUNBOOK.md.
 repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 for file in "$repository_root/src/fault-injection.js" "$repository_root/src/app.js" "$repository_root/src/server.js" "$repository_root/docs/RUNBOOK.md"; do
@@ -27,4 +27,4 @@ rg -Fq '/_phase11/disable' "$repository_root/docs/RUNBOOK.md"
 
 echo 'Phase 11 repository preflight: passed'
 echo 'Fault injection: disabled by default; control listener is loopback-only and not published by Jenkins'
-echo 'Live boundary: do not run the controlled test until Phase 10 is complete and the exact deployment is approved'
+echo 'Live boundary: collect current Phase 11 evidence only from the approved deployed immutable digest'

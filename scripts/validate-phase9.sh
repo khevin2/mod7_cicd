@@ -4,7 +4,7 @@ set -Eeuo pipefail
 repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 jenkinsfile="$repository_root/Jenkinsfile"
 
-for script in validate-phase3.sh validate-phase8.sh; do
+for script in validate-phase3.sh validate-phase8.sh validate-phase11.sh; do
   rg -Fq "bash scripts/$script" "$jenkinsfile"
 done
 
@@ -51,4 +51,5 @@ printf '%s\n' \
   'Terraform remains a local, reviewed workflow; Jenkins has no Terraform command' \
   'Webhook/manual host fallback, timeout, concurrency, retention, JUnit, digest, strict SSH, and rollback controls: present' \
   'Application candidate and active deployment: non-root, read-only, tmpfs, dropped capabilities, no-new-privileges, health, restart, and resource limits' \
+  'Phase 11 fault-control preflight: invoked; normal CI deployment cannot enable or publish it' \
   'Repository secret-pattern check: no matches'

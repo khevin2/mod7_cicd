@@ -37,13 +37,27 @@ jq -e '
   }]
 ' >/dev/null <<<"$compose_json"
 
-jq -e '
+if ! jq -e '
+  # Compose has represented service networks as both arrays and objects across
+  # supported releases. Accept either JSON shape while checking the same
+  # explicit topology.
+  def joins($network):
+    if type == "object" then has($network)
+    elif type == "array" then index($network) != null
+    else false
+    end;
+  (.networks | keys | sort == ["edge", "frontend", "telemetry"]) and
   (.networks.edge.internal != true) and
   (.networks.frontend.internal == true) and
   (.networks.telemetry.internal != true) and
-  ([.services | to_entries[] | select(.value.networks | index("edge")) | .key] == ["edge-proxy"]) and
+  ([.services | to_entries[] | select(.value.networks | joins("edge")) | .key] == ["edge-proxy"]) and
+  ([.services | to_entries[] | select(.value.networks | joins("frontend")) | .key] | sort == ["edge-proxy", "grafana"]) and
+  ([.services | to_entries[] | select(.value.networks | joins("telemetry")) | .key] | sort == ["grafana", "node-exporter", "prometheus"]) and
   ([.services[].volumes[]? | select(.source == "/var/run/docker.sock")] | length == 0)
-' >/dev/null <<<"$compose_json"
+' >/dev/null <<<"$compose_json"; then
+  echo "Compose network topology must keep edge-proxy on edge/frontend, Grafana on frontend/telemetry, and Prometheus plus Node Exporter on telemetry only." >&2
+  exit 1
+fi
 
 if rg -n --glob '*.tf' 'aws_secretsmanager_secret_version|secret_string\s*=' \
   "$repository_root/infra/modules/monitoring_secrets"; then
