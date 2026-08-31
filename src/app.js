@@ -25,6 +25,7 @@ function createApp(metrics = createMetrics(), logger = createLogger(), faultInje
     next();
   });
   app.use(metrics.middleware);
+  app.use(express.json());
 
   // This path returns an error only after the separate loopback-only control
   // listener enables its in-memory switch. It has no request-controlled knobs
@@ -43,6 +44,25 @@ function createApp(metrics = createMetrics(), logger = createLogger(), faultInje
       service: SERVICE_NAME,
       message: 'Jenkins CI/CD lab service is running'
     });
+  });
+
+  app.post('/test', (req, res) => {
+    const { name, value } = req.body;
+    logger.info('test_endpoint_called', { name, value });
+    if (value === 'error') {
+      logger.error('test_endpoint_error', { name, value });
+      return res.status(500).json({
+        service: SERVICE_NAME,
+        message: 'Test endpoint met an unexpected error'
+      });
+    }
+    else {
+      logger.info('test_endpoint_success', { name, value });
+      res.status(200).json({
+        service: SERVICE_NAME,
+        message: 'Test endpoint is working'
+      });
+    }
   });
 
   app.get('/health', (_request, response) => {
