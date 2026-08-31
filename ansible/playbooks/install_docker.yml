@@ -4,6 +4,12 @@
   become: true
   gather_facts: true
 
+  vars:
+    application_aws_region: eu-north-1
+    application_node_exporter_name: application-node-exporter
+    application_node_exporter_image: prom/node-exporter:v1.12.1@sha256:1b4e4438faca4dd7e001dd445d161a4a2091b0fededa84093b3a8dfeae1f1be0
+    application_node_exporter_log_group: /jenkins-webapp/lab/application/containers
+
   tasks:
     - name: Confirm the host uses Amazon Linux 2023
       ansible.builtin.assert:
@@ -28,3 +34,26 @@
         name: "{{ ansible_user | default('ec2-user') }}"
         groups: docker
         append: true
+
+    - name: Install the hardened private application Node Exporter service
+      ansible.builtin.template:
+        src: ../templates/application-node-exporter.service.j2
+        dest: /etc/systemd/system/application-node-exporter.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart application Node Exporter
+
+    - name: Enable the application Node Exporter service
+      ansible.builtin.systemd:
+        name: application-node-exporter
+        daemon_reload: true
+        enabled: true
+        state: started
+
+  handlers:
+    - name: Restart application Node Exporter
+      ansible.builtin.systemd:
+        name: application-node-exporter
+        daemon_reload: true
+        state: restarted

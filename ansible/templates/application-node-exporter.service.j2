@@ -1,0 +1,18 @@
+[Unit]
+Description=Hardened Node Exporter for the private application monitoring path
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Restart=always
+RestartSec=5s
+TimeoutStartSec=90s
+TimeoutStopSec=30s
+ExecStartPre=-/usr/bin/docker rm -f {{ application_node_exporter_name }}
+ExecStartPre=/usr/bin/docker pull {{ application_node_exporter_image }}
+ExecStart=/usr/bin/docker run --rm --name {{ application_node_exporter_name }} --network host --pid host --user 65534:65534 --read-only --tmpfs /tmp:rw,noexec,nosuid,nodev,size=8m,uid=65534,gid=65534 --cap-drop ALL --security-opt no-new-privileges:true --pids-limit 64 --memory 96m --memory-reservation 32m --cpus 0.20 --log-driver awslogs --log-opt awslogs-region={{ application_aws_region }} --log-opt awslogs-group={{ application_node_exporter_log_group }} --log-opt awslogs-stream=application-node-exporter --log-opt awslogs-create-group=false --volume /:/host:ro,rslave {{ application_node_exporter_image }} --path.rootfs=/host --web.listen-address=0.0.0.0:9100 --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/containers/storage/.+)($|/) --collector.netclass.ignored-devices=^(veth.*|docker.*|br-.*)$
+ExecStop=/usr/bin/docker stop --time 20 {{ application_node_exporter_name }}
+
+[Install]
+WantedBy=multi-user.target

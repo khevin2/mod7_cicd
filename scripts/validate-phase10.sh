@@ -19,6 +19,7 @@ done
 playbook="$repository_root/ansible/playbooks/install_monitoring_stack.yml"
 inventory_example="$repository_root/ansible/inventory/hosts.yml.example"
 compose="$repository_root/monitoring/compose.yml"
+application_playbook="$repository_root/ansible/playbooks/install_docker.yml"
 
 # Ansible must require environment-specific values from the ignored inventory,
 # rather than silently using placeholders or a public application endpoint.
@@ -39,6 +40,9 @@ rg -Fq 'docker, compose, --file, compose.yml, up, --detach, --remove-orphans, --
 rg -Fq 'awslogs-create-group: "false"' "$compose"
 rg -Fq 'read_only: true' "$compose"
 rg -Fq 'no-new-privileges:true' "$compose"
+rg -Fq 'application-node-exporter.service.j2' "$application_playbook"
+rg -Fq 'application_node_exporter_image' "$application_playbook"
+rg -Fq 'application_node_exporter_log_group' "$application_playbook"
 
 # TLS and dashboard runtime proof may only be gathered after the user reviews
 # the exact saved plan and the user-managed DNS-only record resolves correctly.

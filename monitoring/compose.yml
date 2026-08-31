@@ -95,12 +95,10 @@ services:
     depends_on:
       prometheus:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "/usr/share/grafana/bin/grafana", "cli", "--version"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
+    # The distroless image deliberately contains no shell or HTTP client, so
+    # it cannot perform an in-container API probe. The edge proxy's health
+    # check reaches Grafana's /api/health endpoint instead; Compose --wait
+    # therefore verifies Grafana readiness end to end.
     pids_limit: 256
     mem_limit: 448m
     mem_reservation: 256m
@@ -170,7 +168,7 @@ services:
         awslogs-create-group: "false"
     depends_on:
       grafana:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "--no-check-certificate", "https://127.0.0.1:8443/healthz"]
       interval: 15s

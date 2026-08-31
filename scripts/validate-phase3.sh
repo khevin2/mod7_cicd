@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 compose_file="$repository_root/monitoring/compose.yml"
+nginx_config="$repository_root/monitoring/nginx/grafana.conf"
 
 command -v docker >/dev/null
 command -v jq >/dev/null
@@ -23,9 +24,12 @@ jq -e '
     (.mem_limit != null) and
     (.mem_reservation != null) and
     (.cpus > 0) and
-    (.healthcheck.test | length > 1) and
     (.restart == "unless-stopped")
-  )
+  ) and
+  # The Grafana distroless image has no HTTP client. Its readiness is checked
+  # end to end by edge-proxy /healthz -> Grafana /api/health instead.
+  (.grafana.healthcheck == null) and
+  all(to_entries[] | select(.key != "grafana"); .value.healthcheck.test | length > 1)
 ' >/dev/null <<<"$compose_json"
 
 jq -e '
@@ -60,6 +64,11 @@ if ! jq -e '
   exit 1
 fi
 
+if ! rg -Uq '(?s)location = /healthz \{.*proxy_pass http://grafana:3000/api/health;' "$nginx_config"; then
+  echo "edge-proxy /healthz must proxy Grafana's /api/health endpoint." >&2
+  exit 1
+fi
+
 if rg -n --glob '*.tf' 'aws_secretsmanager_secret_version|secret_string\s*=' \
   "$repository_root/infra/modules/monitoring_secrets"; then
   echo "Secret values must not be managed by Terraform." >&2
@@ -73,5 +82,6 @@ printf '%s\n' \
   "Resources: health/restart/PID/CPU/memory/log controls present" \
   "Published ports: edge-proxy TCP 443 only" \
   "Networks: edge has only the published proxy; frontend is internal; telemetry has private-VPC scrape egress and no published port" \
+  "Readiness: edge-proxy health verifies Grafana /api/health end to end" \
   "Docker socket mounts: none" \
   "Terraform-managed secret values: none"

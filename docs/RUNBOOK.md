@@ -68,6 +68,12 @@ ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/install_docker
 ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/install_jenkins_controller.yml
 ```
 
+The application-host playbook installs Docker and a hardened, private
+application Node Exporter service. It is managed by systemd, uses the pinned
+image configured in the playbook, sends logs to the application CloudWatch log
+group, and listens only on the private application network path used by
+Prometheus.
+
 The controller playbook installs Jenkins, its plugins, Docker, Nginx, a
 Let's Encrypt certificate, the GitHub webhook allowlist refresher, and the
 Jenkins runtime user's verified application-host `known_hosts` file.
@@ -166,6 +172,19 @@ ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=<VERIFIE
 
 Confirm HTTP 200, one running healthy application container, an immutable digest
 matching build metadata, and a retained `jenkins-webapp:rollback` image.
+
+For Phase 11, retain the successful Jenkins Trivy repository and image reports
+with that build's digest, then prove the running application container uses the
+same digest. Do not repeat an identical app-image scan solely for Phase 11. The
+monitoring images retain their separately documented current-digest exception;
+reassess it when those pinned images change.
+
+The lean Phase 11 acceptance set is the healthy dashboard baseline, one
+controlled Pending-to-Firing-to-Resolved alert test, correlated CloudWatch
+application/system logs, disabled fault-path proof, deployed-digest correlation,
+and concise runtime/private-endpoint inspection. Reuse the sanitized live
+CloudTrail and GuardDuty evidence from Phases 6 and 7; do not generate duplicate
+management events or GuardDuty samples solely for Phase 11.
 
 ## Configure and verify monitoring
 
@@ -284,6 +303,32 @@ the container-local control listener, and confirm that `/_phase11/fault` is 404
 before collecting recovery evidence. Restore the normal deployment without
 `FAULT_INJECTION_ENABLED` after the test. Never put a test-control endpoint,
 Docker socket, token, or temporary environment value in public evidence.
+
+## Monitoring operations and incident triage
+
+Start with the dashboard time range, then distinguish a scrape failure from an
+application failure. Do not expose a private exporter, loosen a security group,
+or enable the fault controller while diagnosing.
+
+| Symptom | Read-only diagnosis | Safe action |
+| --- | --- | --- |
+| Target is down / no metrics | Check Prometheus **Status → Targets** and `up{job=~"application|application-node|monitoring-node|prometheus"}`. On the monitoring host, inspect `docker compose ... ps` with `AWS_REGION` set and verify the rendered private file-SD target files. | Confirm peering routes, the source-restricted SG rule, service health, and the approved private `host:port` inventory value. Re-run the monitoring playbook only after correcting the approved source. |
+| Dashboard has no recent data | Check the selected time range, datasource health, target `up`, and Prometheus rule evaluation. | Restore the failed scrape or datasource; do not change dashboard queries to hide missing data. |
+| CloudWatch logs are absent or delayed | Inspect the named log group/stream, Docker `awslogs` driver, CloudWatch Agent status, and current UTC time. | Verify the scoped instance role and pre-created encrypted group. Keep `awslogs-create-group=false`; a missing group is a deployment failure. |
+| High-error alert fires | Check the RPS, 5xx%, p95, recent structured logs, deployed digest, and whether controlled test traffic is active. | Acknowledge/notify the owner, investigate the digest and application health, and roll back only when the diagnosis supports it. Do not silence a real alert merely because a prior test existed. |
+
+The approved controlled test is the only use of `FAULT_INJECTION_ENABLED=true`.
+It must be explicitly authorized, stays container-local, and ends by disabling
+the controller, confirming the 404 fault route, and restoring the normal
+deployment. Record it as controlled traffic, not a production incident.
+
+For CloudTrail, verify the dedicated lab trail's delivery, validation, KMS/S3
+encryption, public-access block, and lifecycle as described in
+[`CLOUDTRAIL_ARCHIVE.md`](CLOUDTRAIL_ARCHIVE.md). For a real GuardDuty finding,
+preserve access-controlled evidence, validate CloudTrail context, notify the
+authorized owner/security contact, and follow the organization incident process;
+never delete, suppress, or disable it as lab cleanup. The recorded Phase 7
+finding is an AWS-generated synthetic sample and must remain labeled as such.
 
 ## Rollback and cleanup
 

@@ -1,9 +1,11 @@
-# Jenkins CI/CD web service
+# Jenkins webapp observability and security lab
 
 This Express service is built, scanned, published, and deployed by Jenkins on a
 small dedicated controller-runner. GitHub push events trigger the pipeline through
 a HTTPS webhook; deployment uses an immutable GHCR image digest and strict SSH to
-a separate Amazon Linux 2023 application host.
+a separate Amazon Linux 2023 application host. A privately peered Prometheus and
+Grafana stack supplies RPS, p95 latency, 5xx percentage, and host health, while
+CloudWatch, CloudTrail, and GuardDuty provide centralized logging and audit proof.
 
 ## Verified status
 
@@ -20,6 +22,13 @@ commit `65096a2cf28bf49a300b0a177cd5a2eb1cd74eaa`.
 - `jenkins-webapp:rollback` retained the previous immutable image digest
   `sha256:0a7f183d067c264e45fd67f32e82d1ee206c03ebfb820bd78041e9b910fbec0d`.
 
+The current monitoring verification is recorded separately on 2026-08-30. All
+four Prometheus targets were `UP` after recovery; an approved >5% 5xx test
+progressed from Pending to Firing after five minutes and then Resolved. The
+normal non-root container was restored with fault injection disabled. This was
+controlled traffic, not an incident; see
+[the sanitized timestamped record](evidence/20260830-phase11-live-verification.md).
+
 ## Architecture
 
 [Open the editable diagram](architecture.drawio) in diagrams.net.
@@ -28,6 +37,8 @@ commit `65096a2cf28bf49a300b0a177cd5a2eb1cd74eaa`.
   Nginx/TLS, GHCR, and application-host boundaries.
 - **Pipeline execution** shows the event-to-deployment stages, security gates,
   immutable digest hand-off, health validation, rollback retention, and cleanup.
+- **Technical design** shows the private monitoring VPC, VPC peering, Grafana
+  edge, CloudWatch logs, CloudTrail archive, GuardDuty, and secret boundaries.
 
 GitHub can reach only the HTTPS webhook route. AWS permits HTTPS to Nginx, while
 Nginx refreshes GitHub's published webhook source ranges and proxies only
@@ -125,13 +136,11 @@ prometheus.yml       Private Prometheus scrape, recording, and alert-rule config
 evidence/            Sanitized executed evidence
 ```
 
-Phase 4 monitoring infrastructure implementation is in progress; it remains
-plan- and approval-gated, with no cloud mutation authorized. The current Compose
-model publishes only Grafana HTTPS through an unprivileged proxy; Prometheus,
-Grafana's native listener, and Node Exporter remain on internal networks. See
-[the monitoring security boundary](monitoring/README.md), the single
-[`infra/live`](infra/live) Terraform root, and run `scripts/validate-phase3.sh`,
-`scripts/validate-phase4.sh`, and `scripts/validate-phase8.sh` for structural validation.
+The monitoring stack publishes only Grafana HTTPS through an unprivileged proxy;
+Prometheus, Grafana's native listener, and Node Exporter remain on internal
+networks. See [the monitoring security boundary](monitoring/README.md), the
+single [`infra/live`](infra/live) Terraform root, and the validation scripts for
+structural checks. Cloud mutations always require a reviewed saved plan.
 
 ## Local quick start
 
@@ -164,3 +173,12 @@ Terraform, Ansible, Jenkins, webhook, verification, rollback, cleanup, and
 recovery steps are in the [runbook](docs/RUNBOOK.md). Every reviewer-facing claim
 should be backed by sanitized evidence in [the evidence index](evidence/README.md).
 Never commit credentials, tokens, private keys, or unredacted endpoint captures.
+
+## Submission artifacts
+
+The root [prometheus.yml](prometheus.yml), provisioned
+[Grafana dashboard](monitoring/grafana/dashboards/webapp-observability.json),
+editable [architecture.drawio](architecture.drawio), and sanitized evidence are
+submission artifacts. The concise two-page report is maintained in
+[Markdown](docs/observability-security-report.md) and rendered as
+`docs/observability-security-report.pdf` by `scripts/render-phase12-report.js`.

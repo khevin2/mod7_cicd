@@ -23,6 +23,7 @@ keys/
 *.tfstate
 *.tfstate.*
 *.tfplan
+tfplan
 *.tfplan.*
 crash.log
 crash.*.log

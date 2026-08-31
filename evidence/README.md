@@ -2,7 +2,8 @@
 
 This directory contains sanitized evidence from commands and checks actually
 executed for this lab. Configuration explains intended behavior; it is not a
-substitute for runtime evidence.
+substitute for runtime evidence. The Phase 12 report links only to dated
+records below; controlled traffic and synthetic findings are labeled as such.
 
 ## Redaction and retention
 
@@ -34,15 +35,15 @@ documents Jenkins build #4, GHCR, EC2 state, and public browser accessibility.
 | Immutable image/digest traceability | 20260821-phase7-build4-console.txt; 20260821-phase8-deployed-verification.txt | Same digest recorded for push, deployment, and container. |
 | Public root/health accessibility | 20260821-phase8-deployed-verification.txt; screenshots/public-browser-root.png | Terminal and browser checks captured HTTP 200 for build #4. |
 | Runtime cleanup and disk capacity | 20260821-phase9-runtime-cleanup.txt | Host cleanup verified; new Jenkins cleanup stage needs a successful run. |
-| Runbook and reproducibility | ../README.md; ../docs/RUNBOOK.md | Documentation implemented; recheck commands in Phase 11. |
+| Runbook and reproducibility | ../README.md; ../docs/RUNBOOK.md | Deployment, verification, diagnosis, alert, rollback, and cleanup procedures are documented. |
 | Local Phase 11 quality and security review | 20260821-phase11-local-quality-review.md | Clean-checkout tests, no-cache build, static review, and limitations recorded. |
 | Local Trivy repository and image gates | 20260822-trivy-local-security-review.md | Source and hardened image gates passed locally; fresh Jenkins execution remains pending. |
+| Phase 11 live alert and recovery verification | 20260830-phase11-live-verification.md | Controlled Pending-to-Firing-to-Resolved test, CloudWatch correlation, restored digest, and four healthy scrape targets verified 2026-08-30. |
 
-## Remaining captures
+## Evidence limitations
 
-- A fresh successful Jenkins build containing both Trivy stages and Runtime Cleanup.
-- Archived trivy-repository.json and trivy-image.json from that successful build.
-- A current public health check after that build.
+- The listed Jenkins build captures predate the current Trivy and Runtime Cleanup stages; a fresh successful build with archived non-secret reports remains required for that specific CI claim.
+- Current Phase 11 verification is recorded as sanitized text. Add dashboard, alert, and CloudWatch screenshots only after review and redaction; do not fabricate screenshots from configuration.
 
 ## Captured files
 
@@ -65,4 +66,5 @@ documents Jenkins build #4, GHCR, EC2 state, and public browser accessibility.
 - 20260821-phase9-runtime-cleanup.txt — constrained host cleanup and disk capacity.
 - 20260821-phase11-local-quality-review.md — clean-checkout, container, source, security, and documentation checks with limitations.
 - 20260822-trivy-local-security-review.md — local Trivy findings, remediation, final gates, and limitations.
+- 20260830-phase11-live-verification.md — sanitized controlled alert lifecycle, log correlation, and restored runtime verification.
 - screenshots/ — sanitized build #4, credential-ID, GHCR, EC2, and public browser captures.
