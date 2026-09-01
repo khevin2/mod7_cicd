@@ -100,8 +100,11 @@ services:
     # check reaches Grafana's /api/health endpoint instead; Compose --wait
     # therefore verifies Grafana readiness end to end.
     pids_limit: 256
-    mem_limit: 448m
-    mem_reservation: 256m
+    # Grafana reached 98% of the former 448 MiB cgroup cap and was OOM-killed
+    # during dashboard queries. The t3.small monitoring host has sufficient
+    # observed headroom for this bounded 640 MiB allocation.
+    mem_limit: 640m
+    mem_reservation: 384m
     cpus: 0.75
 
   node-exporter:
