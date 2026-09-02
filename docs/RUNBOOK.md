@@ -227,13 +227,27 @@ terraform apply phase10.tfplan
 terraform output
 ```
 
-Use the `monitoring_elastic_ip` output to create the DNS-only
-`grafana.kheven.me` A record manually. Verify it resolves to that address before
-certificate issuance. Populate the ignored `ansible/inventory/hosts.yml` only
-with the monitoring Elastic IP, verified ED25519 host key, private application
-metrics/exporter targets, certificate email, Region, and the two named secret
-**ARNs**. Set the Slack webhook and Cloudflare DNS token values separately in
-their named Secrets Manager containers; never add their values to inventory.
+Use the `monitoring_elastic_ip` output to create DNS-only `grafana.kheven.me`
+and `metrics.kheven.me` A records manually. Verify both resolve to that address
+before certificate issuance. Populate the ignored `ansible/inventory/hosts.yml`
+only with the monitoring Elastic IP, verified ED25519 host key, private
+application metrics/exporter targets, administrator `/32`, certificate email,
+Region, and the three named secret **ARNs**. Set the Slack webhook, Cloudflare
+DNS token, and Prometheus bcrypt htpasswd entry separately in their named
+Secrets Manager containers; never add their values to inventory.
+
+Generate the Prometheus entry on a trusted administrator workstation. The
+command prompts for the password and prints one bcrypt entry; use a unique
+password of at least 24 characters and retain its plaintext only in a password
+manager:
+
+```bash
+htpasswd -nBC 12 prometheus-admin
+```
+
+Put the complete `prometheus-admin:$2...` output line in the named secret. The
+playbook rejects a different username, a non-bcrypt value, or a bcrypt cost
+below 12.
 
 ```bash
 # Compare this result to an independently trusted fingerprint before adding it.
@@ -266,10 +280,19 @@ not change an interactive shell's directory; use `cd ...` without `sudo`, or
 continue specifying the Compose file with its absolute path.
 
 After the second playbook run, capture sanitized evidence for the applied
-resource inventory, container versions/health, `https://grafana.kheven.me/api/health`,
-Prometheus target state, dashboard, and fresh CloudWatch events. The final
-Terraform plan must show no changes, or each change must be explained before
-claiming Phase 10 complete.
+resource inventory, container versions/health,
+`https://grafana.kheven.me/api/health`, authenticated
+`https://metrics.kheven.me/-/ready`, Prometheus target state, dashboard, and
+fresh CloudWatch events. The final Terraform plan must show no changes, or each
+change must be explained before claiming Phase 10 complete.
+
+From the approved `/32`, an unauthenticated Prometheus request must return
+`401`; use `curl -u prometheus-admin https://metrics.kheven.me/-/ready` so curl
+prompts for the password rather than placing it in shell history. A correct
+password must return `200`, while the same endpoint must remain unreachable
+from an independent public network. Direct public ports 3000, 9090, and 9100
+must remain closed. Grafana continues using `http://prometheus:9090` on the
+private telemetry network and needs no Basic Auth credential.
 
 After the approved Phase 10 deployment, verify that Prometheus lists four
 healthy targets (itself, monitoring Node Exporter, application metrics, and

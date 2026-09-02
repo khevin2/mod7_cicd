@@ -26,6 +26,8 @@ services:
       - --storage.tsdb.retention.time=14d
       - --storage.tsdb.retention.size=4GB
       - --web.listen-address=0.0.0.0:9090
+      - --web.external-url=https://${PROMETHEUS_SERVER_NAME:-metrics.kheven.me}/
+      - --web.route-prefix=/
     expose:
       - "9090"
     volumes:
@@ -37,6 +39,7 @@ services:
       - /tmp:rw,noexec,nosuid,nodev,size=16m,uid=65532,gid=65532
     networks:
       - telemetry
+      - prometheus-ui
     logging:
       driver: awslogs
       options:
@@ -155,6 +158,10 @@ services:
       # would mask a /run/tls bind mount, so keep certificate files below the
       # read-only Nginx configuration directory instead.
       - /opt/monitoring/tls:/etc/nginx/tls:ro
+      # The directory contains only a bcrypt htpasswd entry. Keep it below
+      # /etc/nginx because Alpine resolves /run through /var/run, whose tmpfs
+      # would mask a nested bind mount.
+      - /opt/monitoring/nginx-secrets:/etc/nginx/auth:ro
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=16m,uid=101,gid=1901
       - /var/cache/nginx:rw,noexec,nosuid,nodev,size=16m,uid=101,gid=1901
@@ -162,6 +169,7 @@ services:
     networks:
       - edge
       - frontend
+      - prometheus-ui
     logging:
       driver: awslogs
       options:
@@ -172,6 +180,8 @@ services:
     depends_on:
       grafana:
         condition: service_started
+      prometheus:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "--no-check-certificate", "https://127.0.0.1:8443/healthz"]
       interval: 15s
@@ -188,6 +198,10 @@ networks:
   # or Docker's published TCP 443 mapping is unreachable from the host.
   edge:
   frontend:
+    internal: true
+  # Narrow UI/API route shared only by Nginx and Prometheus. Nginx deliberately
+  # does not join telemetry, where Node Exporter and scrape targets are visible.
+  prometheus-ui:
     internal: true
   telemetry:
     # Prometheus needs egress to the application VPC over the peering route.

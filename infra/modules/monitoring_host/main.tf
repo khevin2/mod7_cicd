@@ -31,6 +31,11 @@ resource "aws_instance" "this" {
   }
 
   lifecycle {
+    # The public SSM parameter rolls forward as Amazon publishes AL2023 AMIs.
+    # Prometheus and Grafana data live on this host, so AMI upgrades are an
+    # explicit rebuild operation rather than an incidental Terraform apply.
+    ignore_changes = [ami]
+
     precondition {
       condition     = !var.enable_ssh || var.ssh_public_key != null
       error_message = "ssh_public_key must be set when enable_ssh is true."

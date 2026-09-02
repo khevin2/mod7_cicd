@@ -24,7 +24,7 @@ variable "kms_key_arn" {
 }
 
 variable "tags" {
-  description = "Ownership tags applied to both secret containers."
+  description = "Ownership tags applied to all monitoring secret containers."
   type        = map(string)
 
   validation {

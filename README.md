@@ -136,11 +136,13 @@ prometheus.yml       Private Prometheus scrape, recording, and alert-rule config
 evidence/            Sanitized executed evidence
 ```
 
-The monitoring stack publishes only Grafana HTTPS through an unprivileged proxy;
-Prometheus, Grafana's native listener, and Node Exporter remain on internal
-networks. See [the monitoring security boundary](monitoring/README.md), the
-single [`infra/live`](infra/live) Terraform root, and the validation scripts for
-structural checks. Cloud mutations always require a reviewed saved plan.
+The monitoring stack publishes only Nginx HTTPS through an unprivileged proxy.
+Grafana and the IP-restricted, Basic-Authenticated Prometheus UI use exact
+virtual hosts; Prometheus's native listener, Grafana's native listener, and Node
+Exporter remain on internal networks. See [the monitoring security
+boundary](monitoring/README.md), the single [`infra/live`](infra/live) Terraform
+root, and the validation scripts for structural checks. Cloud mutations always
+require a reviewed saved plan.
 
 ## Local quick start
 

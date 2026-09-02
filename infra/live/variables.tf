@@ -170,7 +170,7 @@ variable "monitoring_availability_zone" {
 }
 
 variable "grafana_admin_cidr" {
-  description = "Approved non-private public IPv4 /32 for Grafana HTTPS."
+  description = "Approved non-private public IPv4 /32 for monitoring HTTPS."
   type        = string
 }
 
@@ -197,7 +197,7 @@ variable "monitoring_root_volume_size_gib" {
 }
 
 variable "monitoring_enable_ssh" {
-  description = "Enable emergency monitoring SSH from grafana_admin_cidr. SSM is preferred."
+  description = "Enable emergency monitoring SSH from the monitoring administrator CIDR. SSM is preferred."
   type        = bool
   default     = false
 }

@@ -1,0 +1,123 @@
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
+# Keep PromQL and credentials out of CloudWatch. $uri excludes query arguments;
+# Nginx never logs request headers in this format.
+log_format monitoring_no_args '$remote_addr - [$time_local] '
+                              '"$request_method $uri $server_protocol" '
+                              '$status $body_bytes_sent '
+                              '"$http_referer" "$http_user_agent"';
+
+server {
+    listen 8443 ssl default_server;
+    server_name _;
+
+    server_tokens off;
+    ssl_certificate /etc/nginx/tls/fullchain.pem;
+    ssl_certificate_key /etc/nginx/tls/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:TLS:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    # The container-local Compose probe uses this exact path. No other request
+    # with an unknown SNI/Host value is allowed to reach an upstream.
+    location = /healthz {
+        access_log off;
+        allow 127.0.0.1;
+        allow ::1;
+        deny all;
+
+        proxy_http_version 1.1;
+        proxy_set_header Host {{ monitoring_server_name }};
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_pass http://grafana:3000/api/health;
+    }
+
+    location / {
+        return 444;
+    }
+}
+
+server {
+    listen 8443 ssl;
+    server_name {{ monitoring_server_name }};
+
+    server_tokens off;
+    ssl_certificate /etc/nginx/tls/fullchain.pem;
+    ssl_certificate_key /etc/nginx/tls/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:TLS:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    allow {{ monitoring_admin_cidr }};
+    deny all;
+
+    add_header Content-Security-Policy "frame-ancestors 'self'" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+
+    location = /healthz {
+        access_log off;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_pass http://grafana:3000/api/health;
+    }
+
+    location / {
+        access_log /var/log/nginx/access.log monitoring_no_args;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_pass http://grafana:3000;
+    }
+}
+
+server {
+    listen 8443 ssl;
+    server_name {{ monitoring_metrics_server_name }};
+
+    server_tokens off;
+    ssl_certificate /etc/nginx/tls/fullchain.pem;
+    ssl_certificate_key /etc/nginx/tls/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:TLS:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    # Both the source-address rule and the password must pass. The AWS /32
+    # security-group rule remains the first and authoritative network control.
+    satisfy all;
+    allow {{ monitoring_admin_cidr }};
+    deny all;
+    auth_basic "Prometheus administration";
+    auth_basic_user_file /etc/nginx/auth/prometheus.htpasswd;
+    auth_delay 500ms;
+
+    add_header Content-Security-Policy "frame-ancestors 'self'" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+
+    location / {
+        access_log /var/log/nginx/access.log monitoring_no_args;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        # Nginx consumes the reusable Basic credential; the upstream does not.
+        proxy_set_header Authorization "";
+        proxy_set_header Connection "";
+        proxy_pass http://prometheus:9090;
+    }
+}

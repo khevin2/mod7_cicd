@@ -54,6 +54,12 @@ resource "aws_instance" "deployment" {
     http_put_response_hop_limit = 1
   }
 
+  lifecycle {
+    # The data source intentionally selects the newest AL2023 AMI for new
+    # instances. Existing stateful hosts must only be rebuilt explicitly.
+    ignore_changes = [ami]
+  }
+
   tags = merge(var.tags, { Name = format("%s-%s-%s", var.project_name, var.environment, var.host_name) })
 }
 

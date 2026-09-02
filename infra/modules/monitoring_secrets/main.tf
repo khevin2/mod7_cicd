@@ -16,6 +16,15 @@ resource "aws_secretsmanager_secret" "cloudflare_dns_token" {
   tags = merge(var.tags, { Role = "grafana-tls" })
 }
 
+resource "aws_secretsmanager_secret" "prometheus_basic_auth_htpasswd" {
+  name                    = format("%s-%s-prometheus-basic-auth-htpasswd", var.project_name, var.environment)
+  description             = "Runtime-only bcrypt htpasswd entry for the Prometheus HTTPS edge."
+  kms_key_id              = var.kms_key_arn
+  recovery_window_in_days = 7
+
+  tags = merge(var.tags, { Role = "prometheus-edge-auth" })
+}
+
 data "aws_iam_policy_document" "runtime_read" {
   statement {
     sid     = "ReadOnlyNamedMonitoringSecrets"
@@ -24,6 +33,7 @@ data "aws_iam_policy_document" "runtime_read" {
     resources = [
       aws_secretsmanager_secret.slack_webhook.arn,
       aws_secretsmanager_secret.cloudflare_dns_token.arn,
+      aws_secretsmanager_secret.prometheus_basic_auth_htpasswd.arn,
     ]
   }
 

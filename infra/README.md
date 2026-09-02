@@ -90,11 +90,11 @@ paths and trusted host entries.
 
 ## Phase 3 monitoring security module
 
-`modules/monitoring_secrets` defines two encrypted, tagged Secrets Manager
-containers and the exact runtime read/decrypt policy: one container for the Slack
-incoming webhook and one for the Cloudflare DNS token. It intentionally defines
-no secret versions or values. The `live` root composes this module with its
-customer-managed KMS key and monitoring EC2 role.
+`modules/monitoring_secrets` defines three encrypted, tagged Secrets Manager
+containers and the exact runtime read/decrypt policy: one each for the Slack
+incoming webhook, Cloudflare DNS token, and Prometheus bcrypt htpasswd entry.
+It intentionally defines no secret versions or values. The `live` root composes
+this module with its customer-managed KMS key and monitoring EC2 role.
 
 After an approved apply creates those empty containers, set each `SecretString`
 out of band. Do not pass a value through Terraform variables, plans, or state.
@@ -115,8 +115,10 @@ contains no Cloudflare provider, DNS record, or secret values.
 Copy the existing example to an ignored local file, set the current Jenkins and
 Grafana administrator `/32` values, then validate and save one plan. The
 monitoring Elastic IP output is the hand-off for the user-managed DNS-only
-`grafana.kheven.me` A record; verify that record before running the TLS Ansible
-playbook.
+`grafana.kheven.me` and `metrics.kheven.me` A records; verify both records before
+running the TLS Ansible playbook. The same security-group TCP 443 rule restricts
+both names to the approved administrator `/32`; ports 3000, 9090, and 9100 remain
+unpublished.
 
 ```bash
 cd infra/live

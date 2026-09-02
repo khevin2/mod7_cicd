@@ -69,7 +69,7 @@ output "monitoring_vpc_id" {
 }
 
 output "monitoring_elastic_ip" {
-  description = "Create and verify the DNS-only grafana.kheven.me A record manually before certificate issuance."
+  description = "Create and verify DNS-only grafana.kheven.me and metrics.kheven.me A records before certificate issuance."
   value       = module.monitoring_host.elastic_ip
 }
 
@@ -91,6 +91,11 @@ output "monitoring_slack_webhook_secret_arn" {
 output "monitoring_cloudflare_dns_token_secret_arn" {
   description = "Empty secret container ARN; set its value out of band only."
   value       = module.monitoring_secrets.cloudflare_dns_token_secret_arn
+}
+
+output "monitoring_prometheus_basic_auth_htpasswd_secret_arn" {
+  description = "Empty bcrypt htpasswd secret container ARN; set its value out of band only."
+  value       = module.monitoring_secrets.prometheus_basic_auth_htpasswd_secret_arn
 }
 
 output "app_monitoring_vpc_peering_connection_id" {

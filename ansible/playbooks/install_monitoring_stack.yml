@@ -13,6 +13,7 @@
     # Keep the supported Python 3.11 environment separate from a failed or
     # previously created default-Python virtualenv at /opt/certbot.
     monitoring_certbot_root: /opt/certbot-python311
+    monitoring_prometheus_basic_auth_username: prometheus-admin
     monitoring_project_name: jenkins-webapp
     monitoring_environment: lab
     monitoring_container_log_group: "/{{ monitoring_project_name }}/{{ monitoring_environment }}/monitoring/containers"
@@ -41,16 +42,19 @@
           - ansible_architecture == "x86_64"
         fail_msg: "This playbook supports only the Project 6 x86_64 Amazon Linux 2023 host."
 
-    - name: Require approved DNS, contact, Region, and named secret inputs
+    - name: Require approved DNS, access, contact, Region, and named secret inputs
       ansible.builtin.assert:
         that:
           - monitoring_server_name == "grafana.kheven.me"
+          - monitoring_metrics_server_name == "metrics.kheven.me"
+          - monitoring_admin_cidr is match('^(?!10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)([0-9]{1,3}\.){3}[0-9]{1,3}/32$')
           - monitoring_certbot_email is match('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
           - monitoring_certbot_email is not match('.*@example\\.com$')
           - monitoring_aws_region is match('^[a-z]{2}-[a-z]+-[0-9]+$')
           - monitoring_slack_secret_arn is match('^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:.+$')
           - monitoring_cloudflare_secret_arn is match('^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:.+$')
-          - monitoring_slack_secret_arn != monitoring_cloudflare_secret_arn
+          - monitoring_prometheus_basic_auth_secret_arn is match('^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:.+$')
+          - ([monitoring_slack_secret_arn, monitoring_cloudflare_secret_arn, monitoring_prometheus_basic_auth_secret_arn] | unique | length) == 3
           - monitoring_application_metrics_target is match('^[A-Za-z0-9][A-Za-z0-9.-]*:[1-9][0-9]{0,4}$')
           - not monitoring_application_metrics_target.startswith('0.0.0.0:')
           - monitoring_application_node_exporter_target is match('^[A-Za-z0-9][A-Za-z0-9.-]*:[1-9][0-9]{0,4}$')
@@ -58,10 +62,11 @@
           - monitoring_container_log_group == "/jenkins-webapp/lab/monitoring/containers"
           - monitoring_system_log_group == "/jenkins-webapp/lab/monitoring/system"
         fail_msg: >-
-          Set the approved Grafana name, certificate email, Region, and the two
-          distinct secret-container ARNs plus the approved private application
-          metrics and Node Exporter host:port values in the ignored inventory.
-          Never put either secret value in inventory.
+          Set the approved Grafana and Prometheus names, administrator public
+          /32, certificate email, Region, and three distinct secret-container
+          ARNs plus the approved private application metrics and Node Exporter
+          host:port values in the ignored inventory. Never put a secret value
+          in inventory.
 
   tasks:
     - name: Install monitoring host prerequisites
@@ -184,6 +189,7 @@
         - { path: "{{ monitoring_root }}/prometheus-targets", group: root, mode: "0755" }
         - { path: "{{ monitoring_compose_root }}/nginx", group: root, mode: "0755" }
         - { path: "{{ monitoring_root }}/secrets", group: root, mode: "0700" }
+        - { path: "{{ monitoring_root }}/nginx-secrets", group: "1901", mode: "0750" }
         - { path: "{{ monitoring_root }}/tls", group: "1901", mode: "0750" }
         - { path: /etc/letsencrypt, group: root, mode: "0700" }
 
@@ -198,7 +204,6 @@
         - { src: ../../monitoring/compose.yml, dest: "{{ monitoring_compose_root }}/compose.yml" }
         - { src: ../../prometheus.yml, dest: "{{ monitoring_root }}/prometheus.yml" }
         - { src: ../../monitoring/alert-rules.yml, dest: "{{ monitoring_compose_root }}/alert-rules.yml" }
-        - { src: ../../monitoring/nginx/grafana.conf, dest: "{{ monitoring_compose_root }}/nginx/grafana.conf" }
         - { src: ../../monitoring/grafana/provisioning/datasources/prometheus.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/datasources/prometheus.yml" }
         - { src: ../../monitoring/grafana/provisioning/dashboards/default.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/dashboards/default.yml" }
         - { src: ../../monitoring/grafana/provisioning/alerting/webapp-alert-rules.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/alerting/webapp-alert-rules.yml" }
@@ -308,6 +313,54 @@
       when: not monitoring_grafana_admin_password_file.stat.exists
       no_log: true
 
+    - name: Read the Prometheus Basic Auth htpasswd entry through the instance role
+      ansible.builtin.command:
+        argv:
+          - aws
+          - secretsmanager
+          - get-secret-value
+          - --region
+          - "{{ monitoring_aws_region }}"
+          - --secret-id
+          - "{{ monitoring_prometheus_basic_auth_secret_arn }}"
+          - --query
+          - SecretString
+          - --output
+          - text
+      register: monitoring_prometheus_basic_auth_secret
+      changed_when: false
+      no_log: true
+
+    - name: Validate the Prometheus bcrypt htpasswd entry without displaying it
+      ansible.builtin.assert:
+        that:
+          - >-
+            (monitoring_prometheus_basic_auth_secret.stdout | trim) is
+            match('^' ~ monitoring_prometheus_basic_auth_username ~ ':\\$2[aby]\\$(1[2-9]|2[0-9]|3[01])\\$[./A-Za-z0-9]{53}$')
+        fail_msg: >-
+          The named Prometheus authentication secret must contain exactly one
+          bcrypt htpasswd entry for the approved username with cost 12 or higher.
+      no_log: true
+
+    - name: Install the Prometheus bcrypt htpasswd entry for Nginx only
+      ansible.builtin.copy:
+        dest: "{{ monitoring_root }}/nginx-secrets/prometheus.htpasswd"
+        content: "{{ monitoring_prometheus_basic_auth_secret.stdout | trim }}\n"
+        owner: root
+        group: "1901"
+        mode: "0440"
+      notify: Reload monitoring edge proxy
+      no_log: true
+
+    - name: Render the hostname, IP, and authentication-aware Nginx policy
+      ansible.builtin.template:
+        src: ../templates/monitoring-nginx.conf.j2
+        dest: "{{ monitoring_compose_root }}/nginx/grafana.conf"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload monitoring edge proxy
+
     - name: Read the Cloudflare token through the instance role
       ansible.builtin.command:
         argv:
@@ -343,7 +396,7 @@
         mode: "0600"
       no_log: true
 
-    - name: Obtain or retain the Grafana DNS-01 certificate
+    - name: Obtain or retain the monitoring edge DNS-01 certificate
       ansible.builtin.command:
         argv:
           - "{{ monitoring_certbot_root }}/bin/certbot"
@@ -354,12 +407,15 @@
           - --non-interactive
           - --agree-tos
           - --keep-until-expiring
+          - --expand
           - --email
           - "{{ monitoring_certbot_email }}"
           - --cert-name
           - "{{ monitoring_server_name }}"
           - -d
           - "{{ monitoring_server_name }}"
+          - -d
+          - "{{ monitoring_metrics_server_name }}"
       register: monitoring_certificate
       changed_when: "'Successfully received certificate' in monitoring_certificate.stdout"
       no_log: true
@@ -401,7 +457,7 @@
         mode: "0644"
         content: |
           [Unit]
-          Description=Daily Project 6 Grafana certificate renewal check
+          Description=Daily Project 6 monitoring edge certificate renewal check
 
           [Timer]
           OnCalendar=daily
@@ -433,6 +489,7 @@
         chdir: "{{ monitoring_compose_root }}"
       environment:
         GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+        PROMETHEUS_SERVER_NAME: "{{ monitoring_metrics_server_name }}"
         AWS_REGION: "{{ monitoring_aws_region }}"
       when:
         - monitoring_telemetry_network.rc == 0
@@ -445,6 +502,7 @@
         chdir: "{{ monitoring_compose_root }}"
       environment:
         GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+        PROMETHEUS_SERVER_NAME: "{{ monitoring_metrics_server_name }}"
         AWS_REGION: "{{ monitoring_aws_region }}"
       changed_when: false
 
@@ -454,6 +512,7 @@
         chdir: "{{ monitoring_compose_root }}"
       environment:
         GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+        PROMETHEUS_SERVER_NAME: "{{ monitoring_metrics_server_name }}"
         AWS_REGION: "{{ monitoring_aws_region }}"
       register: monitoring_compose_pull
       changed_when: "'Pulled' in monitoring_compose_pull.stdout or 'Downloaded' in monitoring_compose_pull.stderr"
@@ -467,9 +526,33 @@
         chdir: "{{ monitoring_compose_root }}"
       environment:
         GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+        PROMETHEUS_SERVER_NAME: "{{ monitoring_metrics_server_name }}"
         AWS_REGION: "{{ monitoring_aws_region }}"
       register: monitoring_compose_up
       changed_when: >-
         'Started' in monitoring_compose_up.stderr or
         'Created' in monitoring_compose_up.stderr or
         'Recreated' in monitoring_compose_up.stderr
+
+  handlers:
+    - name: Validate the changed monitoring edge proxy configuration
+      ansible.builtin.command:
+        argv: [docker, compose, --file, compose.yml, exec, --no-TTY, edge-proxy, nginx, -t]
+        chdir: "{{ monitoring_compose_root }}"
+      environment:
+        GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+        PROMETHEUS_SERVER_NAME: "{{ monitoring_metrics_server_name }}"
+        AWS_REGION: "{{ monitoring_aws_region }}"
+      changed_when: false
+      listen: Reload monitoring edge proxy
+
+    - name: Reload the changed monitoring edge proxy configuration
+      ansible.builtin.command:
+        argv: [docker, compose, --file, compose.yml, exec, --no-TTY, edge-proxy, nginx, -s, reload]
+        chdir: "{{ monitoring_compose_root }}"
+      environment:
+        GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+        PROMETHEUS_SERVER_NAME: "{{ monitoring_metrics_server_name }}"
+        AWS_REGION: "{{ monitoring_aws_region }}"
+      changed_when: true
+      listen: Reload monitoring edge proxy

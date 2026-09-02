@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+export AWS_REGION="{{ monitoring_aws_region }}"
+export GRAFANA_SERVER_NAME="{{ monitoring_server_name }}"
+export PROMETHEUS_SERVER_NAME="{{ monitoring_metrics_server_name }}"
+
 install -o root -g 1901 -m 0440 \
   "/etc/letsencrypt/live/{{ monitoring_server_name }}/fullchain.pem" \
   "{{ monitoring_root }}/tls/fullchain.pem"

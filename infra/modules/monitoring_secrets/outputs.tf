@@ -8,6 +8,11 @@ output "cloudflare_dns_token_secret_arn" {
   value       = aws_secretsmanager_secret.cloudflare_dns_token.arn
 }
 
+output "prometheus_basic_auth_htpasswd_secret_arn" {
+  description = "ARN of the empty Prometheus bcrypt htpasswd container. Set its value out of band."
+  value       = aws_secretsmanager_secret.prometheus_basic_auth_htpasswd.arn
+}
+
 output "runtime_read_policy_json" {
   description = "Least-privilege policy JSON for the monitoring instance role."
   value       = data.aws_iam_policy_document.runtime_read.json

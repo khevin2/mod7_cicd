@@ -16,7 +16,7 @@ variable "availability_zone" {
 }
 
 variable "grafana_admin_cidr" {
-  description = "Approved non-private public IPv4 /32 permitted to reach Grafana HTTPS."
+  description = "Approved non-private public IPv4 /32 permitted to reach monitoring HTTPS."
   type        = string
 
   validation {
@@ -26,7 +26,7 @@ variable "grafana_admin_cidr" {
 }
 
 variable "enable_ssh" {
-  description = "Whether to allow emergency SSH from grafana_admin_cidr. SSM is preferred."
+  description = "Whether to allow emergency SSH from the monitoring administrator CIDR. SSM is preferred."
   type        = bool
   default     = false
 }

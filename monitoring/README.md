@@ -7,6 +7,8 @@ the frontend bridge between Nginx and Grafana is Docker-internal. The telemetry
 bridge has no published ports but permits Prometheus to reach the application
 metrics and Node Exporter through the private VPC peering route. Grafana's
 native listener and both exporters remain inaccessible from the public network.
+A separate internal `prometheus-ui` bridge joins only Nginx and Prometheus, so
+the proxy can expose the authenticated UI without gaining access to exporters.
 
 All four image references include both a version tag and an immutable
 multi-platform digest resolved from their official registries on 2026-08-27.
@@ -44,12 +46,29 @@ The deployment playbook creates these untracked, EBS-backed paths:
   token fetched from its one named Secrets Manager container.
 - `/opt/monitoring/tls`, a least-readable copy of the issued certificate and
   private key for the unprivileged proxy.
+- `/opt/monitoring/nginx-secrets/prometheus.htpasswd`, containing only the
+  bcrypt htpasswd entry fetched from its named Secrets Manager container. The
+  directory is mounted read-only into Nginx and no other container.
 
-Neither secret value belongs in Git, Terraform input/state, Compose environment,
+No secret value belongs in Git, Terraform input/state, Compose environment,
 Docker labels, command arguments, logs, or evidence. The ignored inventory holds
-only the two secret ARNs, not values. The EC2 role created in Phase 4 must receive
+only the three secret ARNs, not values. The EC2 role created in Phase 4 must receive
 only the read policy output by `infra/modules/monitoring_secrets` plus scoped KMS
 decrypt access.
+
+Generate the Prometheus entry on a trusted administrator workstation with an
+interactive prompt:
+
+```bash
+htpasswd -nBC 12 prometheus-admin
+```
+
+Use a unique password of at least 24 characters, keep its plaintext only in a
+password manager, and put the single resulting `prometheus-admin:$2...` line in
+the Terraform-created Secrets Manager container out of band. Rerunning the
+playbook validates and installs the hash, then safely reloads Nginx. Rotation
+uses the same procedure; verify the new password and confirm the old one returns
+`401`.
 
 ## Hardening boundary
 
@@ -66,10 +85,11 @@ has no capabilities, cannot write the host, and has no published port. Removing
 the host namespace/mount would materially reduce required host telemetry; adding
 write access, the Docker socket, host networking, or privilege is not approved.
 
-Grafana's container-local health command proves its binary remains executable;
-Nginx performs the network liveness check at the only published endpoint. Phase
-10 must additionally verify `https://grafana.kheven.me/api/health` through the
-proxy and all Prometheus targets before runtime readiness is claimed.
+Prometheus and Node Exporter use container-local health checks; Nginx checks
+Grafana over the private frontend. Phase 10 must additionally verify
+`https://grafana.kheven.me/api/health`, authenticated
+`https://metrics.kheven.me/-/ready`, the unauthenticated `401` response, and all
+Prometheus targets before runtime readiness is claimed.
 
 ## Observability and alerting
 
