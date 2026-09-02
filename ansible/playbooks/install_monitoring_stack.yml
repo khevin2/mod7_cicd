@@ -203,10 +203,15 @@
       loop:
         - { src: ../../monitoring/compose.yml, dest: "{{ monitoring_compose_root }}/compose.yml" }
         - { src: ../../prometheus.yml, dest: "{{ monitoring_root }}/prometheus.yml" }
-        - { src: ../../monitoring/alert-rules.yml, dest: "{{ monitoring_compose_root }}/alert-rules.yml" }
+        - { src: ../../monitoring/recording-rules.yml, dest: "{{ monitoring_compose_root }}/recording-rules.yml" }
         - { src: ../../monitoring/grafana/provisioning/datasources/prometheus.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/datasources/prometheus.yml" }
         - { src: ../../monitoring/grafana/provisioning/dashboards/default.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/dashboards/default.yml" }
         - { src: ../../monitoring/grafana/provisioning/alerting/webapp-alert-rules.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/alerting/webapp-alert-rules.yml" }
+
+    - name: Remove the obsolete duplicate Prometheus alert-rule file
+      ansible.builtin.file:
+        path: "{{ monitoring_compose_root }}/alert-rules.yml"
+        state: absent
 
     - name: Render the private application Prometheus target
       ansible.builtin.copy:

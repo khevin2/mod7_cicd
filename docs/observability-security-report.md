@@ -6,7 +6,7 @@ The lab deploys an Express application through a GitHub-triggered Jenkins pipeli
 
 Application/Jenkins resources (`10.70.0.0/16`) and monitoring resources (`10.80.0.0/16`) communicate over routed, non-transitive VPC peering. Prometheus privately scrapes application metrics (`:9464`) and Node Exporter (`:9100`); these endpoints are not public. Grafana alone is available on HTTPS to an approved administrator `/32`. Slack and Cloudflare credentials are retrieved at runtime from separately scoped Secrets Manager entries, never from Git, Terraform state, or evidence.
 
-Prometheus evaluates every 15 seconds. The provisioned dashboard shows request rate (RPS), p95 latency, 5xx percentage, CPU, memory, disk, and target health. The high-error alert requires more than 5% 5xx responses for five minutes and at least 20 requests, preventing a tiny sample from generating noise.
+Prometheus scrapes metrics and evaluates three reusable recording rules every 15 seconds. The provisioned dashboard shows request rate (RPS), p95 latency, 5xx percentage, CPU, memory, disk, and target health. Grafana is the sole alerting engine: its high-error rule requires more than 5% 5xx responses for five minutes and at least 20 requests, preventing a tiny sample from generating noise, then sends firing and resolved notifications to Slack.
 
 ## Controlled verification and logging
 

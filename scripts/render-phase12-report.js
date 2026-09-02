@@ -54,14 +54,14 @@ t('Only Grafana is exposed. Application metrics and both Node Exporters use priv
 box(L, 521, CW, 160, c.slate, 8);
 t('SIGNALS AND ALERT POLICY', L + 18, 540, { size: 8, color: c.blue, bold: true, width: CW - 36 });
 t('The provisioned dashboard tracks request rate, p95 latency, HTTP 5xx percentage, CPU, memory, disk, and scrape health.', L + 18, 560, { size: 10.2, bold: true, width: CW - 36 });
-t('Prometheus evaluates every 15 seconds. JenkinsWebappHighErrorRate requires both a 5xx rate above 5% for five minutes and at least 20 requests in that five-minute window. The traffic guard prevents a tiny sample from creating noise.', L + 18, 593, { size: 8.75, color: c.muted, width: CW - 36, gap: 2 });
+t('Prometheus evaluates three recording rules every 15 seconds. Grafana is the sole alerting engine: JenkinsWebappHighErrorRate requires both a 5xx rate above 5% for five minutes and at least 20 requests in that window, then sends firing and resolved notifications to Slack.', L + 18, 593, { size: 8.75, color: c.muted, width: CW - 36, gap: 2 });
 t('No raw URLs, request bodies, identities, tokens, or query strings are used as metric labels.', L + 18, 646, { size: 8.25, color: c.green, bold: true, width: CW - 36 });
 footer(1);
 
 doc.addPage();
 header('Executed evidence', 'Recovery was observed end to end', 'The test validates alerting and logging without presenting controlled traffic as an incident', 2);
 section('Controlled alert lifecycle · 2026-08-30 UTC', 128);
-const timeline = [['14:04:28', 'Traffic started', 'Normal and deliberate fault requests began every five seconds.'], ['14:04:55', 'Pending', 'JenkinsWebappHighErrorRate entered Pending.'], ['14:10:48', 'Firing', 'The threshold remained true for the required five minutes.'], ['14:11:00', 'Traffic stopped', 'No further controlled requests were generated.'], ['14:12:14', 'Fault disabled', 'Controller disabled; fault route returned HTTP 404.'], ['14:15:52', 'Resolved', 'Prometheus returned no active high-error alert.']];
+const timeline = [['14:04:28', 'Traffic started', 'Normal and deliberate fault requests began every five seconds.'], ['14:04:55', 'Pending', 'JenkinsWebappHighErrorRate entered Pending.'], ['14:10:48', 'Firing', 'The threshold remained true for the required five minutes.'], ['14:11:00', 'Traffic stopped', 'No further controlled requests were generated.'], ['14:12:14', 'Fault disabled', 'Controller disabled; fault route returned HTTP 404.'], ['14:15:52', 'Resolved', 'The high-error alert returned to its normal state.']];
 timeline.forEach((item, i) => { const y = 162 + (i * 31); box(L, y + 2, 8, 8, item[1] === 'Firing' ? c.orange : c.green, 4); t(item[0], L + 22, y, { size: 8.3, bold: true, width: 55 }); t(item[1], L + 86, y, { size: 8.4, color: c.blue, bold: true, width: 102 }); t(item[2], L + 190, y, { size: 8.35, color: c.muted, width: 357 }); if (i < 5) box(L + 3.5, y + 13, 1, 17, c.line); });
 section('What the verification proves', 367);
 card(L, 394, 265, 116, 'Recovery state', '4 / 4 UP', 'Application, application-node, monitoring-node, and Prometheus were UP after restoration. The normal container was healthy, non-root, read-only, and fault injection was absent.', c.green, c.paleGreen);

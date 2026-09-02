@@ -1,0 +1,10 @@
+groups:
+  - name: jenkins-webapp-recording-rules
+    interval: 15s
+    rules:
+      - record: jenkins_webapp:http_requests:rate5m
+        expr: sum(rate(jenkins_webapp_http_requests_total[5m]))
+      - record: jenkins_webapp:http_request_duration_seconds:p95_5m
+        expr: histogram_quantile(0.95, sum by (le) (rate(jenkins_webapp_http_request_duration_seconds_bucket[5m])))
+      - record: jenkins_webapp:http_5xx_percentage:rate5m
+        expr: 100 * sum(rate(jenkins_webapp_http_requests_total{status_code=~"5.."}[5m])) / clamp_min(sum(rate(jenkins_webapp_http_requests_total[5m])), 0.001)

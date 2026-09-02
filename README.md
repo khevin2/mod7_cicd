@@ -132,7 +132,7 @@ ansible/             Docker and Jenkins-controller configuration playbooks
 docs/RUNBOOK.md      Provisioning, webhook, verification, rollback, and recovery
 architecture.drawio  Editable two-page architecture and pipeline diagram
 monitoring/          Hardened digest-pinned Prometheus/Grafana runtime
-prometheus.yml       Private Prometheus scrape, recording, and alert-rule configuration
+prometheus.yml       Private Prometheus scrape and recording-rule configuration
 evidence/            Sanitized executed evidence
 ```
 

@@ -100,14 +100,14 @@ Node Exporter on 9100. The application endpoints are rendered from approved
 private `host:port` values in the ignored Ansible inventory into file-SD target
 files; neither endpoint is committed or exposed publicly.
 
-`alert-rules.yml` records request rate, p95 latency, and 5xx percentage. Its
-high-error rule requires more than 5% 5xx responses for five minutes and at
-least 20 requests in the same five-minute window. Grafana provisions the same
-condition as its managed alert, routing it through the runtime-injected Slack
-contact point. Resolve notifications are enabled. The 20-request guard avoids
-noise from a tiny traffic sample. The contact point has a stable provisioning
-UID and is reconciled in place; it is not deleted during startup because an
-existing alert rule may already reference it.
+`recording-rules.yml` precomputes request rate, p95 latency, and 5xx percentage.
+It deliberately contains no alert definitions. Grafana is the sole alerting
+engine: its managed high-error rule requires more than 5% 5xx responses for
+five minutes and at least 20 requests in the same five-minute window, then
+routes firing and resolved notifications through the runtime-injected Slack
+contact point. The traffic guard avoids noise from a tiny sample. The contact
+point has a stable provisioning UID and is reconciled in place; it is not
+deleted during startup because the Grafana alert rule references it.
 
 Run `bash scripts/validate-phase8.sh` to validate the Prometheus configuration
 and rules with the exact pinned Prometheus image and to check the provisioned

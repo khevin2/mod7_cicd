@@ -20,6 +20,13 @@ deployment was:
 | Alert Resolved | 14:15:52 | Prometheus returned no active `JenkinsWebappHighErrorRate` alerts. |
 | Normal container restored | after recovery | `FAULT_INJECTION_ENABLED` absent; health check healthy. |
 
+This dated test was captured before the duplicate Prometheus alert definition
+was removed. Grafana was already evaluating the same condition and delivering
+the Slack notifications. The current architecture retains the Grafana-managed
+alert as the sole alert definition and keeps only recording rules in
+Prometheus; this note preserves the historical observation without presenting
+the former duplication as the current design.
+
 The test container did not publish port 9465. The normal restored container is
 non-root (`10001:10001`), read-only, uses `unless-stopped`, and writes through
 the `awslogs` driver. Its health endpoint returned HTTP 200 and its fault route

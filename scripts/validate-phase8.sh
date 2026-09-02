@@ -11,13 +11,17 @@ command -v rg >/dev/null
 docker run --rm \
   --entrypoint /bin/promtool \
   -v "$repository_root/prometheus.yml:/etc/prometheus/prometheus.yml:ro" \
-  -v "$repository_root/monitoring/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro" \
+  -v "$repository_root/monitoring/recording-rules.yml:/etc/prometheus/recording-rules.yml:ro" \
   "$prometheus_image" check config /etc/prometheus/prometheus.yml >/dev/null
 
 docker run --rm \
   --entrypoint /bin/promtool \
-  -v "$repository_root/monitoring/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro" \
-  "$prometheus_image" check rules /etc/prometheus/alert-rules.yml >/dev/null
+  -v "$repository_root/monitoring/recording-rules.yml:/etc/prometheus/recording-rules.yml:ro" \
+  "$prometheus_image" check rules /etc/prometheus/recording-rules.yml >/dev/null
+
+test "$(rg -c '^\s+- record:' "$repository_root/monitoring/recording-rules.yml")" = 3
+! rg -q '^\s+- alert:' "$repository_root/monitoring/recording-rules.yml"
+test ! -e "$repository_root/monitoring/alert-rules.yml"
 
 jq -e '
   .uid == "jenkins-webapp-observability" and
@@ -36,7 +40,8 @@ rg -q 'recipient: "#project6-observability-alerts"' "$repository_root/ansible/te
 rg -q 'monitoring_application_metrics_target' "$repository_root/ansible/playbooks/install_monitoring_stack.yml"
 
 printf '%s\n' \
-  "Prometheus configuration and alert rules: valid with pinned promtool" \
+  "Prometheus configuration and three recording rules: valid with pinned promtool" \
+  "Alert ownership: Grafana only; no Prometheus alert definitions" \
   "Grafana dashboard: valid JSON with seven required panels" \
   "Grafana alert: 5-minute >5% error threshold with 20-request guard" \
   "Slack contact point: resolved notifications enabled" \
