@@ -11,13 +11,16 @@ groups:
       - uid: jenkins-webapp-high-error-rate
         title: Jenkins web application high error rate
         condition: C
-        for: 5m
+        for: 10m
         noDataState: NoData
         execErrState: Error
         annotations:
           summary: Jenkins web application 5xx error rate is above 5%
-          description: The application has returned more than 5% HTTP 5xx responses for five minutes, with at least 20 requests in the evaluation window.
+          description: The application has returned more than 5% HTTP 5xx responses for ten minutes, with at least 20 requests in the evaluation window.
+          dashboard_url: https://grafana.kheven.me/d/jenkins-webapp-observability/jenkins-webapp-observability?from=now-30m&to=now
           runbook_url: https://grafana.kheven.me/alerting/runbook
+          correlation: Open a latency or error exemplar in the linked dashboard, then search CloudWatch JSON logs by trace_id. Aggregate alerts do not identify one trace.
+          threshold: "> 5% HTTP 5xx for 10m"
           traffic_guard: The minimum-request guard avoids alerting on a small number of requests.
         labels:
           service: jenkins-webapp
@@ -57,3 +60,55 @@ groups:
               refId: C
               type: math
               expression: $A > 0.05 && $B >= 20
+      - uid: jenkins-webapp-high-p95-latency
+        title: Jenkins web application high p95 latency
+        condition: C
+        for: 10m
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: Jenkins web application p95 latency is above 300 ms
+          description: The application p95 response time has exceeded 300 ms for ten minutes, with at least 20 requests in the evaluation window.
+          dashboard_url: https://grafana.kheven.me/d/jenkins-webapp-observability/jenkins-webapp-observability?from=now-30m&to=now
+          runbook_url: https://grafana.kheven.me/alerting/runbook
+          correlation: Open a latency exemplar in the linked dashboard, then search CloudWatch JSON logs by trace_id. Aggregate alerts do not identify one trace.
+          threshold: "> 0.300 seconds p95 for 10m"
+          traffic_guard: The minimum-request guard avoids alerting on a small number of requests.
+        labels:
+          service: jenkins-webapp
+          severity: warning
+        notification_settings:
+          receiver: project6-slack
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: jenkins_webapp:http_request_duration_seconds:p95_5m
+              instant: true
+              range: false
+          - refId: B
+            queryType: ""
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: B
+              expr: sum(increase(jenkins_webapp_http_requests_total[5m]))
+              instant: true
+              range: false
+          - refId: C
+            queryType: ""
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: math
+              expression: $A > 0.300 && $B >= 20

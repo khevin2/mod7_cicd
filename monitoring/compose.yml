@@ -98,6 +98,8 @@ services:
     depends_on:
       prometheus:
         condition: service_healthy
+      jaeger:
+        condition: service_healthy
     # The distroless image deliberately contains no shell or HTTP client, so
     # it cannot perform an in-container API probe. The edge proxy's health
     # check reaches Grafana's /api/health endpoint instead; Compose --wait
@@ -109,6 +111,45 @@ services:
     mem_limit: 640m
     mem_reservation: 384m
     cpus: 0.75
+
+  # Official Jaeger all-in-one image, selected 2026-09-03 for the x86_64
+  # monitoring host. The pinned multi-platform digest is immutable. It uses
+  # bounded in-memory storage for this lab; it is not durable trace storage.
+  jaeger:
+    <<: *runtime-defaults
+    image: jaegertracing/all-in-one:1.76.0@sha256:ab6f1a1f0fb49ea08bcd19f6b84f6081d0d44b364b6de148e1798eb5816bacac
+    user: "10001:10001"
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+      MEMORY_MAX_TRACES: "50000"
+      SPAN_STORAGE_TYPE: memory
+    # The bind address is the monitoring host's approved private VPC address,
+    # supplied only from ignored inventory. Security groups restrict TCP 4318
+    # to the application VPC; TCP 16686 is SSH-tunnel-only on loopback.
+    ports:
+      - "${JAEGER_OTLP_BIND_ADDRESS:?JAEGER_OTLP_BIND_ADDRESS is required}:4318:4318"
+      - "127.0.0.1:16686:16686"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=32m,uid=10001,gid=10001
+    networks:
+      - telemetry
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:?AWS_REGION is required for CloudWatch logging}
+        awslogs-group: /jenkins-webapp/lab/monitoring/containers
+        awslogs-stream: jaeger
+        awslogs-create-group: "false"
+    healthcheck:
+      test: ["CMD", "/go/bin/all-in-one-linux", "version"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    pids_limit: 128
+    mem_limit: 384m
+    mem_reservation: 192m
+    cpus: 0.50
 
   node-exporter:
     <<: *runtime-defaults

@@ -52,3 +52,6 @@ all:
         # from the public internet.
         monitoring_application_metrics_target: "10.70.1.10:9464"
         monitoring_application_node_exporter_target: "10.70.1.10:9100"
+        # Monitoring host private VPC address only. Docker publishes OTLP/HTTP
+        # on this address; Jaeger UI remains loopback-only for SSH tunnelling.
+        monitoring_jaeger_otlp_bind_address: "10.80.1.10"

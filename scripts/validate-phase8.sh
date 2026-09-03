@@ -19,7 +19,7 @@ docker run --rm \
   -v "$repository_root/monitoring/recording-rules.yml:/etc/prometheus/recording-rules.yml:ro" \
   "$prometheus_image" check rules /etc/prometheus/recording-rules.yml >/dev/null
 
-test "$(rg -c '^\s+- record:' "$repository_root/monitoring/recording-rules.yml")" = 3
+test "$(rg -c '^\s+- record:' "$repository_root/monitoring/recording-rules.yml")" = 4
 ! rg -q '^\s+- alert:' "$repository_root/monitoring/recording-rules.yml"
 test ! -e "$repository_root/monitoring/alert-rules.yml"
 
@@ -32,17 +32,23 @@ jq -e '
 ' "$repository_root/monitoring/grafana/dashboards/webapp-observability.json" >/dev/null
 
 rg -q 'uid: jenkins-webapp-high-error-rate' "$repository_root/monitoring/grafana/provisioning/alerting/webapp-alert-rules.yml"
+rg -q 'uid: jenkins-webapp-high-p95-latency' "$repository_root/monitoring/grafana/provisioning/alerting/webapp-alert-rules.yml"
 rg -q 'interval: 10s' "$repository_root/monitoring/grafana/provisioning/alerting/webapp-alert-rules.yml"
-rg -q 'for: 5m' "$repository_root/monitoring/grafana/provisioning/alerting/webapp-alert-rules.yml"
+test "$(rg -c 'for: 10m' "$repository_root/monitoring/grafana/provisioning/alerting/webapp-alert-rules.yml")" = 2
+rg -Fq 'expression: $A > 0.300 && $B >= 20' "$repository_root/monitoring/grafana/provisioning/alerting/webapp-alert-rules.yml"
 rg -q 'receiver: project6-slack' "$repository_root/monitoring/grafana/provisioning/alerting/webapp-alert-rules.yml"
 rg -q 'disableResolveMessage: false' "$repository_root/ansible/templates/grafana-contactpoints.yml.j2"
 rg -q 'recipient: "#project6-observability-alerts"' "$repository_root/ansible/templates/grafana-contactpoints.yml.j2"
 rg -q 'monitoring_application_metrics_target' "$repository_root/ansible/playbooks/install_monitoring_stack.yml"
+rg -Fq 'exemplarTraceIdDestinations:' "$repository_root/monitoring/grafana/provisioning/datasources/prometheus.yml"
+rg -Fq 'datasourceUid: jaeger' "$repository_root/monitoring/grafana/provisioning/datasources/prometheus.yml"
+rg -Fq 'uid: jaeger' "$repository_root/monitoring/grafana/provisioning/datasources/jaeger.yml"
+rg -Fq 'url: http://jaeger:16686' "$repository_root/monitoring/grafana/provisioning/datasources/jaeger.yml"
 
 printf '%s\n' \
-  "Prometheus configuration and three recording rules: valid with pinned promtool" \
+  "Prometheus configuration and four recording rules: valid with pinned promtool" \
   "Alert ownership: Grafana only; no Prometheus alert definitions" \
   "Grafana dashboard: valid JSON with seven required panels" \
-  "Grafana alert: 5-minute >5% error threshold with 20-request guard" \
+  "Grafana alerts: >5% error and >300ms p95 latency thresholds for 10 minutes with 20-request guards" \
   "Slack contact point: resolved notifications enabled" \
   "Application target: rendered only from ignored deployment inventory"

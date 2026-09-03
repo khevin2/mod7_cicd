@@ -100,14 +100,37 @@ Node Exporter on 9100. The application endpoints are rendered from approved
 private `host:port` values in the ignored Ansible inventory into file-SD target
 files; neither endpoint is committed or exposed publicly.
 
-`recording-rules.yml` precomputes request rate, p95 latency, and 5xx percentage.
-It deliberately contains no alert definitions. Grafana is the sole alerting
-engine: its managed high-error rule requires more than 5% 5xx responses for
-five minutes and at least 20 requests in the same five-minute window, then
-routes firing and resolved notifications through the runtime-injected Slack
-contact point. The traffic guard avoids noise from a tiny sample. The contact
-point has a stable provisioning UID and is reconciled in place; it is not
-deleted during startup because the Grafana alert rule references it.
+`recording-rules.yml` precomputes request rate, p95 latency, and both 5xx ratio
+and percentage. It deliberately contains no alert definitions. Grafana is the
+sole alerting engine: separate managed error-rate and p95-latency rules require
+more than 5% 5xx responses or more than 300 ms p95, respectively, for ten
+minutes and at least 20 requests in the same five-minute evaluation window.
+They route firing and resolved notifications through the runtime-injected Slack
+contact point. The traffic guard avoids noise from a tiny sample. Alert links
+carry the dashboard time range; they cannot identify a definitive trace, so use
+a dashboard exemplar to open the corresponding Jaeger trace.
+
+## Jaeger trace correlation
+
+Jaeger `1.76.0` is the official all-in-one image selected on 2026-09-03 for the
+Amazon Linux x86_64 monitoring host, pinned by its official multi-platform
+digest. It runs as its built-in UID 10001 with a read-only filesystem,
+capabilities dropped, no-new-privileges, resource/PID limits, CloudWatch
+container logging, and a bounded `MEMORY_MAX_TRACES=50000` in-memory store.
+This lab store is intentionally non-durable; it is not production retention.
+
+OTLP/HTTP is the sole published collector protocol. Docker binds TCP 4318 only
+to the approved monitoring private address supplied in ignored inventory, and
+the security group permits it only from the application VPC. The Jaeger UI is
+published to `127.0.0.1:16686` only for a user-controlled SSH tunnel; Nginx
+does not route to it. Grafana reaches Jaeger over the internal telemetry
+network, using the stable datasource UID `jaeger`; the Prometheus datasource
+maps OpenMetrics exemplar `trace_id` values to that datasource.
+
+The 2026-09-03 local source selection records no vulnerability exception yet:
+the exact image must be scanned before a user deploys it. Any finding and any
+accepted lab-only exception belong in sanitized evidence, never in a claim of
+production suitability.
 
 Run `bash scripts/validate-phase8.sh` to validate the Prometheus configuration
 and rules with the exact pinned Prometheus image and to check the provisioned

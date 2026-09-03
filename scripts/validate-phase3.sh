@@ -9,10 +9,10 @@ command -v docker >/dev/null
 command -v jq >/dev/null
 command -v rg >/dev/null
 
-compose_json=$(docker compose --file "$compose_file" config --format json)
+compose_json=$(AWS_REGION="${AWS_REGION:-eu-north-1}" JAEGER_OTLP_BIND_ADDRESS="${JAEGER_OTLP_BIND_ADDRESS:-10.80.1.10}" docker compose --file "$compose_file" config --format json)
 
 jq -e '
-  .services | length == 4 and
+  .services | length == 5 and
   all(.[];
     (.image | test("@sha256:[0-9a-f]{64}$")) and
     (.user != null and .user != "" and .user != "0" and (.user | startswith("0:")) | not) and
@@ -33,13 +33,16 @@ jq -e '
 ' >/dev/null <<<"$compose_json"
 
 jq -e '
-  [.services | to_entries[] | select(.value.ports != null) | {
+  ([.services | to_entries[] | select(.value.ports != null) | {
     service: .key,
     ports: .value.ports
-  }] == [{
-    service: "edge-proxy",
-    ports: [{mode: "ingress", host_ip: "0.0.0.0", target: 8443, published: "443", protocol: "tcp"}]
-  }]
+  }] | sort_by(.service)) == [
+    {service: "edge-proxy", ports: [{mode: "ingress", host_ip: "0.0.0.0", target: 8443, published: "443", protocol: "tcp"}]},
+    {service: "jaeger", ports: [
+      {mode: "ingress", host_ip: "10.80.1.10", target: 4318, published: "4318", protocol: "tcp"},
+      {mode: "ingress", host_ip: "127.0.0.1", target: 16686, published: "16686", protocol: "tcp"}
+    ]}
+  ]
 ' >/dev/null <<<"$compose_json"
 
 if ! jq -e '
@@ -59,7 +62,7 @@ if ! jq -e '
   ([.services | to_entries[] | select(.value.networks | joins("edge")) | .key] == ["edge-proxy"]) and
   ([.services | to_entries[] | select(.value.networks | joins("frontend")) | .key] | sort == ["edge-proxy", "grafana"]) and
   ([.services | to_entries[] | select(.value.networks | joins("prometheus-ui")) | .key] | sort == ["edge-proxy", "prometheus"]) and
-  ([.services | to_entries[] | select(.value.networks | joins("telemetry")) | .key] | sort == ["grafana", "node-exporter", "prometheus"]) and
+  ([.services | to_entries[] | select(.value.networks | joins("telemetry")) | .key] | sort == ["grafana", "jaeger", "node-exporter", "prometheus"]) and
   ([.services[].volumes[]? | select(.source == "/var/run/docker.sock")] | length == 0)
 ' >/dev/null <<<"$compose_json"; then
   echo "Compose topology must isolate the edge, Grafana frontend, Prometheus UI proxy path, and scrape telemetry networks." >&2
@@ -86,6 +89,10 @@ done
 
 rg -Fq -- '--web.external-url=https://${PROMETHEUS_SERVER_NAME:-metrics.kheven.me}/' "$compose_file"
 rg -Fq '/opt/monitoring/nginx-secrets:/etc/nginx/auth:ro' "$compose_file"
+rg -Fq 'jaegertracing/all-in-one:1.76.0@sha256:ab6f1a1f0fb49ea08bcd19f6b84f6081d0d44b364b6de148e1798eb5816bacac' "$compose_file"
+rg -Fq 'MEMORY_MAX_TRACES: "50000"' "$compose_file"
+rg -Fq '127.0.0.1:16686:16686' "$compose_file"
+! rg -Fq '0.0.0.0:4318' "$compose_file"
 ! rg -Fq 'auth_basic off' "$nginx_config"
 
 if rg -n --glob '*.tf' 'aws_secretsmanager_secret_version|secret_string\s*=' \
@@ -99,10 +106,10 @@ rg -Fq 'aws_secretsmanager_secret.prometheus_basic_auth_htpasswd.arn' \
 
 printf '%s\n' \
   "Compose model: valid" \
-  "Services: 4 digest-pinned, explicit non-root users" \
+  "Services: 5 digest-pinned, explicit non-root users" \
   "Hardening: read-only roots, cap-drop ALL, no-new-privileges, no privileged containers" \
   "Resources: health/restart/PID/CPU/memory/log controls present" \
-  "Published ports: edge-proxy TCP 443 only" \
+  "Published ports: edge-proxy TCP 443, private OTLP TCP 4318, and loopback Jaeger UI TCP 16686 only" \
   "Networks: edge is published; frontend and Prometheus UI paths are separately internal; telemetry retains private scrape egress" \
   "Prometheus edge auth: approved /32 and bcrypt-backed Nginx Basic Auth are both required" \
   "Readiness: edge-proxy health verifies Grafana /api/health end to end" \

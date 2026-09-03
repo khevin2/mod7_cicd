@@ -59,14 +59,15 @@
           - not monitoring_application_metrics_target.startswith('0.0.0.0:')
           - monitoring_application_node_exporter_target is match('^[A-Za-z0-9][A-Za-z0-9.-]*:[1-9][0-9]{0,4}$')
           - not monitoring_application_node_exporter_target.startswith('0.0.0.0:')
+          - monitoring_jaeger_otlp_bind_address is match('^(10\.(?:[0-9]{1,3}\.){2}[0-9]{1,3}|192\.168\.[0-9]{1,3}\.[0-9]{1,3}|172\.(?:1[6-9]|2[0-9]|3[0-1])\.[0-9]{1,3}\.[0-9]{1,3})$')
           - monitoring_container_log_group == "/jenkins-webapp/lab/monitoring/containers"
           - monitoring_system_log_group == "/jenkins-webapp/lab/monitoring/system"
         fail_msg: >-
           Set the approved Grafana and Prometheus names, administrator public
           /32, certificate email, Region, and three distinct secret-container
           ARNs plus the approved private application metrics and Node Exporter
-          host:port values in the ignored inventory. Never put a secret value
-          in inventory.
+          host:port values and monitoring-host private OTLP bind address in the
+          ignored inventory. Never put a secret value in inventory.
 
   tasks:
     - name: Install monitoring host prerequisites
@@ -205,6 +206,7 @@
         - { src: ../../prometheus.yml, dest: "{{ monitoring_root }}/prometheus.yml" }
         - { src: ../../monitoring/recording-rules.yml, dest: "{{ monitoring_compose_root }}/recording-rules.yml" }
         - { src: ../../monitoring/grafana/provisioning/datasources/prometheus.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/datasources/prometheus.yml" }
+        - { src: ../../monitoring/grafana/provisioning/datasources/jaeger.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/datasources/jaeger.yml" }
         - { src: ../../monitoring/grafana/provisioning/dashboards/default.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/dashboards/default.yml" }
         - { src: ../../monitoring/grafana/provisioning/alerting/webapp-alert-rules.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/alerting/webapp-alert-rules.yml" }
 
@@ -496,6 +498,7 @@
         GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
         PROMETHEUS_SERVER_NAME: "{{ monitoring_metrics_server_name }}"
         AWS_REGION: "{{ monitoring_aws_region }}"
+        JAEGER_OTLP_BIND_ADDRESS: "{{ monitoring_jaeger_otlp_bind_address }}"
       when:
         - monitoring_telemetry_network.rc == 0
         - "'\"Internal\": true' in monitoring_telemetry_network.stdout"
@@ -509,6 +512,7 @@
         GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
         PROMETHEUS_SERVER_NAME: "{{ monitoring_metrics_server_name }}"
         AWS_REGION: "{{ monitoring_aws_region }}"
+        JAEGER_OTLP_BIND_ADDRESS: "{{ monitoring_jaeger_otlp_bind_address }}"
       changed_when: false
 
     - name: Pull only the digest-pinned monitoring images
@@ -519,6 +523,7 @@
         GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
         PROMETHEUS_SERVER_NAME: "{{ monitoring_metrics_server_name }}"
         AWS_REGION: "{{ monitoring_aws_region }}"
+        JAEGER_OTLP_BIND_ADDRESS: "{{ monitoring_jaeger_otlp_bind_address }}"
       register: monitoring_compose_pull
       changed_when: "'Pulled' in monitoring_compose_pull.stdout or 'Downloaded' in monitoring_compose_pull.stderr"
 
@@ -533,6 +538,7 @@
         GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
         PROMETHEUS_SERVER_NAME: "{{ monitoring_metrics_server_name }}"
         AWS_REGION: "{{ monitoring_aws_region }}"
+        JAEGER_OTLP_BIND_ADDRESS: "{{ monitoring_jaeger_otlp_bind_address }}"
       register: monitoring_compose_up
       changed_when: >-
         'Started' in monitoring_compose_up.stderr or
@@ -548,6 +554,7 @@
         GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
         PROMETHEUS_SERVER_NAME: "{{ monitoring_metrics_server_name }}"
         AWS_REGION: "{{ monitoring_aws_region }}"
+        JAEGER_OTLP_BIND_ADDRESS: "{{ monitoring_jaeger_otlp_bind_address }}"
       changed_when: false
       listen: Reload monitoring edge proxy
 
@@ -559,5 +566,6 @@
         GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
         PROMETHEUS_SERVER_NAME: "{{ monitoring_metrics_server_name }}"
         AWS_REGION: "{{ monitoring_aws_region }}"
+        JAEGER_OTLP_BIND_ADDRESS: "{{ monitoring_jaeger_otlp_bind_address }}"
       changed_when: true
       listen: Reload monitoring edge proxy

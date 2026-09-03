@@ -87,9 +87,10 @@ Environment variables**:
 
 ```text
 APPLICATION_DEPLOY_HOST=<approved application private DNS name or IP>
+APPLICATION_OTLP_TRACES_ENDPOINT=http://<approved-monitoring-private-ip>:4318/v1/traces
 ```
 
-A manual `DEPLOY_HOST` parameter overrides the global value. GitHub webhook
+A manual `DEPLOY_HOST` parameter overrides the global deployment-host value. GitHub webhook
 builds have no interactive parameters and therefore resolve the target from
 `APPLICATION_DEPLOY_HOST`. The pipeline stops with an explicit error if neither
 value is present.
@@ -187,6 +188,29 @@ CloudTrail and GuardDuty evidence from Phases 6 and 7; do not generate duplicate
 management events or GuardDuty samples solely for Phase 11.
 
 ## Configure and verify monitoring
+
+### Module 10 telemetry environment contract
+
+The application emits traces only when an explicitly approved private OTLP path
+is supplied. Local development and unit tests default to `OTEL_TRACES_EXPORTER=none`;
+they never silently export to localhost. Production launches must set all of:
+
+```text
+OTEL_TRACES_EXPORTER=otlp
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://<monitoring-private-ip>:4318/v1/traces
+OTEL_SERVICE_NAME=jenkins-webapp
+OTEL_TRACES_SAMPLER=parentbased_traceidratio
+OTEL_TRACES_SAMPLER_ARG=1
+SERVICE_VERSION=<non-secret-image-or-build-version>
+```
+
+`OTEL_RESOURCE_ATTRIBUTES`, when present, may only repeat the contract's
+`service.name`, `service.version`, and `deployment.environment=lab` values. The
+endpoint must be credential-free and use an RFC1918 IPv4 address on TCP 4318;
+never place credentials or a public URL in source, Docker labels, evidence, or
+Terraform. This service has no database client, so database tracing is not
+applicable.
 
 Before the monitoring playbook is run, set these ignored inventory values to
 the approved **private** application-host endpoints:
@@ -371,6 +395,12 @@ docker run -d --name jenkins-webapp --restart unless-stopped \
   --log-driver awslogs --log-opt awslogs-region=eu-north-1 \
   --log-opt awslogs-group=/jenkins-webapp/lab/application/containers \
   --log-opt awslogs-stream=active --log-opt awslogs-create-group=false \
+  --env NODE_ENV=production --env OTEL_TRACES_EXPORTER=otlp \
+  --env OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf \
+  --env OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://<approved-monitoring-private-ip>:4318/v1/traces \
+  --env OTEL_SERVICE_NAME=jenkins-webapp \
+  --env OTEL_TRACES_SAMPLER=parentbased_traceidratio --env OTEL_TRACES_SAMPLER_ARG=1 \
+  --env SERVICE_VERSION=<rollback-image-or-build-version> \
   -p 80:3000 -p 9464:9464 jenkins-webapp:rollback
 curl --fail --silent --show-error --max-time 10 http://127.0.0.1:80/health
 ```

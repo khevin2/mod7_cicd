@@ -39,10 +39,15 @@ variable "enable_ec2_instance_connect" {
 }
 
 variable "monitoring_vpc_cidr" {
-  description = "Optional peered monitoring VPC CIDR allowed to scrape the application privately."
+  description = "Optional approved peered monitoring VPC CIDR. It may scrape private app metrics and receive private OTLP/HTTP trace export on TCP 4318; never use a public CIDR."
   type        = string
   default     = null
   nullable    = true
+
+  validation {
+    condition     = var.monitoring_vpc_cidr == null || can(cidrhost(var.monitoring_vpc_cidr, 0)) && !contains(["0.0.0.0/0"], var.monitoring_vpc_cidr)
+    error_message = "monitoring_vpc_cidr must be a valid non-public CIDR for the private OTLP path."
+  }
 }
 
 variable "app_monitoring_peering_connection_id" {

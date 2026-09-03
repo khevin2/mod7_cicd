@@ -32,10 +32,15 @@ variable "enable_ssh" {
 }
 
 variable "application_vpc_cidr" {
-  description = "Optional peered application VPC CIDR reachable only for Prometheus scrapes."
+  description = "Optional approved peered application VPC CIDR permitted for Prometheus scrapes and private OTLP/HTTP trace ingestion on TCP 4318; never use a public CIDR."
   type        = string
   default     = null
   nullable    = true
+
+  validation {
+    condition     = var.application_vpc_cidr == null || can(cidrhost(var.application_vpc_cidr, 0)) && !contains(["0.0.0.0/0"], var.application_vpc_cidr)
+    error_message = "application_vpc_cidr must be a valid non-public CIDR for the private OTLP path."
+  }
 }
 
 variable "app_monitoring_peering_connection_id" {

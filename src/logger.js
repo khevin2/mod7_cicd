@@ -1,4 +1,6 @@
-function createLogger(output = console, clock = () => new Date().toISOString()) {
+const { getLogTraceFields } = require('./trace-context');
+
+function createLogger(output = console, clock = () => new Date().toISOString(), getTraceContext) {
   function write(level, event, fields = {}) {
     // Callers supply only an explicit allowlist of operational fields. Do not
     // pass request headers, cookies, bodies, query strings, user identifiers,
@@ -8,6 +10,7 @@ function createLogger(output = console, clock = () => new Date().toISOString()) 
         timestamp: clock(),
         level,
         event,
+        ...getLogTraceFields(getTraceContext?.()),
         ...fields
       })
     );

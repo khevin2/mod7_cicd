@@ -1,3 +1,8 @@
+const { initializeTelemetry, shutdownTelemetry } = require('./telemetry');
+
+// This must run before loading Express or Node's HTTP module through app.js.
+initializeTelemetry();
+
 const { createApp } = require('./app');
 const { createMetricsApp } = require('./metrics');
 const { createFaultInjection } = require('./fault-injection');
@@ -53,7 +58,7 @@ function createFaultControlApp(faultInjection) {
   return app;
 }
 
-function registerShutdownHandlers(servers, shutdownTimeoutMs) {
+function registerShutdownHandlers(servers, shutdownTimeoutMs, shutdownTelemetryFn = shutdownTelemetry, exit = process.exit) {
   const serverList = Array.isArray(servers) ? servers : [servers];
   let shutdownStarted = false;
   const shutdown = (signal) => {
@@ -62,21 +67,24 @@ function registerShutdownHandlers(servers, shutdownTimeoutMs) {
     console.log(`Received ${signal}; closing HTTP servers`);
     const forcedShutdown = setTimeout(() => {
       console.error('Graceful shutdown timed out');
-      process.exit(1);
+      exit(1);
     }, shutdownTimeoutMs);
     forcedShutdown.unref();
     Promise.all(serverList.map((server) => new Promise((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));
     })))
+      // Close listeners first so completed request spans are eligible for the
+      // bounded SDK flush instead of racing it during process termination.
+      .then(() => shutdownTelemetryFn())
       .then(() => {
         clearTimeout(forcedShutdown);
         console.log('HTTP servers closed');
-        process.exit(0);
+        exit(0);
       })
       .catch((error) => {
         clearTimeout(forcedShutdown);
         console.error('Failed to close HTTP servers', error);
-        process.exit(1);
+        exit(1);
       });
   };
   process.once('SIGTERM', () => shutdown('SIGTERM'));

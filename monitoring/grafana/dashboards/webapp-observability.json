@@ -4,11 +4,11 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
-  "links": [],
+  "links": [{"title": "Investigate traces in Jaeger", "type": "link", "url": "/explore?left={\"datasource\":\"jaeger\",\"queries\":[{\"query\":\"\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}", "targetBlank": false}],
   "liveNow": false,
   "panels": [
     {"id": 1, "type": "timeseries", "title": "Request rate", "description": "All application requests per second. The dedicated metrics listener means Prometheus scrapes are not included.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(jenkins_webapp_http_requests_total[5m]))", "legendFormat": "requests/s"}], "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 2}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}},
-    {"id": 2, "type": "timeseries", "title": "p95 request latency", "description": "95th-percentile application response time over five minutes.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(jenkins_webapp_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p95"}], "fieldConfig": {"defaults": {"unit": "s", "decimals": 3}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}},
+    {"id": 2, "type": "timeseries", "title": "p95 request latency", "description": "95th-percentile application response time over five minutes. Open an exemplar marker to investigate its Jaeger trace.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(jenkins_webapp_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p95"}], "fieldConfig": {"defaults": {"unit": "s", "decimals": 3}, "overrides": []}, "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single", "sort": "none"}}, "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}},
     {"id": 3, "type": "timeseries", "title": "HTTP 5xx percentage", "description": "5xx responses as a percentage of all application requests over five minutes.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "100 * sum(rate(jenkins_webapp_http_requests_total{status_code=~\"5..\"}[5m])) / clamp_min(sum(rate(jenkins_webapp_http_requests_total[5m])), 0.001)", "legendFormat": "5xx %"}], "fieldConfig": {"defaults": {"unit": "percent", "decimals": 2, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 5}]}}, "overrides": []}, "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8}},
     {"id": 4, "type": "timeseries", "title": "CPU usage", "description": "Non-idle CPU usage on each scraped host.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])))", "legendFormat": "{{instance}}"}], "fieldConfig": {"defaults": {"unit": "percent", "decimals": 1}, "overrides": []}, "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8}},
     {"id": 5, "type": "timeseries", "title": "Memory usage", "description": "Memory in use on each scraped host.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))", "legendFormat": "{{instance}}"}], "fieldConfig": {"defaults": {"unit": "percent", "decimals": 1}, "overrides": []}, "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8}},
@@ -23,5 +23,5 @@
   "timezone": "browser",
   "title": "Jenkins Webapp Observability",
   "uid": "jenkins-webapp-observability",
-  "version": 1
+  "version": 2
 }

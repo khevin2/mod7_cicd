@@ -2,15 +2,20 @@ const express = require('express');
 
 const { createMetrics } = require('./metrics');
 const { createLogger } = require('./logger');
+const { captureTraceContext, getLogTraceFields, recordSanitizedError } = require('./trace-context');
 
 const SERVICE_NAME = 'jenkins-webapp';
 
-function createApp(metrics = createMetrics(), logger = createLogger(), faultInjection) {
+function createApp(metrics = createMetrics(), logger = createLogger(), faultInjection, getTraceContext = captureTraceContext) {
   const app = express();
 
   app.disable('x-powered-by');
   app.use((request, response, next) => {
     const startedAt = process.hrtime.bigint();
+    // Capture the server span once. The finish callback can run after the
+    // active async context has moved on, but its log and metric must still
+    // correlate with this request.
+    request.traceContext = getTraceContext();
 
     response.once('finish', () => {
       const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
@@ -18,7 +23,8 @@ function createApp(metrics = createMetrics(), logger = createLogger(), faultInje
         method: request.method,
         route: request.route?.path || 'unmatched',
         status_code: response.statusCode,
-        duration_ms: Math.round(durationMs * 1000) / 1000
+        duration_ms: Math.round(durationMs * 1000) / 1000,
+        ...getLogTraceFields(request.traceContext)
       });
     });
 
@@ -35,6 +41,7 @@ function createApp(metrics = createMetrics(), logger = createLogger(), faultInje
       return next();
     }
 
+    recordSanitizedError('controlled_test_error');
     logger.warn('controlled_fault_injection', { status_code: 500 });
     return response.status(500).json({ service: SERVICE_NAME, status: 'controlled-test-error' });
   });
@@ -73,6 +80,7 @@ function createApp(metrics = createMetrics(), logger = createLogger(), faultInje
   });
 
   app.use((error, _request, response, _next) => {
+    recordSanitizedError('internal_error');
     logger.error('http_request_failed', {
       error_type: 'internal_error',
       status_code: 500

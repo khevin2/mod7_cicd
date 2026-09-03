@@ -20,6 +20,11 @@ pipeline {
     APP_NAME = 'jenkins-webapp'
     APP_CONTAINER_PORT = '3000'
     APP_METRICS_PORT = '9464'
+    OTEL_SERVICE_NAME = 'jenkins-webapp'
+    OTEL_TRACES_EXPORTER = 'otlp'
+    OTEL_EXPORTER_OTLP_PROTOCOL = 'http/protobuf'
+    OTEL_TRACES_SAMPLER = 'parentbased_traceidratio'
+    OTEL_TRACES_SAMPLER_ARG = '1'
     AWS_REGION = 'eu-north-1'
     APP_CLOUDWATCH_LOG_GROUP = '/jenkins-webapp/lab/application/containers'
     REGISTRY_HOST = 'ghcr.io'
@@ -75,6 +80,7 @@ pipeline {
           bash scripts/validate-phase8.sh
           bash scripts/validate-phase9.sh
           bash scripts/validate-phase11.sh
+          bash scripts/validate-mod10.sh
         '''
       }
     }
@@ -210,13 +216,17 @@ pipeline {
           if (!env.DEPLOY_HOST) {
             error('Set DEPLOY_HOST for a manual run or APPLICATION_DEPLOY_HOST in Jenkins Global properties.')
           }
+          env.APP_OTLP_ENDPOINT = env.APPLICATION_OTLP_TRACES_ENDPOINT?.trim()
+          if (!(env.APP_OTLP_ENDPOINT ==~ /^http:\/\/(10\.(?:[0-9]{1,3}\.){2}[0-9]{1,3}|192\.168\.(?:[0-9]{1,3}\.){1}[0-9]{1,3}|172\.(?:1[6-9]|2[0-9]|3[0-1])\.(?:[0-9]{1,3}\.){1}[0-9]{1,3}):4318\/v1\/traces$/)) {
+            error('Set APPLICATION_OTLP_TRACES_ENDPOINT to the approved credential-free private http://IPv4:4318/v1/traces endpoint before deployment.')
+          }
         }
         withCredentials([usernamePassword(credentialsId: 'registry_creds', usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_TOKEN')]) {
           sshagent(credentials: ['ec2_ssh']) {
             sh '''#!/usr/bin/env bash
               set -Eeuo pipefail
               DEPLOY_IMAGE_REF="$(< build-metadata/image-digest.txt)"
-              remote_command=$(printf 'REGISTRY_HOST=%q DEPLOY_IMAGE_REF=%q APP_NAME=%q DEPLOY_PORT=%q APP_CONTAINER_PORT=%q APP_METRICS_PORT=%q AWS_REGION=%q APP_CLOUDWATCH_LOG_GROUP=%q bash -c %q' "$REGISTRY_HOST" "$DEPLOY_IMAGE_REF" "$APP_NAME" "$DEPLOY_PORT" "$APP_CONTAINER_PORT" "$APP_METRICS_PORT" "$AWS_REGION" "$APP_CLOUDWATCH_LOG_GROUP" 'IFS= read -r REGISTRY_USERNAME; IFS= read -r REGISTRY_TOKEN; export REGISTRY_USERNAME REGISTRY_TOKEN; exec bash -s')
+              remote_command=$(printf 'REGISTRY_HOST=%q DEPLOY_IMAGE_REF=%q APP_NAME=%q DEPLOY_PORT=%q APP_CONTAINER_PORT=%q APP_METRICS_PORT=%q AWS_REGION=%q APP_CLOUDWATCH_LOG_GROUP=%q APP_OTLP_ENDPOINT=%q OTEL_SERVICE_NAME=%q OTEL_TRACES_EXPORTER=%q OTEL_EXPORTER_OTLP_PROTOCOL=%q OTEL_TRACES_SAMPLER=%q OTEL_TRACES_SAMPLER_ARG=%q GIT_SHA=%q bash -c %q' "$REGISTRY_HOST" "$DEPLOY_IMAGE_REF" "$APP_NAME" "$DEPLOY_PORT" "$APP_CONTAINER_PORT" "$APP_METRICS_PORT" "$AWS_REGION" "$APP_CLOUDWATCH_LOG_GROUP" "$APP_OTLP_ENDPOINT" "$OTEL_SERVICE_NAME" "$OTEL_TRACES_EXPORTER" "$OTEL_EXPORTER_OTLP_PROTOCOL" "$OTEL_TRACES_SAMPLER" "$OTEL_TRACES_SAMPLER_ARG" "$GIT_SHA" 'IFS= read -r REGISTRY_USERNAME; IFS= read -r REGISTRY_TOKEN; export REGISTRY_USERNAME REGISTRY_TOKEN; exec bash -s')
               {
                 printf '%s\n%s\n' "$REGISTRY_USERNAME" "$REGISTRY_TOKEN"
                 cat <<'REMOTE'
@@ -245,6 +255,14 @@ run_logged_container() {
     --log-opt "awslogs-group=${APP_CLOUDWATCH_LOG_GROUP}" \
     --log-opt "awslogs-stream=${stream}" \
     --log-opt awslogs-create-group=false \
+    --env NODE_ENV=production \
+    --env OTEL_TRACES_EXPORTER="${OTEL_TRACES_EXPORTER}" \
+    --env OTEL_EXPORTER_OTLP_PROTOCOL="${OTEL_EXPORTER_OTLP_PROTOCOL}" \
+    --env OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="${APP_OTLP_ENDPOINT}" \
+    --env OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME}" \
+    --env OTEL_TRACES_SAMPLER="${OTEL_TRACES_SAMPLER}" \
+    --env OTEL_TRACES_SAMPLER_ARG="${OTEL_TRACES_SAMPLER_ARG}" \
+    --env SERVICE_VERSION="${GIT_SHA}" \
     -p "${DEPLOY_PORT}:${APP_CONTAINER_PORT}" -p "${APP_METRICS_PORT}:${APP_METRICS_PORT}" "$image" >/dev/null
 }
 recover() {
@@ -276,6 +294,14 @@ docker run -d --rm --name "$candidate" \
   --log-opt "awslogs-group=${APP_CLOUDWATCH_LOG_GROUP}" \
   --log-opt awslogs-stream=candidate \
   --log-opt awslogs-create-group=false \
+  --env NODE_ENV=production \
+  --env OTEL_TRACES_EXPORTER="${OTEL_TRACES_EXPORTER}" \
+  --env OTEL_EXPORTER_OTLP_PROTOCOL="${OTEL_EXPORTER_OTLP_PROTOCOL}" \
+  --env OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="${APP_OTLP_ENDPOINT}" \
+  --env OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME}" \
+  --env OTEL_TRACES_SAMPLER="${OTEL_TRACES_SAMPLER}" \
+  --env OTEL_TRACES_SAMPLER_ARG="${OTEL_TRACES_SAMPLER_ARG}" \
+  --env SERVICE_VERSION="${GIT_SHA}" \
   "$DEPLOY_IMAGE_REF" >/dev/null
 for attempt in {1..12}; do
   [[ "$(docker inspect --format='{{.State.Health.Status}}' "$candidate")" == healthy ]] && break

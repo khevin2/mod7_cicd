@@ -1,10 +1,11 @@
 const express = require('express');
 const client = require('@prometheus-io/client');
+const { captureTraceContext } = require('./trace-context');
 
 const METRIC_PREFIX = 'jenkins_webapp_';
 
-function createMetrics() {
-  const registry = new client.Registry();
+function createMetrics(getTraceContext = captureTraceContext) {
+  const registry = new client.Registry(client.Registry.OPENMETRICS_CONTENT_TYPE);
 
   registry.setDefaultLabels({ service: 'jenkins-webapp' });
   client.collectDefaultMetrics({ prefix: METRIC_PREFIX, register: registry });
@@ -21,6 +22,7 @@ function createMetrics() {
     help: 'Application HTTP request duration in seconds.',
     labelNames: ['method', 'route', 'status_code'],
     buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+    enableExemplars: true,
     registers: [registry]
   });
 
@@ -32,7 +34,8 @@ function createMetrics() {
 
   function middleware(request, response, next) {
     requestsInFlight.inc();
-    const stopTimer = requestDuration.startTimer();
+    const requestTraceContext = request.traceContext || getTraceContext();
+    const stopTimer = requestDuration.startTimer(undefined, requestTraceContext);
     let requestCompleted = false;
 
     const releaseInFlight = () => {
@@ -50,7 +53,7 @@ function createMetrics() {
       };
 
       requestsTotal.inc(labels);
-      stopTimer(labels);
+      stopTimer(labels, requestTraceContext);
       releaseInFlight();
     });
     response.once('close', releaseInFlight);

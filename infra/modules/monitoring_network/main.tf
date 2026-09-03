@@ -75,6 +75,17 @@ resource "aws_security_group" "monitoring" {
     }
   }
 
+  dynamic "ingress" {
+    for_each = var.application_vpc_cidr == null ? [] : [var.application_vpc_cidr]
+    content {
+      description = "Private OTLP/HTTP trace ingestion from the application VPC"
+      from_port   = 4318
+      to_port     = 4318
+      protocol    = "tcp"
+      cidr_blocks = [ingress.value]
+    }
+  }
+
   egress {
     description = "HTTPS for AWS APIs, package repositories, registries, and certificate services"
     from_port   = 443

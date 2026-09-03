@@ -228,5 +228,16 @@ resource "aws_security_group" "deployment" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  dynamic "egress" {
+    for_each = var.monitoring_vpc_cidr == null ? [] : [var.monitoring_vpc_cidr]
+    content {
+      description = "Private OTLP/HTTP trace export to Jaeger in the monitoring VPC"
+      from_port   = 4318
+      to_port     = 4318
+      protocol    = "tcp"
+      cidr_blocks = [egress.value]
+    }
+  }
+
   tags = merge(var.tags, { Name = format("%s-%s-deployment", var.tags["Project"], var.tags["Environment"]) })
 }
