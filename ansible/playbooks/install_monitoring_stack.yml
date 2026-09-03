@@ -205,10 +205,23 @@
         - { src: ../../monitoring/compose.yml, dest: "{{ monitoring_compose_root }}/compose.yml" }
         - { src: ../../prometheus.yml, dest: "{{ monitoring_root }}/prometheus.yml" }
         - { src: ../../monitoring/recording-rules.yml, dest: "{{ monitoring_compose_root }}/recording-rules.yml" }
+
+    - name: Copy Grafana startup provisioning configuration
+      # Datasources, alert rules, contact points, and dashboard-provider
+      # definitions are evaluated at Grafana startup. Track these separately
+      # from dashboard JSON, which the file provider polls while Grafana runs.
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop:
         - { src: ../../monitoring/grafana/provisioning/datasources/prometheus.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/datasources/prometheus.yml" }
         - { src: ../../monitoring/grafana/provisioning/datasources/jaeger.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/datasources/jaeger.yml" }
         - { src: ../../monitoring/grafana/provisioning/dashboards/default.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/dashboards/default.yml" }
         - { src: ../../monitoring/grafana/provisioning/alerting/webapp-alert-rules.yml, dest: "{{ monitoring_compose_root }}/grafana/provisioning/alerting/webapp-alert-rules.yml" }
+      register: monitoring_grafana_startup_provisioning
 
     - name: Remove the obsolete duplicate Prometheus alert-rule file
       ansible.builtin.file:
@@ -294,6 +307,36 @@
         mode: "0400"
       vars:
         monitoring_slack_webhook_url: "{{ monitoring_slack_secret.stdout }}"
+      register: monitoring_grafana_contactpoint_provisioning
+      no_log: true
+
+    - name: Calculate the desired Grafana startup-provisioning fingerprint
+      # Include the rendered contact point without displaying its secret value.
+      # The marker is written only after Grafana has restarted and recovered,
+      # so an interrupted deployment is retried on the next playbook run.
+      ansible.builtin.shell:
+        cmd: >-
+          set -o pipefail &&
+          sha256sum
+          {{ monitoring_compose_root }}/grafana/provisioning/datasources/prometheus.yml
+          {{ monitoring_compose_root }}/grafana/provisioning/datasources/jaeger.yml
+          {{ monitoring_compose_root }}/grafana/provisioning/dashboards/default.yml
+          {{ monitoring_compose_root }}/grafana/provisioning/alerting/webapp-alert-rules.yml
+          {{ monitoring_compose_root }}/grafana/provisioning/alerting/contactpoints.yml
+          | sha256sum | cut -d ' ' -f 1
+        executable: /bin/bash
+      register: monitoring_grafana_desired_fingerprint
+      changed_when: false
+      no_log: true
+
+    - name: Read the last successfully applied Grafana provisioning fingerprint
+      ansible.builtin.command:
+        argv:
+          - cat
+          - "{{ monitoring_compose_root }}/.grafana-startup-provisioning.sha256"
+      register: monitoring_grafana_applied_fingerprint
+      changed_when: false
+      failed_when: false
       no_log: true
 
     - name: Check whether a Grafana administrator password already exists
@@ -544,6 +587,66 @@
         'Started' in monitoring_compose_up.stderr or
         'Created' in monitoring_compose_up.stderr or
         'Recreated' in monitoring_compose_up.stderr
+
+    - name: Restart Grafana when startup-only provisioning changes
+      # Bind-mounted provisioning files do not alter the Compose service model,
+      # so `compose up` can legitimately leave the existing Grafana process
+      # running. Restart only Grafana after the whole stack is reconciled so
+      # datasource and managed-alert changes become active on every deployment.
+      ansible.builtin.command:
+        argv: [docker, compose, --file, compose.yml, restart, grafana]
+        chdir: "{{ monitoring_compose_root }}"
+      environment:
+        GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+        PROMETHEUS_SERVER_NAME: "{{ monitoring_metrics_server_name }}"
+        AWS_REGION: "{{ monitoring_aws_region }}"
+        JAEGER_OTLP_BIND_ADDRESS: "{{ monitoring_jaeger_otlp_bind_address }}"
+      when: >-
+        monitoring_grafana_applied_fingerprint.rc != 0 or
+        monitoring_grafana_applied_fingerprint.stdout !=
+        monitoring_grafana_desired_fingerprint.stdout
+      register: monitoring_grafana_restart
+      changed_when: true
+
+    - name: Wait for Grafana readiness after provisioning restart
+      # Run the same container-local probe as the edge-proxy healthcheck. A
+      # request to the host-published port arrives from Docker's bridge address
+      # and is correctly rejected by the administrator-CIDR allowlist.
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --file
+          - compose.yml
+          - exec
+          - --no-TTY
+          - edge-proxy
+          - wget
+          - --quiet
+          - --spider
+          - --no-check-certificate
+          - https://127.0.0.1:8443/healthz
+        chdir: "{{ monitoring_compose_root }}"
+      environment:
+        GRAFANA_SERVER_NAME: "{{ monitoring_server_name }}"
+        PROMETHEUS_SERVER_NAME: "{{ monitoring_metrics_server_name }}"
+        AWS_REGION: "{{ monitoring_aws_region }}"
+        JAEGER_OTLP_BIND_ADDRESS: "{{ monitoring_jaeger_otlp_bind_address }}"
+      register: monitoring_grafana_readiness
+      until: monitoring_grafana_readiness.rc == 0
+      retries: 12
+      delay: 5
+      when: monitoring_grafana_restart is changed
+      changed_when: false
+
+    - name: Record the successfully applied Grafana provisioning fingerprint
+      ansible.builtin.copy:
+        dest: "{{ monitoring_compose_root }}/.grafana-startup-provisioning.sha256"
+        content: "{{ monitoring_grafana_desired_fingerprint.stdout }}\n"
+        owner: root
+        group: root
+        mode: "0644"
+      when: monitoring_grafana_restart is changed
 
   handlers:
     - name: Validate the changed monitoring edge proxy configuration

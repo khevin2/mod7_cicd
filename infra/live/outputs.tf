@@ -147,3 +147,8 @@ output "jaeger_otlp_bind_address" {
   description = "New lab Jaeger OTLP bind address; null until explicitly enabled and applied."
   value       = module.monitoring_host.jaeger_otlp_bind_address
 }
+
+output "monitoring_private_ip" {
+  description = "Monitoring host private IP; null until explicitly applied."
+  value       = module.monitoring_host.private_ip
+}

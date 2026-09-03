@@ -21,6 +21,12 @@ rg -Fq 'Private OTLP/HTTP trace ingestion from the application VPC' "$repository
 rg -Fq 'APPLICATION_OTLP_TRACES_ENDPOINT' "$repository_root/Jenkinsfile"
 rg -Fq 'OTEL_EXPORTER_OTLP_TRACES_ENDPOINT' "$repository_root/Jenkinsfile"
 rg -Fq 'monitoring_jaeger_otlp_bind_address' "$repository_root/ansible/playbooks/install_monitoring_stack.yml"
+rg -Fq 'register: monitoring_grafana_startup_provisioning' "$repository_root/ansible/playbooks/install_monitoring_stack.yml"
+rg -Fq 'Restart Grafana when startup-only provisioning changes' "$repository_root/ansible/playbooks/install_monitoring_stack.yml"
+rg -Fq 'monitoring_grafana_applied_fingerprint.rc != 0' "$repository_root/ansible/playbooks/install_monitoring_stack.yml"
+rg -Fq '.grafana-startup-provisioning.sha256' "$repository_root/ansible/playbooks/install_monitoring_stack.yml"
+rg -Fq -- '- https://127.0.0.1:8443/healthz' "$repository_root/ansible/playbooks/install_monitoring_stack.yml"
+rg -Fq 'until: monitoring_grafana_readiness.rc == 0' "$repository_root/ansible/playbooks/install_monitoring_stack.yml"
 
 jq empty "$repository_root/monitoring/grafana/dashboards/webapp-observability.json"
 printf '%s\n' 'Module 10 Phase 3 static validation: passed (repository-only)'

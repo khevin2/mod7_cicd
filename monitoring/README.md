@@ -127,6 +127,17 @@ does not route to it. Grafana reaches Jaeger over the internal telemetry
 network, using the stable datasource UID `jaeger`; the Prometheus datasource
 maps OpenMetrics exemplar `trace_id` values to that datasource.
 
+Grafana datasource, managed-alert, contact-point, and dashboard-provider files
+are startup provisioning inputs. The Ansible playbook fingerprints those files,
+including the secret-bearing contact point without displaying its contents. If
+the fingerprint differs from the last successfully loaded value, Ansible
+restarts only Grafana after Compose reconciliation, waits for the
+container-local Nginx `/healthz` probe to recover, and then records the applied
+fingerprint. Dashboard JSON does not trigger a restart because the configured
+file provider polls it every 30 seconds. This makes interrupted deployments
+retry safely and keeps unchanged repeat runs idempotent without allowing copied
+configuration to remain inactive.
+
 The 2026-09-03 local source selection records no vulnerability exception yet:
 the exact image must be scanned before a user deploys it. Any finding and any
 accepted lab-only exception belong in sanitized evidence, never in a claim of

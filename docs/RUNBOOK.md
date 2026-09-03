@@ -286,6 +286,16 @@ cd infra/live
 terraform plan
 ```
 
+The playbook treats Grafana datasources, managed alerts, contact points, and the
+dashboard-provider definition as startup provisioning. It compares their
+combined fingerprint with a marker written only after a successful load. When
+they differ—or a prior deployment stopped before recording success—Ansible
+restarts only Grafana after Compose reconciliation, waits for the
+container-local edge `/healthz` check to recover, and then updates the marker.
+Dashboard JSON changes do not cause a restart because Grafana polls that
+directory every 30 seconds. A second unchanged playbook run must therefore leave
+Grafana running.
+
 ### Diagnose the monitoring Compose stack over SSH
 
 The monitoring playbook passes `AWS_REGION` to every Docker Compose command so
