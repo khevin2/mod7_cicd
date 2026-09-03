@@ -2,11 +2,9 @@ const request = require('supertest');
 const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 
-const { createApp, SERVICE_NAME } = require('../src/app');
+const { createApp, SERVICE_NAME, TEST_LATENCY_MS } = require('../src/app');
 const { createMetrics, createMetricsApp } = require('../src/metrics');
 const { createLogger } = require('../src/logger');
-const { createFaultInjection } = require('../src/fault-injection');
-const { createFaultControlApp, readConfig } = require('../src/server');
 const { readTelemetryConfig } = require('../src/telemetry');
 const { getLogTraceFields, isValidTraceContext } = require('../src/trace-context');
 
@@ -115,7 +113,7 @@ describe('Express service', () => {
         () => '2026-08-28T00:00:00.000Z',
         () => traceContext
       );
-      const tracedApp = createApp(exemplarMetrics, logger, undefined, () => traceContext);
+      const tracedApp = createApp(exemplarMetrics, logger, () => traceContext);
 
       await request(tracedApp).get('/');
       const output = await exemplarMetrics.registry.metrics();
@@ -161,28 +159,28 @@ describe('Express service', () => {
     });
   });
 
-  describe('controlled Phase 11 fault injection', () => {
-    test('requires an explicit true environment value', () => {
-      expect(readConfig({}).faultInjectionEnabled).toBe(false);
-      expect(readConfig({ FAULT_INJECTION_ENABLED: 'true' }).faultInjectionEnabled).toBe(true);
-      expect(() => readConfig({ FAULT_INJECTION_ENABLED: 'yes' })).toThrow(
-        'FAULT_INJECTION_ENABLED must be either true or false'
-      );
+  describe('POST /test test capabilities', () => {
+    test('retains the deliberate error response', async () => {
+      const response = await request(createApp()).post('/test').send({ value: 'error' });
+
+      expect(response.status).toBe(500);
+      expect(response.body).toEqual({
+        service: SERVICE_NAME,
+        message: 'Test endpoint met an unexpected error'
+      });
     });
 
-    test('is disabled by default and can only be enabled through its separate controller', async () => {
-      const faultInjection = createFaultInjection();
-      const faultApp = createApp(undefined, undefined, faultInjection);
-      const controlApp = createFaultControlApp(faultInjection);
+    test('uses a fixed latency response without request-controlled timing', async () => {
+      const delays = [];
+      const testApp = createApp(undefined, undefined, undefined, async (milliseconds) => {
+        delays.push(milliseconds);
+      });
 
-      expect((await request(faultApp).get('/_phase11/fault')).status).toBe(404);
-      expect((await request(controlApp).get('/_phase11/status')).body).toEqual({ enabled: false });
-      expect((await request(controlApp).post('/_phase11/enable')).status).toBe(204);
-      const faultResponse = await request(faultApp).get('/_phase11/fault');
-      expect(faultResponse.status).toBe(500);
-      expect(faultResponse.body).toEqual({ service: SERVICE_NAME, status: 'controlled-test-error' });
-      expect((await request(controlApp).post('/_phase11/disable')).status).toBe(204);
-      expect((await request(faultApp).get('/_phase11/fault')).status).toBe(404);
+      const response = await request(testApp).post('/test').send({ name: 'ignored', value: 'latency', delay: 1 });
+      expect(response.body).toEqual({
+        service: SERVICE_NAME, message: 'Test endpoint latency response'
+      });
+      expect(delays).toEqual([TEST_LATENCY_MS]);
     });
   });
 

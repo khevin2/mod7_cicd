@@ -5,8 +5,16 @@ const { createLogger } = require('./logger');
 const { captureTraceContext, getLogTraceFields, recordSanitizedError } = require('./trace-context');
 
 const SERVICE_NAME = 'jenkins-webapp';
+const TEST_LATENCY_MS = 400;
 
-function createApp(metrics = createMetrics(), logger = createLogger(), faultInjection, getTraceContext = captureTraceContext) {
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function createApp(
+  metrics = createMetrics(), logger = createLogger(),
+  getTraceContext = captureTraceContext, delay = wait
+) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -33,19 +41,6 @@ function createApp(metrics = createMetrics(), logger = createLogger(), faultInje
   app.use(metrics.middleware);
   app.use(express.json());
 
-  // This path returns an error only after the separate loopback-only control
-  // listener enables its in-memory switch. It has no request-controlled knobs
-  // and does not affect ordinary application routes.
-  app.get('/_phase11/fault', (_request, response, next) => {
-    if (!faultInjection?.isEnabled()) {
-      return next();
-    }
-
-    recordSanitizedError('controlled_test_error');
-    logger.warn('controlled_fault_injection', { status_code: 500 });
-    return response.status(500).json({ service: SERVICE_NAME, status: 'controlled-test-error' });
-  });
-
   app.get('/', (_request, response) => {
     response.status(200).json({
       service: SERVICE_NAME,
@@ -53,7 +48,7 @@ function createApp(metrics = createMetrics(), logger = createLogger(), faultInje
     });
   });
 
-  app.post('/test', (req, res) => {
+  app.post('/test', async (req, res) => {
     const { name, value } = req.body;
     logger.info('test_endpoint_called', { name, value });
     if (value === 'error') {
@@ -63,13 +58,19 @@ function createApp(metrics = createMetrics(), logger = createLogger(), faultInje
         message: 'Test endpoint met an unexpected error'
       });
     }
-    else {
-      logger.info('test_endpoint_success', { name, value });
-      res.status(200).json({
+    if (value === 'latency') {
+      await delay(TEST_LATENCY_MS);
+      logger.info('test_endpoint_latency', { name, value, delay_ms: TEST_LATENCY_MS });
+      return res.status(200).json({
         service: SERVICE_NAME,
-        message: 'Test endpoint is working'
+        message: 'Test endpoint latency response'
       });
     }
+    logger.info('test_endpoint_success', { name, value });
+    return res.status(200).json({
+      service: SERVICE_NAME,
+      message: 'Test endpoint is working'
+    });
   });
 
   app.get('/health', (_request, response) => {
@@ -92,4 +93,4 @@ function createApp(metrics = createMetrics(), logger = createLogger(), faultInje
   return app;
 }
 
-module.exports = { createApp, SERVICE_NAME };
+module.exports = { createApp, SERVICE_NAME, TEST_LATENCY_MS };

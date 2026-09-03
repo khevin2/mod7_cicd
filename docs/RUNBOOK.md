@@ -323,33 +323,9 @@ healthy targets (itself, monitoring Node Exporter, application metrics, and
 application Node Exporter) and that the `Jenkins Webapp Observability` dashboard
 has data for RPS, p95, 5xx percentage, CPU, memory, disk, and scrape health.
 The high-error alert fires only after the ratio remains above 5% for five
-minutes and at least 20 requests occurred in the window. Test it only via the
-approved internal fault-injection path, then capture normal, pending, firing,
-and resolved states and the paired Slack messages without exposing the webhook.
-
-## Controlled Phase 11 fault test
-
-Do not perform this procedure until Phase 10 has completed, the exact deployed
-digest is recorded, and the operator has approval for the temporary test. The
-application keeps the mechanism disabled by default. The normal Jenkins
-deployment must never set `FAULT_INJECTION_ENABLED=true` or publish port 9465.
-
-For the approved test only, start the already-verified immutable application
-digest with `FAULT_INJECTION_ENABLED=true` while retaining every normal runtime
-hardening, log-driver, health-check, port, and resource option. The process then
-opens its control listener only on `127.0.0.1:9465` **inside the container**; it
-is not Docker-published and cannot be reached from the network. From the
-application host, use `docker exec` to POST to `/_phase11/enable`, then generate
-the controlled traffic only against `/_phase11/fault`. The route is a 404 until
-enabled and returns a bounded, deliberate 500 response only while enabled.
-
-Capture the baseline, Pending, Firing, and Resolved alert states with timestamps.
-Maintain more than 20 requests in the five-minute window and an error ratio above
-5% for more than five minutes. Stop traffic, POST to `/_phase11/disable` through
-the container-local control listener, and confirm that `/_phase11/fault` is 404
-before collecting recovery evidence. Restore the normal deployment without
-`FAULT_INJECTION_ENABLED` after the test. Never put a test-control endpoint,
-Docker socket, token, or temporary environment value in public evidence.
+minutes and at least 20 requests occurred in the window. Test it only through
+the documented `/test` route, then capture normal, pending, firing, and
+resolved states and the paired Slack messages without exposing the webhook.
 
 ## Monitoring operations and incident triage
 
@@ -364,10 +340,22 @@ or enable the fault controller while diagnosing.
 | CloudWatch logs are absent or delayed | Inspect the named log group/stream, Docker `awslogs` driver, CloudWatch Agent status, and current UTC time. | Verify the scoped instance role and pre-created encrypted group. Keep `awslogs-create-group=false`; a missing group is a deployment failure. |
 | High-error alert fires | Check the RPS, 5xx%, p95, recent structured logs, deployed digest, and whether controlled test traffic is active. | Acknowledge/notify the owner, investigate the digest and application health, and roll back only when the diagnosis supports it. Do not silence a real alert merely because a prior test existed. |
 
-The approved controlled test is the only use of `FAULT_INJECTION_ENABLED=true`.
-It must be explicitly authorized, stays container-local, and ends by disabling
-the controller, confirming the 404 fault route, and restoring the normal
-deployment. Record it as controlled traffic, not a production incident.
+## Module 10 controlled correlation test
+
+Only after the user has deployed the reviewed Module 10 configuration, use the
+existing `POST /test` route for the bounded evidence run. Send `value: "error"`
+to produce its existing deliberate 500 response, or `value: "latency"` to
+produce a fixed 400 ms successful response. The route ignores request-supplied
+timing values; it has no controller, test-only port, or `/_phase10/*` path.
+
+The operator captures a 10-minute normal baseline, then conducts separate
+error and latency runs long enough for each 10-minute alert to transition from
+pending to firing and then resolve. Capture the alert, dashboard time range,
+exemplar, Jaeger trace, and a CloudWatch JSON event filtered by the exact
+trace ID. Store only sanitized screenshots and summaries under
+`evidence/mod10/`; do not save endpoints, credentials, cookies, account IDs,
+or raw log exports. After evidence, remove `/test` from source and deploy the
+clean final image.
 
 For CloudTrail, verify the dedicated lab trail's delivery, validation, KMS/S3
 encryption, public-access block, and lifecycle as described in
