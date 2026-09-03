@@ -39,11 +39,14 @@ documents Jenkins build #4, GHCR, EC2 state, and public browser accessibility.
 | Local Phase 11 quality and security review | 20260821-phase11-local-quality-review.md | Clean-checkout tests, no-cache build, static review, and limitations recorded. |
 | Local Trivy repository and image gates | 20260822-trivy-local-security-review.md | Source and hardened image gates passed locally; fresh Jenkins execution remains pending. |
 | Phase 11 live alert and recovery verification | 20260830-phase11-live-verification.md | Controlled Pending-to-Firing-to-Resolved test, CloudWatch correlation, restored digest, and four healthy scrape targets verified 2026-08-30. |
+| Module 10 read-only preflight | mod10/phase5-readonly-preflight.md | Read-only topology, private-OTLP exposure, log metadata, and CPU review refreshed 2026-09-03; live trace/alert evidence remains pending. |
+| Module 10 report | ../docs/observability-security-report.md; ../docs/observability-security-report.pdf | Two-page report distinguishes local implementation proof from pending user-operated live acceptance evidence. |
 
 ## Evidence limitations
 
 - The listed Jenkins build captures predate the current Trivy and Runtime Cleanup stages; a fresh successful build with archived non-secret reports remains required for that specific CI claim.
 - Current Phase 11 verification is recorded as sanitized text. Add dashboard, alert, and CloudWatch screenshots only after review and redaction; do not fabricate screenshots from configuration.
+- Module 10 requires separate, deployed Jaeger/exemplar/CloudWatch trace correlation and both 10-minute alert lifecycles. The report deliberately does not treat prior Phase 11 evidence as proof of these requirements.
 
 ## Captured files
 

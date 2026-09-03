@@ -1,23 +1,77 @@
-# Observability and security report
+# Module 10 observability report
 
-## Architecture and controls
+**Status: implementation verified locally; live acceptance evidence pending.** This
+report distinguishes repository evidence from a deployed-runtime claim. No cloud
+resource was changed while preparing it.
 
-The lab deploys an Express application through a GitHub-triggered Jenkins pipeline. Jenkins runs syntax and Jest/JUnit checks, repository and image Trivy gates, then publishes and deploys an immutable GHCR digest through strict SSH. Candidate health validation protects cutover; the prior image is retained for rollback. The application container runs as UID/GID 10001 with a read-only root filesystem, dropped capabilities, `no-new-privileges`, bounded resources, and no privileged mode or Docker socket.
+## Architecture and telemetry flow
 
-Application/Jenkins resources (`10.70.0.0/16`) and monitoring resources (`10.80.0.0/16`) communicate over routed, non-transitive VPC peering. Prometheus privately scrapes application metrics (`:9464`) and Node Exporter (`:9100`); these endpoints are not public. Grafana alone is available on HTTPS to an approved administrator `/32`. Slack and Cloudflare credentials are retrieved at runtime from separately scoped Secrets Manager entries, never from Git, Terraform state, or evidence.
+`jenkins-webapp` emits bounded RED metrics on its private metrics endpoint and
+structured JSON logs to stdout. Prometheus scrapes the metrics, evaluates
+recording rules, and supplies Grafana dashboards and alerts. OpenTelemetry HTTP
+and Express instrumentation creates server and outbound-client spans. In a
+deployment, the application exports sampled traces via OTLP/HTTP only to the
+approved private Jaeger receiver; Grafana resolves histogram exemplars to that
+Jaeger datasource. The log record retains only `trace_id` and `span_id` for
+cross-tool correlation.
 
-Prometheus scrapes metrics and evaluates three reusable recording rules every 15 seconds. The provisioned dashboard shows request rate (RPS), p95 latency, 5xx percentage, CPU, memory, disk, and target health. Grafana is the sole alerting engine: its high-error rule requires more than 5% 5xx responses for five minutes and at least 20 requests, preventing a tiny sample from generating noise, then sends firing and resolved notifications to Slack.
+The intended investigation path is:
 
-## Controlled verification and logging
+`symptom -> alert -> RED metric/exemplar -> Jaeger trace and span -> CloudWatch JSON log -> controlled root cause`.
 
-On 2026-08-30, all four post-recovery targets were `UP`: application, application-node, monitoring-node, and Prometheus. An approved fault test sent normal and deliberate requests every five seconds. The alert became Pending at 14:04:55 UTC, fired at 14:10:48 UTC after the five-minute requirement, and resolved at 14:15:52 UTC after traffic stopped. The internal controller was disabled, the fault route returned 404, and the normal healthy container was restored without fault injection. This is controlled test traffic, not a real service event.
+The local integration test verifies the equivalent chain through an in-memory
+Jaeger-compatible trace capture and structured JSON log; it does not prove live
+Jaeger export or CloudWatch ingestion.
 
-CloudWatch Logs Insights found 156 application events matching the controlled 500-response filter between 14:04:28.862 and 14:10:55.089 UTC, which brackets the test. Application/container and selected system logs use encrypted CloudWatch log groups with 14-day retention. Structured application logging redacts bodies, headers, cookies, tokens, and other secrets.
+## RED policy and safety controls
 
-## Audit, limitations, cost, and cleanup
+| Signal | Definition | Alert threshold and hold time |
+| --- | --- | --- |
+| Rate | `jenkins_webapp_http_requests_total` | Dashboard only |
+| Errors | 5xx requests / all requests over 5 minutes | >5%, at least 20 requests, sustained 10 minutes |
+| Duration | p95 of request-duration histogram over 5 minutes | >300 ms, at least 20 requests, sustained 10 minutes |
 
-The dedicated CloudTrail archive is live with multi-Region management events, log-file validation, KMS encryption, a public-blocked/versioned S3 bucket, and 30-day Standard-IA, 90-day Glacier, and 365-day expiry. GuardDuty is enabled in the lab Region; its recorded finding is an AWS-generated synthetic sample, not a real incident. CloudTrail and GuardDuty proof is retained separately to avoid repeating management actions solely for this report.
+Grafana is the sole alert engine and evaluates the alert group every 10 seconds.
+The histogram includes sampled W3C trace IDs as exemplars without adding them as
+Prometheus labels. Metric labels are bounded to method, route, and status code.
+Logs allowlist operational fields and never include request bodies, headers,
+cookies, tokens, query values, or arbitrary errors. The OTLP endpoint rejects
+public addresses and credentials. Sampling is `parentbased_traceidratio` at
+100% for this lab; production use must reduce it according to volume and
+retention policy.
 
-Monitoring runs on a cost-sensitive `t3.micro`; CPU, memory, and disk must be measured before any resize. Grafana, Node Exporter, and Nginx have documented fixable Trivy HIGH findings in their current official stable images; no CRITICAL finding was accepted, and the approved lab exception must be re-evaluated on each image update. Teardown requires preserving sanitized evidence, refreshing ownership, and applying only an explicitly approved destroy plan. Pre-existing or shared trails, detectors, keys, and resources are excluded.
+## Controlled incident analysis
 
-Evidence: [Phase 11 verification](../evidence/20260830-phase11-live-verification.md), [CloudTrail verification](../evidence/20260828-phase6-live-verification.txt), [GuardDuty sample](../evidence/20260828-phase7-sample-finding.txt), and the [evidence index](../evidence/README.md).
+No Module 10 symptom, alert timestamp, exemplar, Jaeger span, or exact
+CloudWatch `trace_id`/`span_id` match has been captured from the deployed lab
+yet. Therefore the acceptance narrative is **pending**, not a claim of a live
+incident or successful alert test.
+
+When the user performs the approved bounded test, `POST /test` accepts only two
+documented modes: `value: "error"` produces a deliberate HTTP 500 and
+`value: "latency"` produces a fixed 400 ms successful response. Capture each
+mode separately through Pending, Firing, and Resolved, then record the UTC
+symptom and alert timestamps. From the Grafana marker, open the matching Jaeger
+trace and inspect the route-stable HTTP server span plus the relevant child
+client span, status, duration, and sanitized error attribute. Use the exact
+trace ID to filter CloudWatch JSON logs and verify the corresponding span ID.
+The expected controlled root cause is the chosen `/test` mode; remediation is
+to stop test traffic and return to ordinary traffic, not to alter the alert.
+
+## Acceptance, limits, and final state
+
+Repository checks currently prove HTTP server/client instrumentation, RED
+metrics and exemplars, Jaeger/Grafana provisioning, both 10-minute alert rules,
+and removal of `/_phase10/*`, `/_phase11/*`, controller, and port 9465. The
+durable `/test` route and observability configuration remain. The final user
+deployment and read-only checks must still prove healthy Jaeger, populated
+Grafana panels, alert lifecycles, trace links, CloudWatch correlation, version
+capture, and ordinary-request tracing.
+
+Lab limits: Jaeger storage is intentionally non-durable/lab-scoped, sampling is
+100%, and the application has no database dependency, so database tracing is
+N/A. Keep sanitized evidence in `evidence/mod10/`; never add endpoints,
+credentials, account identifiers, raw CloudWatch exports, or unsanitized
+screenshots. Final acceptance remains blocked until the missing live evidence
+is captured by the user-operated procedure and read-only verification confirms
+recovery.

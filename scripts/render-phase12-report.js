@@ -1,78 +1,89 @@
 #!/usr/bin/env node
 'use strict';
 
+// Dependency-free PDF renderer. Keeping this self-contained means the two-page
+// reviewer artifact can be regenerated from a clean npm install.
 const fs = require('fs');
 const path = require('path');
-const PDFDocument = require('pdfkit');
 
-const out = path.resolve(__dirname, '../docs/observability-security-report.pdf');
-const doc = new PDFDocument({ size: 'A4', margin: 0, info: { Title: 'Observability and security report', Author: 'Project 6 lab' } });
-const W = 595.28, L = 48, CW = W - 96;
-const c = { ink: '#172033', muted: '#5f6b7a', blue: '#2463a6', paleBlue: '#eaf3fb', green: '#1f7a4d', paleGreen: '#e9f6ee', orange: '#bc6500', paleOrange: '#fff3e2', line: '#d7e0ea', white: '#ffffff', slate: '#eff3f7' };
-doc.pipe(fs.createWriteStream(out));
-function box(x, y, w, h, color, radius) { doc.save().fillColor(color); radius ? doc.roundedRect(x, y, w, h, radius).fill() : doc.rect(x, y, w, h).fill(); doc.restore(); }
-function outline(x, y, w, h, color, radius) { doc.save().lineWidth(1).strokeColor(color); radius ? doc.roundedRect(x, y, w, h, radius).stroke() : doc.rect(x, y, w, h).stroke(); doc.restore(); }
-function t(value, x, y, o) { const a = o || {}; doc.font(a.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(a.size || 9).fillColor(a.color || c.ink).lineGap(a.gap || 1).text(value, x, y, { width: a.width || CW, align: a.align || 'left' }); }
-function header(kicker, title, subtitle, page) {
-  box(0, 0, W, 104, c.ink); t(kicker.toUpperCase(), L, 25, { size: 8, color: '#a9d2f5', bold: true });
-  t(title, L, 41, { size: 23, color: c.white, bold: true }); t(subtitle, L, 73, { size: 9.2, color: '#d9e6f2' });
-  t('PROJECT 6  ·  ' + page + ' / 2', L, 25, { size: 8, color: '#a9d2f5', bold: true, align: 'right' });
-}
-function section(label, y) { t(label.toUpperCase(), L, y, { size: 8, color: c.blue, bold: true }); box(L, y + 14, CW, 1, c.line); }
-function card(x, y, w, h, label, value, detail, accent, pale) {
-  box(x, y, w, h, c.white, 7); outline(x, y, w, h, c.line, 7); box(x, y, 5, h, accent, 7); box(x + w - 28, y + 13, 15, 15, pale, 7);
-  t(label.toUpperCase(), x + 17, y + 14, { size: 7.4, color: accent, bold: true, width: w - 32 });
-  t(value, x + 17, y + 29, { size: 16, bold: true, width: w - 32 });
-  t(detail, x + 17, y + 53, { size: 7.8, color: c.muted, width: w - 32 });
-}
-function footer(page) {
-  box(L, 790, CW, 1, c.line); t('Controlled traffic and the GuardDuty sample are labeled test evidence—not production incidents.', L, 802, { size: 7.4, color: c.muted, width: 400 });
-  t('Project 6 · ' + page + ' of 2', L, 802, { size: 7.4, color: c.muted, align: 'right' });
-}
-function node(x, label, detail, color) {
-  box(x, 261, 82, 55, c.white, 6); outline(x, 261, 82, 55, color, 6);
-  t(label, x + 7, 271, { size: 7.7, color, bold: true, width: 68, align: 'center' });
-  t(detail, x + 7, 287, { size: 6.8, color: c.muted, width: 68, align: 'center' });
-}
-function arrow(x) { doc.save().strokeColor('#93a6b8').lineWidth(1.1).moveTo(x, 289).lineTo(x + 16, 289).stroke(); doc.fillColor('#93a6b8').moveTo(x + 16, 286).lineTo(x + 22, 289).lineTo(x + 16, 292).fill().restore(); }
+const output = path.resolve(__dirname, '../docs/observability-security-report.pdf');
+const pages = [
+  [
+    ['MODULE 10  /  ADVANCED OBSERVABILITY', 8, 48, 812, true],
+    ['Observability report', 22, 48, 782, true],
+    ['Repository-verified design; not uncaptured runtime evidence.', 9, 48, 762],
+    ['ARCHITECTURE AND TELEMETRY FLOW', 9, 48, 718, true],
+    ['jenkins-webapp emits bounded RED metrics and structured JSON logs.', 9, 48, 696],
+    ['Prometheus privately scrapes metrics, evaluates recording rules, and', 9, 48, 682],
+    ['supplies Grafana panels and alerts. OpenTelemetry HTTP and Express', 9, 48, 668],
+    ['instrumentation creates server/client spans; sampled traces export via', 9, 48, 654],
+    ['private OTLP/HTTP to Jaeger. Grafana opens Jaeger from exemplars.', 9, 48, 640],
+    ['symptom -> alert -> RED metric/exemplar -> Jaeger trace/span ->', 10, 48, 608, true],
+    ['CloudWatch JSON log -> controlled root cause', 10, 48, 594, true],
+    ['RED DEFINITIONS AND EXACT ALERT POLICY', 9, 48, 552, true],
+    ['Rate: jenkins_webapp_http_requests_total (dashboard).', 9, 48, 530],
+    ['Errors: 5xx / all requests over 5 minutes. Alert: >5%, at least 20', 9, 48, 516],
+    ['requests, sustained 10 minutes. Duration: p95 histogram over 5 minutes.', 9, 48, 502],
+    ['Alert: >300 ms, at least 20 requests, sustained 10 minutes.', 9, 48, 488],
+    ['Grafana evaluates the group every 10 seconds and is the sole alert engine.', 9, 48, 474],
+    ['EXPORTER, SAMPLING, PRIVACY, AND CARDINALITY', 9, 48, 430, true],
+    ['Only a credential-free RFC1918 OTLP endpoint on TCP 4318 is accepted.', 9, 48, 408],
+    ['Sampling is parentbased_traceidratio at 100% for this lab. Exemplars', 9, 48, 394],
+    ['carry sampled IDs without adding metric labels. Metrics use only method,', 9, 48, 380],
+    ['route, and status-code labels. Logs allowlist operational fields and', 9, 48, 366],
+    ['exclude request bodies, headers, cookies, tokens, query values, and', 9, 48, 352],
+    ['arbitrary errors. Invalid production exporter configuration fails startup;', 9, 48, 338],
+    ['local development/tests default to no exporter.', 9, 48, 324]
+  ],
+  [
+    ['MODULE 10  /  ADVANCED OBSERVABILITY', 8, 48, 812, true],
+    ['Controlled acceptance', 22, 48, 782, true],
+    ['Live Module 10 acceptance evidence is pending.', 9, 48, 762],
+    ['CONTROLLED INCIDENT ANALYSIS - CURRENT STATUS', 9, 48, 718, true],
+    ['No deployed Module 10 symptom, alert timestamp, Grafana exemplar, Jaeger', 9, 48, 696],
+    ['span, or exact CloudWatch trace_id/span_id match has been captured.', 9, 48, 682],
+    ['Do not infer a live incident or successful alert test from local checks.', 9, 48, 668],
+    ['REQUIRED USER-OPERATED CAPTURE AND READ-ONLY VERIFICATION', 9, 48, 624, true],
+    ['1. Capture a 10-minute normal baseline: rate, p95, errors, CPU, memory,', 9, 48, 602],
+    ['   scrape health, and no firing Module 10 alert.', 9, 48, 588],
+    ['2. Run POST /test value: error through Pending, Firing, and Resolved.', 9, 48, 574],
+    ['3. Separately run value: latency (a fixed 400 ms successful response).', 9, 48, 560],
+    ['4. Open an exemplar; inspect matching Jaeger server/client spans and', 9, 48, 546],
+    ['   exact-filter CloudWatch JSON logs by trace_id and span_id.', 9, 48, 532],
+    ['5. Stop test traffic; verify recovery, ordinary traces, health, and versions.', 9, 48, 518],
+    ['CONTROLLED ROOT CAUSE AND REMEDIATION', 9, 48, 474, true],
+    ['Error mode deliberately returns HTTP 500; latency mode deliberately delays', 9, 48, 452],
+    ['the response by 400 ms. Remediate by stopping test traffic and confirming', 9, 48, 438],
+    ['recovery, never by suppressing or bypassing the alert.', 9, 48, 424],
+    ['FINAL ACCEPTANCE AND RETAINED STATE', 9, 48, 380, true],
+    ['Repository gates verify tracing, RED metrics/exemplars, Jaeger/Grafana', 9, 48, 358],
+    ['provisioning, both alert rules, and removal of temporary routes/controller.', 9, 48, 344],
+    ['POST /test remains the documented demo route. Live proof remains required.', 9, 48, 330],
+    ['Limits: Jaeger storage is non-durable/lab-scoped; 100% sampling is lab-only;', 9, 48, 288],
+    ['database tracing is N/A. Store only sanitized evidence in evidence/mod10/.', 9, 48, 274],
+    ['2 of 2', 8, 48, 42]
+  ]
+];
 
-header('Observability & security', 'A defensible delivery path', 'Immutable deployment, private telemetry, and evidence-led operations', 1);
-card(L, 124, 175, 84, 'Deployment', 'Immutable', 'GHCR digest deployed through strict SSH with candidate validation and rollback retention.', c.blue, c.paleBlue);
-card(L + 187, 124, 175, 84, 'Monitoring', 'Private', 'Prometheus and Node Exporter stay off the public network; Grafana HTTPS is admin-restricted.', c.green, c.paleGreen);
-card(L + 374, 124, 175, 84, 'Verification', 'Controlled', '>5% 5xx test proved Pending → Firing → Resolved, then restored normal service.', c.orange, c.paleOrange);
-section('Architecture at a glance', 232);
-node(L, 'GitHub + GHCR', 'push webhook\nimmutable digest', c.ink); node(L + 103, 'Jenkins', 'test · Trivy\ndeploy + rollback', c.blue);
-node(L + 206, 'Application', 'HTTP :80\nmetrics :9464', c.green); node(L + 309, 'Prometheus', 'private scrape\n15s evaluation', '#b64b1f'); node(L + 412, 'Grafana', 'HTTPS /32\nSlack alerting', c.orange);
-[L + 82, L + 185, L + 288, L + 391].forEach(arrow);
-t('Application/Jenkins VPC 10.70.0.0/16', L, 330, { size: 7.6, color: c.muted, width: 280 });
-t('Private VPC peering → Monitoring VPC 10.80.0.0/16', L, 330, { size: 7.6, color: c.muted, align: 'right' });
-section('Controls that matter', 365);
-t('Delivery safeguards', L, 392, { size: 10.5, bold: true, width: 245 });
-t('Jenkins runs syntax/Jest/JUnit and repository/image Trivy gates before push. The application runs as UID/GID 10001 with a read-only filesystem, dropped capabilities, no-new-privileges, resource limits, and no Docker socket.', L, 411, { size: 8.55, color: c.muted, width: 245, gap: 2 });
-t('Telemetry and secrets', L + 286, 392, { size: 10.5, bold: true, width: 261 });
-t('Only Grafana is exposed. Application metrics and both Node Exporters use private peering. Slack and Cloudflare credentials are fetched at runtime from scoped Secrets Manager entries—not from Git, Terraform state, logs, or evidence.', L + 286, 411, { size: 8.55, color: c.muted, width: 261, gap: 2 });
-box(L, 521, CW, 160, c.slate, 8);
-t('SIGNALS AND ALERT POLICY', L + 18, 540, { size: 8, color: c.blue, bold: true, width: CW - 36 });
-t('The provisioned dashboard tracks request rate, p95 latency, HTTP 5xx percentage, CPU, memory, disk, and scrape health.', L + 18, 560, { size: 10.2, bold: true, width: CW - 36 });
-t('Prometheus evaluates three recording rules every 15 seconds. Grafana is the sole alerting engine: JenkinsWebappHighErrorRate requires both a 5xx rate above 5% for five minutes and at least 20 requests in that window, then sends firing and resolved notifications to Slack.', L + 18, 593, { size: 8.75, color: c.muted, width: CW - 36, gap: 2 });
-t('No raw URLs, request bodies, identities, tokens, or query strings are used as metric labels.', L + 18, 646, { size: 8.25, color: c.green, bold: true, width: CW - 36 });
-footer(1);
-
-doc.addPage();
-header('Executed evidence', 'Recovery was observed end to end', 'The test validates alerting and logging without presenting controlled traffic as an incident', 2);
-section('Controlled alert lifecycle · 2026-08-30 UTC', 128);
-const timeline = [['14:04:28', 'Traffic started', 'Normal and deliberate fault requests began every five seconds.'], ['14:04:55', 'Pending', 'JenkinsWebappHighErrorRate entered Pending.'], ['14:10:48', 'Firing', 'The threshold remained true for the required five minutes.'], ['14:11:00', 'Traffic stopped', 'No further controlled requests were generated.'], ['14:12:14', 'Fault disabled', 'Controller disabled; fault route returned HTTP 404.'], ['14:15:52', 'Resolved', 'The high-error alert returned to its normal state.']];
-timeline.forEach((item, i) => { const y = 162 + (i * 31); box(L, y + 2, 8, 8, item[1] === 'Firing' ? c.orange : c.green, 4); t(item[0], L + 22, y, { size: 8.3, bold: true, width: 55 }); t(item[1], L + 86, y, { size: 8.4, color: c.blue, bold: true, width: 102 }); t(item[2], L + 190, y, { size: 8.35, color: c.muted, width: 357 }); if (i < 5) box(L + 3.5, y + 13, 1, 17, c.line); });
-section('What the verification proves', 367);
-card(L, 394, 265, 116, 'Recovery state', '4 / 4 UP', 'Application, application-node, monitoring-node, and Prometheus were UP after restoration. The normal container was healthy, non-root, read-only, and fault injection was absent.', c.green, c.paleGreen);
-card(L + 282, 394, 265, 116, 'Log correlation', '156 events', 'CloudWatch Logs Insights matched 156 controlled application 500/error events from 14:04:28.862 to 14:10:55.089 UTC, bracketing the traffic window.', c.blue, c.paleBlue);
-section('Audit posture, limitations, and cleanup', 538);
-t('CloudTrail and GuardDuty', L, 565, { size: 10.2, bold: true, width: 245 });
-t('The dedicated archive has multi-Region management events, log-file validation, KMS encryption, blocked public access, versioning, and 30/90/365-day lifecycle controls. GuardDuty is enabled; the saved finding is AWS-generated synthetic evidence.', L, 584, { size: 8.45, color: c.muted, width: 245, gap: 2 });
-t('Limits and teardown boundary', L + 286, 565, { size: 10.2, bold: true, width: 261 });
-t('Monitoring runs on a cost-sensitive t3.micro. Official stable Grafana, Node Exporter, and Nginx images retain a documented lab exception for fixable Trivy HIGH findings; no CRITICAL finding is accepted. Preserve evidence, refresh ownership, then apply only an explicitly approved destroy plan. Shared resources are excluded.', L + 286, 584, { size: 8.45, color: c.muted, width: 261, gap: 2 });
-box(L, 690, CW, 68, c.paleBlue, 8);
-t('EVIDENCE INDEX', L + 17, 706, { size: 7.8, color: c.blue, bold: true, width: CW - 34 });
-t('Phase 11 live verification · Phase 6 CloudTrail verification · Phase 7 GuardDuty synthetic sample · evidence/README.md', L + 17, 726, { size: 8.3, width: CW - 34 });
-footer(2);
-doc.end();
+function escapePdf(value) { return value.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)'); }
+function stream(lines) {
+  return lines.map(([value, size, x, y, bold]) => `BT /${bold ? 'F2' : 'F1'} ${size} Tf ${x} ${y} Td (${escapePdf(value)}) Tj ET`).join('\n');
+}
+const objects = [
+  '<< /Type /Catalog /Pages 2 0 R >>',
+  '<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>',
+  '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 7 0 R /F2 8 0 R >> >> /Contents 4 0 R >>',
+  `<< /Length ${Buffer.byteLength(stream(pages[0]))} >>\nstream\n${stream(pages[0])}\nendstream`,
+  '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 7 0 R /F2 8 0 R >> >> /Contents 6 0 R >>',
+  `<< /Length ${Buffer.byteLength(stream(pages[1]))} >>\nstream\n${stream(pages[1])}\nendstream`,
+  '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>'
+];
+let pdf = '%PDF-1.4\n';
+const offsets = [0];
+objects.forEach((object, index) => { offsets.push(Buffer.byteLength(pdf)); pdf += `${index + 1} 0 obj\n${object}\nendobj\n`; });
+const xref = Buffer.byteLength(pdf);
+pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+offsets.slice(1).forEach((offset) => { pdf += `${String(offset).padStart(10, '0')} 00000 n\n`; });
+pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+fs.writeFileSync(output, pdf);

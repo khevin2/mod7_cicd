@@ -142,3 +142,8 @@ output "guardduty_detector_arn" {
   description = "New lab GuardDuty detector ARN; null until explicitly enabled and applied."
   value       = module.guardduty_detector.detector_arn
 }
+
+output "jaeger_otlp_bind_address" {
+  description = "New lab Jaeger OTLP bind address; null until explicitly enabled and applied."
+  value       = module.monitoring_host.jaeger_otlp_bind_address
+}

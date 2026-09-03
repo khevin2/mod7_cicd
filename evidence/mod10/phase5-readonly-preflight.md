@@ -1,6 +1,6 @@
 # Module 10 Phase 5 Read-Only Preflight
 
-Generated: 2026-09-03T09:19:56Z
+Generated: 2026-09-03T10:31:41Z
 
 ## Safety statement
 
@@ -37,9 +37,9 @@ recorded here.
 - Monitoring-host CPU (previous hour): `{
   "status": "available",
   "samples": 12,
-  "minimum_percent": 2.63,
-  "maximum_percent": 2.73,
-  "average_percent": 2.68
+  "minimum_percent": 2.65,
+  "maximum_percent": 2.82,
+  "average_percent": 2.7
 }`
 - Monitoring-host memory/disk: not available from native EC2 metrics; obtain
   through an existing read-only host telemetry view or an already-approved,
