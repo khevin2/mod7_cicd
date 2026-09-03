@@ -354,8 +354,9 @@ pending to firing and then resolve. Capture the alert, dashboard time range,
 exemplar, Jaeger trace, and a CloudWatch JSON event filtered by the exact
 trace ID. Store only sanitized screenshots and summaries under
 `evidence/mod10/`; do not save endpoints, credentials, cookies, account IDs,
-or raw log exports. After evidence, remove `/test` from source and deploy the
-clean final image.
+or raw log exports. After evidence, retain `/test` as the documented demo route;
+only the already-removed temporary controller and phase-specific routes stay
+absent from the final image.
 
 For CloudTrail, verify the dedicated lab trail's delivery, validation, KMS/S3
 encryption, public-access block, and lifecycle as described in

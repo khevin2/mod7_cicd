@@ -18,8 +18,9 @@ unsanitized screenshots.
    an exact `trace_id` CloudWatch JSON match that also shows `span_id`.
 5. `versions.md`: Node and installed OpenTelemetry package versions,
    Prometheus, Grafana, Jaeger, and CloudWatch logging-path versions.
-6. `recovery.md`: controller disabled, ordinary traffic recovered, alerts
-   resolved, and test endpoints unavailable after the final clean deployment.
+6. `recovery.md`: ordinary traffic recovered, alerts resolved, temporary
+   controller/phase-specific routes absent, and the documented `/test` demo
+   modes retained after final deployment.
 
 Each Markdown summary must label the action as user-operated or read-only,
 state timestamps in UTC, identify the evidence file names, and avoid sensitive
