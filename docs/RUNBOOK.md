@@ -313,6 +313,32 @@ than altering `compose.yml` or disabling CloudWatch logging. `sudo cd ...` does
 not change an interactive shell's directory; use `cd ...` without `sudo`, or
 continue specifying the Compose file with its absolute path.
 
+### Access the Jaeger UI through SSH port forwarding
+
+Jaeger has no public proxy route. Its UI port is bound to loopback on the
+monitoring host and must be accessed through an SSH tunnel from the
+administrator workstation:
+
+```bash
+ssh -N \
+  -L 16686:127.0.0.1:16686 \
+  -i <SSH_PRIVATE_KEY> \
+  ec2-user@<MONITORING_ELASTIC_IP>
+```
+
+Keep that command running and browse to `http://localhost:16686`. The SSH
+destination must be the monitoring host, not the Jenkins controller or
+application host. If the tunnel reports `connect failed: Connection refused`,
+confirm the destination and then check the Jaeger container on the monitoring
+host:
+
+```bash
+sudo env AWS_REGION=eu-north-1 \
+  docker compose -f /opt/monitoring/monitoring/compose.yml ps jaeger
+
+curl --fail http://127.0.0.1:16686/
+```
+
 After the second playbook run, capture sanitized evidence for the applied
 resource inventory, container versions/health,
 `https://grafana.kheven.me/api/health`, authenticated

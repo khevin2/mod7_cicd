@@ -127,6 +127,22 @@ does not route to it. Grafana reaches Jaeger over the internal telemetry
 network, using the stable datasource UID `jaeger`; the Prometheus datasource
 maps OpenMetrics exemplar `trace_id` values to that datasource.
 
+Access the native Jaeger UI by forwarding local TCP 16686 to loopback on the
+**monitoring host** (not the Jenkins controller or application host):
+
+```bash
+ssh -N \
+  -L 16686:127.0.0.1:16686 \
+  -i <SSH_PRIVATE_KEY> \
+  ec2-user@<MONITORING_ELASTIC_IP>
+```
+
+Keep the SSH process running and open `http://localhost:16686` in a local
+browser. SSH authenticates and encrypts this access path; Jaeger does not
+provide its own user accounts or login. A remote `Connection refused` error
+usually means the tunnel targets the wrong EC2 instance or the Jaeger container
+is not running on the monitoring host.
+
 Grafana datasource, managed-alert, contact-point, and dashboard-provider files
 are startup provisioning inputs. The Ansible playbook fingerprints those files,
 including the secret-bearing contact point without displaying its contents. If
