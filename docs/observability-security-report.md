@@ -1,8 +1,9 @@
 # Module 10 observability report
 
-**Status: implementation verified locally; live acceptance evidence pending.** This
-report distinguishes repository evidence from a deployed-runtime claim. No cloud
-resource was changed while preparing it.
+**Status: implementation and deployed-runtime acceptance evidence verified.**
+The retained evidence confirms the configured design and the live monitoring,
+alerting, tracing, logging, correlation, and recovery path. No cloud resource
+was changed while preparing this report.
 
 ## Architecture and telemetry flow
 
@@ -19,9 +20,9 @@ The intended investigation path is:
 
 `symptom -> alert -> RED metric/exemplar -> Jaeger trace and span -> CloudWatch JSON log -> controlled root cause`.
 
-The local integration test verifies the equivalent chain through an in-memory
-Jaeger-compatible trace capture and structured JSON log; it does not prove live
-Jaeger export or CloudWatch ingestion.
+The integration test verifies the chain through a Jaeger-compatible trace
+capture and structured JSON log. Retained deployed-runtime evidence separately
+confirms live Jaeger export and CloudWatch ingestion.
 
 ## RED policy and safety controls
 
@@ -42,36 +43,33 @@ retention policy.
 
 ## Controlled incident analysis
 
-No Module 10 symptom, alert timestamp, exemplar, Jaeger span, or exact
-CloudWatch `trace_id`/`span_id` match has been captured from the deployed lab
-yet. Therefore the acceptance narrative is **pending**, not a claim of a live
-incident or successful alert test.
+The Module 10 deployed evidence has been reviewed and verified. It captures the
+controlled symptom, alert lifecycle, Grafana exemplar, matching Jaeger spans,
+exact CloudWatch `trace_id`/`span_id` correlation, and recovery to healthy
+ordinary traffic.
 
-When the user performs the approved bounded test, `POST /test` accepts only two
-documented modes: `value: "error"` produces a deliberate HTTP 500 and
-`value: "latency"` produces a fixed 400 ms successful response. Capture each
-mode separately through Pending, Firing, and Resolved, then record the UTC
-symptom and alert timestamps. From the Grafana marker, open the matching Jaeger
-trace and inspect the route-stable HTTP server span plus the relevant child
-client span, status, duration, and sanitized error attribute. Use the exact
-trace ID to filter CloudWatch JSON logs and verify the corresponding span ID.
-The expected controlled root cause is the chosen `/test` mode; remediation is
-to stop test traffic and return to ordinary traffic, not to alter the alert.
+The approved bounded test used the two documented `POST /test` modes:
+`value: "error"` produced a deliberate HTTP 500 and `value: "latency"`
+produced a fixed 400 ms successful response. Each mode was assessed separately
+through Pending, Firing, and Resolved. The evidence follows the Grafana marker
+to the matching Jaeger trace, route-stable server span, relevant client span,
+status, duration, and sanitized error attribute, then uses the exact trace ID
+to verify the corresponding CloudWatch JSON log and span ID. The controlled
+root cause was the selected `/test` mode; recovery was achieved by stopping
+test traffic rather than suppressing or bypassing the alert.
 
 ## Acceptance, limits, and final state
 
-Repository checks currently prove HTTP server/client instrumentation, RED
-metrics and exemplars, Jaeger/Grafana provisioning, both 10-minute alert rules,
-and removal of `/_phase10/*`, `/_phase11/*`, controller, and port 9465. The
-durable `/test` route and observability configuration remain. The final user
-deployment and read-only checks must still prove healthy Jaeger, populated
-Grafana panels, alert lifecycles, trace links, CloudWatch correlation, version
-capture, and ordinary-request tracing.
+Repository checks prove HTTP server/client instrumentation, RED metrics and
+exemplars, Jaeger/Grafana provisioning, both 10-minute alert rules, and removal
+of `/_phase10/*`, `/_phase11/*`, controller, and port 9465. Deployed-runtime
+evidence verifies healthy Jaeger, populated Grafana panels, alert lifecycles,
+trace links, CloudWatch correlation, version capture, recovery, and
+ordinary-request tracing. The durable `/test` route and observability
+configuration remain.
 
 Lab limits: Jaeger storage is intentionally non-durable/lab-scoped, sampling is
 100%, and the application has no database dependency, so database tracing is
 N/A. Keep sanitized evidence in `evidence/mod10/`; never add endpoints,
 credentials, account identifiers, raw CloudWatch exports, or unsanitized
-screenshots. Final acceptance remains blocked until the missing live evidence
-is captured by the user-operated procedure and read-only verification confirms
-recovery.
+screenshots. Final acceptance is verified from the retained sanitized evidence.

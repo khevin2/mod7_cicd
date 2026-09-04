@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="jenkins-cicd-simple" name="Jenkins CI/CD Architecture">
-        <mxGraphModel dx="493" dy="305" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="700" math="0" shadow="0">
+        <mxGraphModel dx="490" dy="601" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="700" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -59,7 +59,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="jenkins-pipeline-execution-v2" name="Pipeline execution">
-        <mxGraphModel dx="705" dy="305" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="700" math="0" shadow="0">
+        <mxGraphModel dx="809" dy="601" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="700" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -151,7 +151,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="technical-design-target" name="Technical design">
-        <mxGraphModel dx="493" dy="305" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="850" math="0" shadow="0">
+        <mxGraphModel dx="809" dy="601" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="850" math="0" shadow="0">
             <root>
                 <mxCell id="td-0"/>
                 <mxCell id="td-1" parent="td-0"/>
@@ -352,20 +352,52 @@
                 <mxCell id="m10-flow-note" value="&lt;b&gt;Investigation path&lt;/b&gt;: alert time window -&gt; RED panel -&gt; exemplar -&gt; Jaeger trace/span -&gt; exact trace_id CloudWatch JSON log -&gt; controlled root cause" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5A6C86;fontColor=#232F3E;fontSize=12;fontStyle=1;align=center;" vertex="1" parent="m10-1">
                     <mxGeometry x="440" y="1290" width="1500" height="55" as="geometry"/>
                 </mxCell>
-                <mxCell id="m10-e-browser" value="HTTPS 443" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;" edge="1" parent="m10-1" source="m10-browser" target="m10-nginx"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1790" y="105"/></Array></mxGeometry></mxCell>
-                <mxCell id="m10-e-nginx" value="Proxy" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;" edge="1" parent="m10-monitor-vpc" source="m10-nginx" target="m10-grafana"><mxGeometry relative="1" as="geometry"/></mxCell>
-                <mxCell id="m10-e-deploy" value="Digest deploy" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#DD344C;" edge="1" parent="m10-app-vpc" source="m10-jenkins" target="m10-app-ec2"><mxGeometry relative="1" as="geometry"/></mxCell>
-                <mxCell id="m10-e-runtime" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="m10-app-vpc" source="m10-app-ec2" target="m10-app-runtime"><mxGeometry relative="1" as="geometry"/></mxCell>
-                <mxCell id="m10-e-metrics" value="OpenMetrics" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.35;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#2F6690;" edge="1" parent="m10-1" source="m10-app-runtime" target="m10-prom"><mxGeometry relative="1" as="geometry"/></mxCell>
-                <mxCell id="m10-e-otlp" value="OTLP 4318" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#147EBA;" edge="1" parent="m10-1" source="m10-app-runtime" target="m10-jaeger"><mxGeometry relative="1" as="geometry"/></mxCell>
-                <mxCell id="m10-e-prom" value="PromQL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.35;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#C0392B;" edge="1" parent="m10-monitor-vpc" source="m10-prom" target="m10-grafana"><mxGeometry relative="1" as="geometry"/></mxCell>
-                <mxCell id="m10-e-trace" value="Trace lookup" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#2F6690;" edge="1" parent="m10-monitor-vpc" source="m10-jaeger" target="m10-grafana"><mxGeometry relative="1" as="geometry"/></mxCell>
-                <mxCell id="m10-e-alert" value="Alerts" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#F48120;" edge="1" parent="m10-1" source="m10-grafana" target="m10-slack"><mxGeometry relative="1" as="geometry"/></mxCell>
-                <mxCell id="m10-e-ansible" value="Provision" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#3F7F5F;" edge="1" parent="m10-1" source="m10-operator" target="m10-fingerprint"><mxGeometry relative="1" as="geometry"/></mxCell>
-                <mxCell id="m10-e-restart" value="Restart on drift" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#3F7F5F;" edge="1" parent="m10-monitor-vpc" source="m10-fingerprint" target="m10-grafana"><mxGeometry relative="1" as="geometry"/></mxCell>
-                <mxCell id="m10-e-app-logs" value="JSON logs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#7B2F8E;" edge="1" parent="m10-1" source="m10-app-runtime" target="m10-cloudwatch"><mxGeometry relative="1" as="geometry"/></mxCell>
-                <mxCell id="m10-e-secrets" value="Runtime fetch" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#7B2F8E;" edge="1" parent="m10-1" source="m10-secrets" target="m10-fingerprint"><mxGeometry relative="1" as="geometry"/></mxCell>
-                <mxCell id="m10-e-archive" value="Archive" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#7AA116;" edge="1" parent="m10-managed" source="m10-audit" target="m10-archive"><mxGeometry relative="1" as="geometry"/></mxCell>
+                <mxCell id="m10-e-browser" value="HTTPS 443" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;" edge="1" parent="m10-1" source="m10-browser" target="m10-nginx">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1790" y="105"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m10-e-nginx" value="Proxy" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;" edge="1" parent="m10-monitor-vpc" source="m10-nginx" target="m10-grafana">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="m10-e-deploy" value="Digest deploy" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#DD344C;" edge="1" parent="m10-app-vpc" source="m10-jenkins" target="m10-app-ec2">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="m10-e-runtime" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="m10-app-vpc" source="m10-app-ec2" target="m10-app-runtime">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="m10-e-metrics" value="OpenMetrics" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.35;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#2F6690;" edge="1" parent="m10-1" source="m10-app-runtime" target="m10-prom">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="m10-e-otlp" value="OTLP 4318" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#147EBA;" edge="1" parent="m10-1" source="m10-app-runtime" target="m10-jaeger">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="m10-e-prom" value="PromQL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.35;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#C0392B;" edge="1" parent="m10-monitor-vpc" source="m10-prom" target="m10-grafana">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="m10-e-trace" value="Trace lookup" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#2F6690;" edge="1" parent="m10-monitor-vpc" source="m10-jaeger" target="m10-grafana">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="m10-e-alert" value="Alerts" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#F48120;" edge="1" parent="m10-1" source="m10-grafana" target="m10-slack">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="m10-e-ansible" value="Provision" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#3F7F5F;" edge="1" parent="m10-1" source="m10-operator" target="m10-fingerprint">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="m10-e-restart" value="Restart on drift" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#3F7F5F;" edge="1" parent="m10-monitor-vpc" source="m10-fingerprint" target="m10-grafana">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="m10-e-app-logs" value="JSON logs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#7B2F8E;" edge="1" parent="m10-1" source="m10-app-runtime" target="m10-cloudwatch">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="m10-e-secrets" value="Runtime fetch" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#7B2F8E;" edge="1" parent="m10-1" source="m10-secrets" target="m10-fingerprint">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="m10-e-archive" value="Archive" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=11;strokeColor=#7AA116;" edge="1" parent="m10-managed" source="m10-audit" target="m10-archive">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
             </root>
         </mxGraphModel>
     </diagram>
