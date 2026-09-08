@@ -454,6 +454,12 @@
           - --dns-cloudflare
           - --dns-cloudflare-credentials
           - /etc/letsencrypt/cloudflare.ini
+          # Cloudflare's API accepts the TXT record immediately, but recursive
+          # resolvers used by the ACME service can still hold an NXDOMAIN
+          # response for a just-created nested challenge name.  The default
+          # 10-second delay was insufficient for metrics.kheven.me.
+          - --dns-cloudflare-propagation-seconds
+          - "60"
           - --non-interactive
           - --agree-tos
           - --keep-until-expiring

@@ -34,6 +34,21 @@ Never provide private keys to Terraform.
 administration and Jenkins HTTPS UI access. The application host continues to
 accept deployment SSH from the Jenkins security group, not from a public CIDR.
 
+When the administrator's public IPv4 changes, refresh the Terraform and Ansible
+allowlists from the repository root:
+
+```bash
+./update_public_cidr.sh
+```
+
+The script validates the address, updates every Jenkins and monitoring CIDR in
+the ignored local configuration, and creates the saved plan as
+`infra/live/live.tfplan`. It safely replaces an older plan only after a new
+plan succeeds and never applies the plan or runs Ansible.
+Review the entire plan because this root uses unified state; after explicit
+approval, apply that exact plan and run the playbook command(s) printed by the
+script so the corresponding Nginx allowlist is updated too.
+
 ```bash
 cd infra/live
 terraform init -reconfigure -backend-config=backend.hcl
