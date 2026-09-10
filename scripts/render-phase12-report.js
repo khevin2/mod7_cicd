@@ -1,232 +1,294 @@
 #!/usr/bin/env node
 'use strict';
 
-// Dependency-free vector PDF renderer for the two-page reviewer report.
+// Dependency-free vector renderer for the required two-page assurance report.
+// One muted blue accent and neutral tones keep the document publication-like.
 const fs = require('fs');
 const path = require('path');
+
 const output = path.resolve(__dirname, '../docs/observability-security-report.pdf');
 const W = 595;
 const H = 842;
+const M = 42;
+const R = W - M;
 
 const C = {
-  paper: '#F6F8FC', white: '#FFFFFF', ink: '#14243A', muted: '#617087', line: '#DCE3EC',
-  navy: '#102A43', navy2: '#183B5B', blue: '#2774E6', blueSoft: '#EAF2FF',
-  teal: '#138A83', tealSoft: '#E8F7F5', green: '#16835D', greenSoft: '#E9F7F0',
-  amber: '#B86600', amberSoft: '#FFF3D6', red: '#B9414B', redSoft: '#FDECEF'
+  paper: '#FFFFFF',
+  ink: '#20262D',
+  muted: '#626B73',
+  line: '#D8DDE2',
+  accent: '#23527C'
 };
 
 function rgb(hex) {
   const clean = hex.slice(1);
-  return [0, 2, 4].map((i) => (parseInt(clean.slice(i, i + 2), 16) / 255).toFixed(3)).join(' ');
+  return [0, 2, 4].map(function (index) {
+    return (parseInt(clean.slice(index, index + 2), 16) / 255).toFixed(3);
+  }).join(' ');
 }
-function esc(value) { return value.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)'); }
+
+function esc(value) {
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+}
 
 function makePage() {
   const commands = [];
-  const add = (command) => commands.push(command);
-  function rect(x, y, w, h, fill, stroke = null, width = 1) {
-    add(`q ${rgb(fill)} rg${stroke ? ` ${rgb(stroke)} RG ${width} w` : ''} ${x} ${y} ${w} ${h} re ${stroke ? 'B' : 'f'} Q`);
+
+  function add(command) {
+    commands.push(command);
   }
-  function line(x1, y1, x2, y2, color = C.line, width = 1) {
-    add(`q ${rgb(color)} RG ${width} w ${x1} ${y1} m ${x2} ${y2} l S Q`);
+
+  function rect(x, y, width, height, fill, stroke, lineWidth) {
+    const outline = stroke ? ' ' + rgb(stroke) + ' RG ' + (lineWidth || 1) + ' w' : '';
+    add('q ' + rgb(fill) + ' rg' + outline + ' ' + x + ' ' + y + ' ' + width + ' ' + height + ' re ' + (stroke ? 'B' : 'f') + ' Q');
   }
-  function circle(cx, cy, radius, fill, stroke = null, width = 1) {
-    const k = radius * 0.55228475;
-    const path = `${cx + radius} ${cy} m ${cx + radius} ${cy + k} ${cx + k} ${cy + radius} ${cx} ${cy + radius} c ${cx - k} ${cy + radius} ${cx - radius} ${cy + k} ${cx - radius} ${cy} c ${cx - radius} ${cy - k} ${cx - k} ${cy - radius} ${cx} ${cy - radius} c ${cx + k} ${cy - radius} ${cx + radius} ${cy - k} ${cx + radius} ${cy} c`;
-    add(`q ${rgb(fill)} rg${stroke ? ` ${rgb(stroke)} RG ${width} w` : ''} ${path} ${stroke ? 'B' : 'f'} Q`);
+
+  function line(x1, y1, x2, y2, color, lineWidth) {
+    add('q ' + rgb(color || C.line) + ' RG ' + (lineWidth || 1) + ' w ' + x1 + ' ' + y1 + ' m ' + x2 + ' ' + y2 + ' l S Q');
   }
-  function text(value, x, y, size = 9, options = {}) {
+
+  function text(value, x, y, size, options) {
+    options = options || {};
     const font = options.bold ? 'F2' : 'F1';
-    const color = options.color || C.ink;
-    const tracking = options.tracking ? `${options.tracking} Tc ` : '';
-    add(`BT /${font} ${size} Tf ${rgb(color)} rg ${tracking}${x} ${y} Td (${esc(value)}) Tj ET`);
+    const tracking = options.tracking ? options.tracking + ' Tc ' : '';
+    add('BT /' + font + ' ' + (size || 9) + ' Tf ' + rgb(options.color || C.ink) + ' rg ' + tracking + x + ' ' + y + ' Td (' + esc(value) + ') Tj ET');
   }
-  function wrap(value, x, y, maxWidth, size = 9, options = {}) {
-    const words = value.split(/\s+/); const lines = []; let current = '';
-    const factor = options.bold ? 0.56 : 0.50;
-    for (const word of words) {
-      const candidate = current ? `${current} ${word}` : word;
-      if (candidate.length * size * factor > maxWidth && current) { lines.push(current); current = word; } else current = candidate;
-    }
+
+  function wrap(value, x, y, maxWidth, size, options) {
+    options = options || {};
+    const words = String(value).split(/\s+/);
+    const lines = [];
+    let current = '';
+    const widthFactor = options.bold ? 0.54 : 0.49;
+
+    words.forEach(function (word) {
+      const candidate = current ? current + ' ' + word : word;
+      if (candidate.length * size * widthFactor > maxWidth && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = candidate;
+      }
+    });
     if (current) lines.push(current);
-    const leading = options.leading || size * 1.38;
+
     const shown = options.maxLines ? lines.slice(0, options.maxLines) : lines;
-    shown.forEach((entry, index) => text(entry, x, y - index * leading, size, options));
+    const leading = options.leading || size * 1.42;
+    shown.forEach(function (entry, index) {
+      text(entry, x, y - index * leading, size, options);
+    });
     return y - shown.length * leading;
   }
-  function pill(label, x, y, w, fill, color) {
-    rect(x, y, w, 20, fill); circle(x, y + 10, 10, fill); circle(x + w, y + 10, 10, fill);
-    text(label, x + 8, y + 6.5, 7.4, { bold: true, color, tracking: 0.25 });
+
+  function ruleLabel(label, y) {
+    text(label.toUpperCase(), M, y, 7.3, { bold: true, color: C.accent, tracking: 0.75 });
+    line(M, y - 9, R, y - 9, C.line, 0.8);
   }
-  function sectionLabel(label, x, y, color = C.blue) {
-    rect(x, y - 1, 4, 14, color);
-    text(label.toUpperCase(), x + 12, y + 2, 8, { bold: true, color: C.navy, tracking: 0.7 });
+
+  function finding(number, title, body, y) {
+    text(number, M, y, 8.5, { bold: true, color: C.accent });
+    text(title, M + 27, y, 9.6, { bold: true });
+    wrap(body, M + 154, y, R - (M + 154), 9.2, { color: C.muted, leading: 12.2, maxLines: 2 });
   }
-  function arrow(x1, y, x2, color = C.blue) {
-    line(x1, y, x2 - 5, y, color, 1.5);
-    add(`q ${rgb(color)} rg ${x2 - 7} ${y + 3.5} m ${x2} ${y} l ${x2 - 7} ${y - 3.5} l f Q`);
+
+  function footer(page, descriptor) {
+    line(M, 38, R, 38, C.line, 0.8);
+    text('MODULE 10  |  OBSERVABILITY REPORT', M, 22, 7, { bold: true, color: C.muted, tracking: 0.4 });
+    text(descriptor, 223, 22, 7, { color: C.muted });
+    text(String(page) + ' / 2', 531, 22, 7, { bold: true, color: C.accent });
   }
-  function footer(page, label) {
-    line(32, 34, 563, 34, C.line, 0.8);
-    text('AMALI TECH  /  MODULE 10', 32, 18, 6.8, { bold: true, color: C.muted, tracking: 0.7 });
-    text(label, 250, 18, 6.8, { color: C.muted });
-    text(`${String(page).padStart(2, '0')} / 02`, 519, 18, 7.2, { bold: true, color: C.navy });
-  }
-  return { commands, rect, line, circle, text, wrap, pill, sectionLabel, arrow, footer };
+
+  return { commands, rect, line, text, wrap, ruleLabel, finding, footer };
 }
 
-function header(p, title, subtitle, status, statusWidth, statusFill, statusColor) {
-  p.rect(0, 0, W, H, C.paper); p.rect(0, 700, W, 142, C.navy); p.rect(0, 700, 8, 142, C.blue);
-  p.text('MODULE 10', 32, 815, 8, { bold: true, color: '#7EB2FF', tracking: 1.2 });
-  p.text('ADVANCED OBSERVABILITY', 102, 815, 8, { bold: true, color: C.white, tracking: 1.2 });
-  p.text(title, 32, 768, 27, { bold: true, color: C.white });
-  p.wrap(subtitle, 32, 742, 390, 9, { color: '#C9D7E5', leading: 12 });
-  p.pill(status, 447, 754, statusWidth, statusFill, statusColor);
+function reportHeader(p, pageTitle, pageDescriptor) {
+  p.rect(0, 0, W, H, C.paper);
+  p.rect(0, H - 8, W, 8, C.accent);
+  p.text(pageTitle, M, 782, 26, { bold: true });
+  p.text(pageDescriptor, M, 756, 10, { color: C.muted });
+  p.line(M, 731, R, 731, C.ink, 1.1);
 }
 
 function pageOne() {
   const p = makePage();
-  header(p, 'Observability posture', 'Repository and deployed-runtime evidence verified end to end.', 'EVIDENCE VERIFIED', 99, C.greenSoft, C.green);
+  reportHeader(
+    p,
+    'Observability assurance report',
+    'Module 10 | Monitoring, distributed tracing and incident correlation'
+  );
 
-  [
-    { x: 32, value: '> 5%', label: '5xx error ratio', note: '5-minute window', color: C.red },
-    { x: 213, value: '> 300 ms', label: 'p95 latency', note: '5-minute window', color: C.amber },
-    { x: 394, value: '10 min', label: 'sustained breach', note: 'minimum 20 requests', color: C.teal }
-  ].forEach((card) => {
-    p.rect(card.x, 632, 169, 52, C.white, C.line, 0.7); p.rect(card.x, 632, 4, 52, card.color);
-    p.text(card.value, card.x + 14, 659, 15, { bold: true, color: C.navy });
-    p.text(card.label, card.x + 14, 646, 7.2, { bold: true, color: C.muted });
-    p.text(card.note, card.x + 92, 646, 6.7, { color: C.muted });
-  });
+  p.ruleLabel('Executive summary', 694);
+  p.wrap(
+    'The implementation meets the Module 10 acceptance objective. RED metrics, guarded alerts, distributed traces and structured logs form a coherent investigation path from a service symptom to its controlled root cause.',
+    M, 667, R - M, 9.7, { leading: 13.5, maxLines: 3 }
+  );
+  p.wrap(
+    'Retained deployment evidence confirms the alert lifecycle, cross-tool identifier matching and return to a healthy state. The design also bounds metric cardinality and excludes sensitive request data from telemetry.',
+    M, 619, R - M, 9.7, { leading: 13.5, maxLines: 3 }
+  );
 
-  p.sectionLabel('Architecture & correlation path', 32, 601);
-  p.text('A single investigation path joins symptoms to controlled root cause.', 259, 604, 7.5, { color: C.muted });
-  const nodes = [
-    { x: 32, w: 91, title: 'APPLICATION', body: 'RED + JSON', fill: C.blueSoft, color: C.blue },
-    { x: 142, w: 91, title: 'PROMETHEUS', body: 'scrape + rules', fill: C.tealSoft, color: C.teal },
-    { x: 252, w: 91, title: 'GRAFANA', body: 'panels + alerts', fill: C.blueSoft, color: C.blue },
-    { x: 362, w: 91, title: 'JAEGER', body: 'trace + spans', fill: C.tealSoft, color: C.teal },
-    { x: 472, w: 91, title: 'CLOUDWATCH', body: 'exact ID match', fill: C.blueSoft, color: C.blue }
+  p.ruleLabel('Key findings', 567);
+  p.finding('01', 'Actionable alerting', 'Grafana evaluates guarded error-rate and latency rules every 10 seconds; a breach must persist for 10 minutes.', 539);
+  p.line(M + 27, 508, R, 508, C.line, 0.6);
+  p.finding('02', 'End-to-end correlation', 'The exemplar trace ID resolves to Jaeger; the trace and span IDs then locate the exact CloudWatch JSON log.', 490);
+  p.line(M + 27, 459, R, 459, C.line, 0.6);
+  p.finding('03', 'Bounded telemetry', 'Metric labels and log fields are allowlisted, while trace export is credential-free and limited to a private receiver.', 441);
+
+  p.ruleLabel('Investigation path', 395);
+  const stages = [
+    ['01', 'Symptom', 'Grafana'],
+    ['02', 'Alert', 'Grafana'],
+    ['03', 'Exemplar', 'Prometheus'],
+    ['04', 'Trace / span', 'Jaeger'],
+    ['05', 'Correlated log', 'CloudWatch']
   ];
-  nodes.forEach((node, index) => {
-    p.rect(node.x, 544, node.w, 40, node.fill); p.circle(node.x + 13, 570, 4, node.color);
-    p.text(node.title, node.x + 22, 567, 6.7, { bold: true, color: C.navy, tracking: 0.3 });
-    p.text(node.body, node.x + 10, 553, 7, { color: C.muted });
-    if (index < nodes.length - 1) p.arrow(node.x + node.w + 3, 564, nodes[index + 1].x - 3, C.blue);
+  stages.forEach(function (stage, index) {
+    const x = M + index * 102;
+    p.text(stage[0], x, 364, 7, { bold: true, color: C.accent });
+    p.text(stage[1], x, 348, 8.5, { bold: true });
+    p.text(stage[2], x, 334, 7.8, { color: C.muted });
+    if (index < stages.length - 1) {
+      p.line(x + 80, 362, x + 94, 362, C.line, 1);
+    }
   });
-  ['symptom', 'alert', 'exemplar', 'trace / span', 'controlled root cause'].forEach((label, index) => {
-    p.text(label, nodes[index].x, 527, 6.6, { bold: true, color: index % 2 ? C.teal : C.blue });
+  p.text('Correlation key', M, 304, 7.2, { bold: true, color: C.muted });
+  p.text('Sampled W3C trace ID; span ID identifies the exact operation.', M + 72, 304, 8.5);
+
+  p.ruleLabel('RED signal and alert policy', 269);
+  p.rect(M, 217, R - M, 23, C.line);
+  p.text('SIGNAL', M + 10, 225, 7, { bold: true });
+  p.text('MEASUREMENT', M + 90, 225, 7, { bold: true });
+  p.text('POLICY', M + 335, 225, 7, { bold: true });
+  p.line(M, 194, R, 194, C.line, 0.6);
+  p.line(M, 171, R, 171, C.line, 0.6);
+  p.line(M, 148, R, 148, C.line, 0.6);
+  [
+    ['Rate', 'Total requests', 'Dashboard baseline'],
+    ['Errors', '5xx / all requests over 5 minutes', '> 5%; 20+ requests; 10 minutes'],
+    ['Duration', 'p95 histogram over 5 minutes', '> 300 ms; 20+ requests; 10 minutes']
+  ].forEach(function (row, index) {
+    const y = 202 - index * 23;
+    p.text(row[0], M + 10, y, 8.3, { bold: true });
+    p.text(row[1], M + 90, y, 8.3, { color: C.muted });
+    p.text(row[2], M + 335, y, 8.3, { bold: index > 0 });
   });
 
-  p.sectionLabel('RED signal policy', 32, 494);
-  p.rect(32, 382, 531, 94, C.white, C.line, 0.7); p.rect(32, 452, 531, 24, C.navy2);
-  p.text('SIGNAL', 45, 460, 6.7, { bold: true, color: C.white, tracking: 0.5 });
-  p.text('DEFINITION', 132, 460, 6.7, { bold: true, color: C.white, tracking: 0.5 });
-  p.text('ALERT POLICY', 389, 460, 6.7, { bold: true, color: C.white, tracking: 0.5 });
-  p.line(117, 382, 117, 476); p.line(374, 382, 374, 476); p.line(32, 429, 563, 429); p.line(32, 405, 563, 405);
-  p.text('RATE', 45, 438, 7.3, { bold: true, color: C.blue });
-  p.text('jenkins_webapp_http_requests_total', 132, 438, 7.4); p.text('Dashboard only', 389, 438, 7.4, { color: C.muted });
-  p.text('ERRORS', 45, 414, 7.3, { bold: true, color: C.red });
-  p.text('5xx / all requests over 5 minutes', 132, 414, 7.4); p.text('>5%  |  20+ req  |  10 min', 389, 414, 7.4, { bold: true });
-  p.text('DURATION', 45, 390, 7.3, { bold: true, color: C.amber });
-  p.text('p95 histogram over 5 minutes', 132, 390, 7.4); p.text('>300 ms  |  20+ req  |  10 min', 389, 390, 7.4, { bold: true });
+  p.text('CONTROL NOTE', M, 122, 6.8, { bold: true, color: C.accent, tracking: 0.55 });
+  p.wrap('Labels are limited to method, route and status. Logs exclude bodies, headers, cookies, tokens, query values and arbitrary errors.', M + 92, 122, R - (M + 92), 8.2, { color: C.muted, leading: 10.5, maxLines: 2 });
 
-  p.sectionLabel('Controls by design', 32, 351);
-  p.rect(32, 181, 258, 152, C.white, C.line, 0.7); p.rect(305, 181, 258, 152, C.white, C.line, 0.7);
-  p.pill('PRIVACY + CARDINALITY', 48, 297, 121, C.blueSoft, C.blue);
-  p.text('Bounded metrics', 48, 276, 9, { bold: true, color: C.navy });
-  p.wrap('Labels are limited to method, route and status code. Trace IDs travel as exemplars, never metric labels.', 48, 261, 220, 7.6, { color: C.muted, leading: 11 });
-  p.text('Allowlisted logs', 48, 220, 9, { bold: true, color: C.navy });
-  p.wrap('No bodies, headers, cookies, tokens, query values or arbitrary error payloads.', 48, 205, 220, 7.6, { color: C.muted, leading: 11 });
-  p.pill('EXPORT + SAMPLING', 321, 297, 105, C.tealSoft, C.teal);
-  p.text('Private OTLP only', 321, 276, 9, { bold: true, color: C.navy });
-  p.wrap('Credential-free RFC1918 endpoint on TCP 4318. Invalid production configuration fails at startup.', 321, 261, 220, 7.6, { color: C.muted, leading: 11 });
-  p.text('Lab-scoped sampling', 321, 220, 9, { bold: true, color: C.navy });
-  p.wrap('parentbased_traceidratio at 100%. Production must reduce sampling to match volume and retention.', 321, 205, 220, 7.6, { color: C.muted, leading: 11 });
-
-  p.rect(32, 78, 531, 81, C.navy);
-  p.text('OPERATING MODEL', 48, 137, 7, { bold: true, color: '#7EB2FF', tracking: 0.7 });
-  p.text('Grafana is the sole alert engine.', 48, 117, 12, { bold: true, color: C.white });
-  p.wrap('It evaluates every 10 seconds. OpenTelemetry HTTP and Express instrumentation creates server and client spans; Grafana resolves exemplars to Jaeger.', 48, 101, 482, 7.6, { color: '#C9D7E5', leading: 11 });
-  p.footer(1, 'OBSERVABILITY & SECURITY REPORT');
+  p.footer(1, 'OBSERVABILITY DESIGN');
   return p.commands.join('\n');
 }
 
 function pageTwo() {
   const p = makePage();
-  header(p, 'Verified acceptance', 'A complete path from bounded test traffic to confirmed recovery.', 'END-TO-END VERIFIED', 108, C.greenSoft, C.green);
-  p.rect(32, 635, 531, 48, C.greenSoft); p.rect(32, 635, 5, 48, C.green);
-  p.text('VERIFICATION STATUS', 49, 664, 7, { bold: true, color: C.green, tracking: 0.7 });
-  p.wrap('Deployed evidence confirms the alert lifecycle, exemplar, matching Jaeger spans, exact CloudWatch IDs and healthy recovery.', 49, 649, 490, 8.2, { bold: true, color: C.navy, leading: 11 });
+  reportHeader(
+    p,
+    'Evidence and conclusion',
+    'Controlled validation, correlation chain and acceptance boundary'
+  );
 
-  p.sectionLabel('Verified capture sequence', 32, 603, C.green);
-  const steps = [
-    ['01', 'BASELINE', '10-minute normal baseline and healthy scrape state verified.'],
-    ['02', 'ERROR MODE', 'HTTP 500 test observed through Pending, Firing and Resolved.'],
-    ['03', 'LATENCY MODE', 'Independent fixed 400 ms successful response validated.'],
-    ['04', 'CORRELATE', 'Exemplar, Jaeger spans and exact-match JSON log IDs verified.'],
-    ['05', 'RECOVER', 'Ordinary traces, health, versions and alert recovery confirmed.']
-  ];
-  p.line(52, 415, 52, 574, C.line, 2);
-  steps.forEach((step, index) => {
-    const y = 567 - index * 36; p.circle(52, y, 11, index === 4 ? C.teal : C.blue);
-    p.text(step[0], 45.5, y - 2.7, 6.5, { bold: true, color: C.white });
-    p.text(step[1], 76, y + 3, 7.3, { bold: true, color: C.navy, tracking: 0.45 });
-    p.text(step[2], 155, y + 3, 7.4, { color: C.muted });
-  });
+  p.ruleLabel('Controlled validation', 684);
+  p.rect(M, 637, R - M, 23, C.line);
+  p.text('TEST', M + 10, 645, 7, { bold: true });
+  p.text('OBSERVED EFFECT', M + 130, 645, 7, { bold: true });
+  p.text('VERIFICATION AND RECOVERY', M + 286, 645, 7, { bold: true });
+  p.line(M, 584, R, 584, C.line, 0.6);
+  p.line(M, 530, R, 530, C.line, 0.6);
 
-  p.sectionLabel('Verified controlled behavior', 32, 388, C.green);
-  p.rect(32, 292, 258, 78, C.white, C.line, 0.7); p.rect(305, 292, 258, 78, C.white, C.line, 0.7);
-  p.circle(52, 348, 7, C.redSoft); p.circle(52, 348, 3, C.red);
-  p.text('ERROR MODE', 68, 345, 7.4, { bold: true, color: C.red, tracking: 0.5 });
-  p.text('Deliberate HTTP 500', 48, 325, 11, { bold: true, color: C.navy });
-  p.wrap('Selected /test mode confirmed as root cause; stopping controlled traffic restored service.', 48, 309, 220, 7.4, { color: C.muted, leading: 10 });
-  p.circle(325, 348, 7, C.amberSoft); p.circle(325, 348, 3, C.amber);
-  p.text('LATENCY MODE', 341, 345, 7.4, { bold: true, color: C.amber, tracking: 0.5 });
-  p.text('Fixed 400 ms success', 321, 325, 11, { bold: true, color: C.navy });
-  p.wrap('Validated separately from error mode without suppressing or bypassing the alert.', 321, 309, 220, 7.4, { color: C.muted, leading: 10 });
+  p.text('Error mode', M + 10, 618, 9, { bold: true });
+  p.text('POST /test | value=error', M + 10, 603, 7.8, { color: C.muted });
+  p.text('Deliberate HTTP 500', M + 130, 618, 8.7, { bold: true });
+  p.text('Assessed as a bounded run', M + 130, 603, 7.8, { color: C.muted });
+  p.wrap('Pending, Firing and Resolved states captured. Stopping controlled traffic restored service.', M + 286, 618, 211, 8.2, { color: C.muted, leading: 11.2, maxLines: 3 });
 
-  p.sectionLabel('Evidence chain', 32, 262);
+  p.text('Latency mode', M + 10, 564, 9, { bold: true });
+  p.text('POST /test | value=latency', M + 10, 549, 7.8, { color: C.muted });
+  p.text('Fixed 400 ms success', M + 130, 564, 8.7, { bold: true });
+  p.text('Assessed independently', M + 130, 549, 7.8, { color: C.muted });
+  p.wrap('Alert behavior verified without suppression, bypass or configuration change.', M + 286, 564, 211, 8.2, { color: C.muted, leading: 11.2, maxLines: 2 });
+
+  p.ruleLabel('Correlation chain', 495);
   const evidence = [
-    { x: 32, w: 92, label: 'UTC SYMPTOM' }, { x: 138, w: 88, label: 'ALERT STATE' },
-    { x: 240, w: 88, label: 'EXEMPLAR' }, { x: 342, w: 88, label: 'JAEGER' },
-    { x: 444, w: 119, label: 'CLOUDWATCH ID' }
+    ['01', 'Alert state', 'UTC marker'],
+    ['02', 'Exemplar', 'Trace ID'],
+    ['03', 'Jaeger', 'Matching span'],
+    ['04', 'CloudWatch', 'Exact IDs'],
+    ['05', 'Root cause', '/test mode']
   ];
-  evidence.forEach((item, index) => {
-    p.rect(item.x, 224, item.w, 25, index % 2 ? C.tealSoft : C.blueSoft);
-    p.text(item.label, item.x + 9, 233, 6.6, { bold: true, color: index % 2 ? C.teal : C.blue, tracking: 0.35 });
-    if (index < evidence.length - 1) p.arrow(item.x + item.w + 3, 236.5, evidence[index + 1].x - 3, C.muted);
+  evidence.forEach(function (item, index) {
+    const x = M + index * 102;
+    p.text(item[0], x, 464, 7, { bold: true, color: C.accent });
+    p.text(item[1], x, 448, 8.4, { bold: true });
+    p.text(item[2], x, 434, 7.8, { color: C.muted });
+    if (index < evidence.length - 1) {
+      p.line(x + 80, 462, x + 94, 462, C.line, 1);
+    }
+  });
+  p.wrap('The same identifier links the metric exemplar, Jaeger trace and structured log. Route-stable span names and the selected test mode establish causality.', M, 403, R - M, 9.2, { leading: 12.5, maxLines: 2 });
+
+  p.ruleLabel('Verification sequence', 357);
+  [
+    ['01', 'Baseline', 'Healthy scrape state and 10-minute normal baseline.'],
+    ['02', 'Error mode', 'Bounded 500 traffic; full alert lifecycle captured.'],
+    ['03', 'Latency mode', 'Fixed 400 ms successes assessed separately.'],
+    ['04', 'Correlate', 'Exemplar, spans and exact log IDs matched.'],
+    ['05', 'Recover', 'Ordinary traffic, versions and healthy state reconfirmed.']
+  ].forEach(function (step, index) {
+    const y = 329 - index * 24;
+    p.text(step[0], M, y, 7.5, { bold: true, color: C.accent });
+    p.text(step[1], M + 33, y, 8.7, { bold: true });
+    p.text(step[2], M + 124, y, 8.7, { color: C.muted });
   });
 
-  p.sectionLabel('Acceptance boundary', 32, 197);
-  p.rect(32, 70, 531, 109, C.white, C.line, 0.7); p.rect(32, 70, 265.5, 109, C.greenSoft);
-  p.text('PROVEN IN REPOSITORY', 48, 157, 7, { bold: true, color: C.green, tracking: 0.6 });
-  p.wrap('HTTP server/client tracing; RED metrics and exemplars; Jaeger/Grafana provisioning; both 10-minute alerts; temporary phase routes removed.', 48, 138, 222, 7.5, { color: C.ink, leading: 11 });
-  p.text('Durable demo surface', 48, 91, 7, { bold: true, color: C.green }); p.text('POST /test remains documented.', 143, 91, 7, { color: C.muted });
-  p.text('VERIFIED IN DEPLOYMENT', 314, 157, 7, { bold: true, color: C.blue, tracking: 0.6 });
-  p.wrap('Healthy Jaeger; populated panels; full alert lifecycle; trace links; exact CloudWatch correlation; versions; recovery and ordinary traces.', 314, 138, 223, 7.5, { color: C.ink, leading: 11 });
-  p.text('Limits', 314, 91, 7, { bold: true, color: C.blue }); p.text('Non-durable Jaeger; 100% lab sampling; DB N/A.', 348, 91, 7, { color: C.muted });
-  p.footer(2, 'SANITIZED EVIDENCE  /  evidence/mod10/');
+  p.ruleLabel('Acceptance boundary', 190);
+  p.text('PROVEN IN REPOSITORY', M, 162, 7.1, { bold: true, color: C.accent, tracking: 0.45 });
+  p.wrap('HTTP server/client spans, RED metrics and exemplars; Jaeger and Grafana provisioning; both alert rules.', M, 143, 235, 8.5, { leading: 11.4, maxLines: 3 });
+  p.line(296, 112, 296, 165, C.line, 0.8);
+  p.text('VERIFIED IN DEPLOYMENT', 316, 162, 7.1, { bold: true, color: C.accent, tracking: 0.45 });
+  p.wrap('Populated panels, alert lifecycles, trace links and exact log IDs; recovery, ordinary traces, health and versions.', 316, 143, 237, 8.5, { leading: 11.4, maxLines: 3 });
+
+  p.line(M, 98, R, 98, C.ink, 1.1);
+  p.text('CONCLUSION', M, 78, 7.1, { bold: true, color: C.accent, tracking: 0.55 });
+  p.text('Acceptance evidence is complete and the service returned to a healthy state.', M + 84, 78, 9.1, { bold: true });
+  p.text('LIMITS', M, 60, 6.8, { bold: true, color: C.muted, tracking: 0.55 });
+  p.text('Non-durable lab Jaeger; 100% lab sampling; database tracing not applicable.', M + 84, 60, 8.2, { color: C.muted });
+
+  p.footer(2, 'SANITIZED EVIDENCE  |  evidence/mod10/');
   return p.commands.join('\n');
 }
 
 const streams = [pageOne(), pageTwo()];
 const objects = [
-  '<< /Type /Catalog /Pages 2 0 R /PageMode /UseNone >>',
+  '<< /Type /Catalog /Pages 2 0 R /Outlines 10 0 R /PageMode /UseOutlines /Lang (en-ZA) /ViewerPreferences << /DisplayDocTitle true >> >>',
   '<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>',
   '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 7 0 R /F2 8 0 R >> >> /Contents 4 0 R >>',
-  `<< /Length ${Buffer.byteLength(streams[0])} >>\nstream\n${streams[0]}\nendstream`,
+  '<< /Length ' + Buffer.byteLength(streams[0]) + ' >>\nstream\n' + streams[0] + '\nendstream',
   '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 7 0 R /F2 8 0 R >> >> /Contents 6 0 R >>',
-  `<< /Length ${Buffer.byteLength(streams[1])} >>\nstream\n${streams[1]}\nendstream`,
+  '<< /Length ' + Buffer.byteLength(streams[1]) + ' >>\nstream\n' + streams[1] + '\nendstream',
   '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
   '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>',
-  '<< /Title (Module 10 Observability and Security Report) /Author (AMALI TECH) /Subject (Advanced observability design and controlled acceptance) /Creator (Dependency-free Node.js PDF renderer) >>'
+  '<< /Title (Observability Assurance Report) /Subject (Module 10 monitoring, distributed tracing and incident correlation) /Keywords (Prometheus, Grafana, Jaeger, OpenTelemetry, CloudWatch) /Creator (Dependency-free Node.js PDF renderer) >>',
+  '<< /Type /Outlines /First 11 0 R /Last 12 0 R /Count 2 >>',
+  '<< /Title (Observability design) /Parent 10 0 R /Next 12 0 R /Dest [3 0 R /Fit] >>',
+  '<< /Title (Evidence and conclusion) /Parent 10 0 R /Prev 11 0 R /Dest [5 0 R /Fit] >>'
 ];
-let pdf = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'; const offsets = [0];
-objects.forEach((object, index) => { offsets.push(Buffer.byteLength(pdf, 'binary')); pdf += `${index + 1} 0 obj\n${object}\nendobj\n`; });
+
+let pdf = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';
+const offsets = [0];
+objects.forEach(function (object, index) {
+  offsets.push(Buffer.byteLength(pdf, 'binary'));
+  pdf += (index + 1) + ' 0 obj\n' + object + '\nendobj\n';
+});
 const xref = Buffer.byteLength(pdf, 'binary');
-pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-offsets.slice(1).forEach((offset) => { pdf += `${String(offset).padStart(10, '0')} 00000 n \n`; });
-pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R /Info 9 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+pdf += 'xref\n0 ' + (objects.length + 1) + '\n0000000000 65535 f \n';
+offsets.slice(1).forEach(function (offset) {
+  pdf += String(offset).padStart(10, '0') + ' 00000 n \n';
+});
+pdf += 'trailer\n<< /Size ' + (objects.length + 1) + ' /Root 1 0 R /Info 9 0 R >>\nstartxref\n' + xref + '\n%%EOF\n';
+
 fs.writeFileSync(output, Buffer.from(pdf, 'binary'));
-console.log(`Rendered ${output} (${streams.length} pages)`);
+console.log('Rendered ' + output + ' (' + streams.length + ' pages)');

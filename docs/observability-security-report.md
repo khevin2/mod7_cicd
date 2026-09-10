@@ -73,3 +73,4 @@ Lab limits: Jaeger storage is intentionally non-durable/lab-scoped, sampling is
 N/A. Keep sanitized evidence in `evidence/mod10/`; never add endpoints,
 credentials, account identifiers, raw CloudWatch exports, or unsanitized
 screenshots. Final acceptance is verified from the retained sanitized evidence.
+

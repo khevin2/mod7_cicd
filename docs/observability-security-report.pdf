@@ -1,7 +1,7 @@
 %PDF-1.4
 %‚„œ”
 1 0 obj
-<< /Type /Catalog /Pages 2 0 R /PageMode /UseNone >>
+<< /Type /Catalog /Pages 2 0 R /Outlines 10 0 R /PageMode /UseOutlines /Lang (en-ZA) /ViewerPreferences << /DisplayDocTitle true >> >>
 endobj
 2 0 obj
 << /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>
@@ -10,226 +10,177 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 7 0 R /F2 8 0 R >> >> /Contents 4 0 R >>
 endobj
 4 0 obj
-<< /Length 9324 >>
+<< /Length 5713 >>
 stream
-q 0.965 0.973 0.988 rg 0 0 595 842 re f Q
-q 0.063 0.165 0.263 rg 0 700 595 142 re f Q
-q 0.153 0.455 0.902 rg 0 700 8 142 re f Q
-BT /F2 8 Tf 0.494 0.698 1.000 rg 1.2 Tc 32 815 Td (MODULE 10) Tj ET
-BT /F2 8 Tf 1.000 1.000 1.000 rg 1.2 Tc 102 815 Td (ADVANCED OBSERVABILITY) Tj ET
-BT /F2 27 Tf 1.000 1.000 1.000 rg 32 768 Td (Observability posture) Tj ET
-BT /F1 9 Tf 0.788 0.843 0.898 rg 32 742 Td (Repository and deployed-runtime evidence verified end to end.) Tj ET
-q 0.914 0.969 0.941 rg 447 754 99 20 re f Q
-q 0.914 0.969 0.941 rg 457 764 m 457 769.5228475 452.5228475 774 447 774 c 441.4771525 774 437 769.5228475 437 764 c 437 758.4771525 441.4771525 754 447 754 c 452.5228475 754 457 758.4771525 457 764 c f Q
-q 0.914 0.969 0.941 rg 556 764 m 556 769.5228475 551.5228475 774 546 774 c 540.4771525 774 536 769.5228475 536 764 c 536 758.4771525 540.4771525 754 546 754 c 551.5228475 754 556 758.4771525 556 764 c f Q
-BT /F2 7.4 Tf 0.086 0.514 0.365 rg 0.25 Tc 455 760.5 Td (EVIDENCE VERIFIED) Tj ET
-q 1.000 1.000 1.000 rg 0.863 0.890 0.925 RG 0.7 w 32 632 169 52 re B Q
-q 0.725 0.255 0.294 rg 32 632 4 52 re f Q
-BT /F2 15 Tf 0.063 0.165 0.263 rg 46 659 Td (> 5%) Tj ET
-BT /F2 7.2 Tf 0.380 0.439 0.529 rg 46 646 Td (5xx error ratio) Tj ET
-BT /F1 6.7 Tf 0.380 0.439 0.529 rg 124 646 Td (5-minute window) Tj ET
-q 1.000 1.000 1.000 rg 0.863 0.890 0.925 RG 0.7 w 213 632 169 52 re B Q
-q 0.722 0.400 0.000 rg 213 632 4 52 re f Q
-BT /F2 15 Tf 0.063 0.165 0.263 rg 227 659 Td (> 300 ms) Tj ET
-BT /F2 7.2 Tf 0.380 0.439 0.529 rg 227 646 Td (p95 latency) Tj ET
-BT /F1 6.7 Tf 0.380 0.439 0.529 rg 305 646 Td (5-minute window) Tj ET
-q 1.000 1.000 1.000 rg 0.863 0.890 0.925 RG 0.7 w 394 632 169 52 re B Q
-q 0.075 0.541 0.514 rg 394 632 4 52 re f Q
-BT /F2 15 Tf 0.063 0.165 0.263 rg 408 659 Td (10 min) Tj ET
-BT /F2 7.2 Tf 0.380 0.439 0.529 rg 408 646 Td (sustained breach) Tj ET
-BT /F1 6.7 Tf 0.380 0.439 0.529 rg 486 646 Td (minimum 20 requests) Tj ET
-q 0.153 0.455 0.902 rg 32 600 4 14 re f Q
-BT /F2 8 Tf 0.063 0.165 0.263 rg 0.7 Tc 44 603 Td (ARCHITECTURE & CORRELATION PATH) Tj ET
-BT /F1 7.5 Tf 0.380 0.439 0.529 rg 259 604 Td (A single investigation path joins symptoms to controlled root cause.) Tj ET
-q 0.918 0.949 1.000 rg 32 544 91 40 re f Q
-q 0.153 0.455 0.902 rg 49 570 m 49 572.209139 47.209139 574 45 574 c 42.790861 574 41 572.209139 41 570 c 41 567.790861 42.790861 566 45 566 c 47.209139 566 49 567.790861 49 570 c f Q
-BT /F2 6.7 Tf 0.063 0.165 0.263 rg 0.3 Tc 54 567 Td (APPLICATION) Tj ET
-BT /F1 7 Tf 0.380 0.439 0.529 rg 42 553 Td (RED + JSON) Tj ET
-q 0.153 0.455 0.902 RG 1.5 w 126 564 m 134 564 l S Q
-q 0.153 0.455 0.902 rg 132 567.5 m 139 564 l 132 560.5 l f Q
-q 0.910 0.969 0.961 rg 142 544 91 40 re f Q
-q 0.075 0.541 0.514 rg 159 570 m 159 572.209139 157.209139 574 155 574 c 152.790861 574 151 572.209139 151 570 c 151 567.790861 152.790861 566 155 566 c 157.209139 566 159 567.790861 159 570 c f Q
-BT /F2 6.7 Tf 0.063 0.165 0.263 rg 0.3 Tc 164 567 Td (PROMETHEUS) Tj ET
-BT /F1 7 Tf 0.380 0.439 0.529 rg 152 553 Td (scrape + rules) Tj ET
-q 0.153 0.455 0.902 RG 1.5 w 236 564 m 244 564 l S Q
-q 0.153 0.455 0.902 rg 242 567.5 m 249 564 l 242 560.5 l f Q
-q 0.918 0.949 1.000 rg 252 544 91 40 re f Q
-q 0.153 0.455 0.902 rg 269 570 m 269 572.209139 267.209139 574 265 574 c 262.790861 574 261 572.209139 261 570 c 261 567.790861 262.790861 566 265 566 c 267.209139 566 269 567.790861 269 570 c f Q
-BT /F2 6.7 Tf 0.063 0.165 0.263 rg 0.3 Tc 274 567 Td (GRAFANA) Tj ET
-BT /F1 7 Tf 0.380 0.439 0.529 rg 262 553 Td (panels + alerts) Tj ET
-q 0.153 0.455 0.902 RG 1.5 w 346 564 m 354 564 l S Q
-q 0.153 0.455 0.902 rg 352 567.5 m 359 564 l 352 560.5 l f Q
-q 0.910 0.969 0.961 rg 362 544 91 40 re f Q
-q 0.075 0.541 0.514 rg 379 570 m 379 572.209139 377.209139 574 375 574 c 372.790861 574 371 572.209139 371 570 c 371 567.790861 372.790861 566 375 566 c 377.209139 566 379 567.790861 379 570 c f Q
-BT /F2 6.7 Tf 0.063 0.165 0.263 rg 0.3 Tc 384 567 Td (JAEGER) Tj ET
-BT /F1 7 Tf 0.380 0.439 0.529 rg 372 553 Td (trace + spans) Tj ET
-q 0.153 0.455 0.902 RG 1.5 w 456 564 m 464 564 l S Q
-q 0.153 0.455 0.902 rg 462 567.5 m 469 564 l 462 560.5 l f Q
-q 0.918 0.949 1.000 rg 472 544 91 40 re f Q
-q 0.153 0.455 0.902 rg 489 570 m 489 572.209139 487.209139 574 485 574 c 482.790861 574 481 572.209139 481 570 c 481 567.790861 482.790861 566 485 566 c 487.209139 566 489 567.790861 489 570 c f Q
-BT /F2 6.7 Tf 0.063 0.165 0.263 rg 0.3 Tc 494 567 Td (CLOUDWATCH) Tj ET
-BT /F1 7 Tf 0.380 0.439 0.529 rg 482 553 Td (exact ID match) Tj ET
-BT /F2 6.6 Tf 0.153 0.455 0.902 rg 32 527 Td (symptom) Tj ET
-BT /F2 6.6 Tf 0.075 0.541 0.514 rg 142 527 Td (alert) Tj ET
-BT /F2 6.6 Tf 0.153 0.455 0.902 rg 252 527 Td (exemplar) Tj ET
-BT /F2 6.6 Tf 0.075 0.541 0.514 rg 362 527 Td (trace / span) Tj ET
-BT /F2 6.6 Tf 0.153 0.455 0.902 rg 472 527 Td (controlled root cause) Tj ET
-q 0.153 0.455 0.902 rg 32 493 4 14 re f Q
-BT /F2 8 Tf 0.063 0.165 0.263 rg 0.7 Tc 44 496 Td (RED SIGNAL POLICY) Tj ET
-q 1.000 1.000 1.000 rg 0.863 0.890 0.925 RG 0.7 w 32 382 531 94 re B Q
-q 0.094 0.231 0.357 rg 32 452 531 24 re f Q
-BT /F2 6.7 Tf 1.000 1.000 1.000 rg 0.5 Tc 45 460 Td (SIGNAL) Tj ET
-BT /F2 6.7 Tf 1.000 1.000 1.000 rg 0.5 Tc 132 460 Td (DEFINITION) Tj ET
-BT /F2 6.7 Tf 1.000 1.000 1.000 rg 0.5 Tc 389 460 Td (ALERT POLICY) Tj ET
-q 0.863 0.890 0.925 RG 1 w 117 382 m 117 476 l S Q
-q 0.863 0.890 0.925 RG 1 w 374 382 m 374 476 l S Q
-q 0.863 0.890 0.925 RG 1 w 32 429 m 563 429 l S Q
-q 0.863 0.890 0.925 RG 1 w 32 405 m 563 405 l S Q
-BT /F2 7.3 Tf 0.153 0.455 0.902 rg 45 438 Td (RATE) Tj ET
-BT /F1 7.4 Tf 0.078 0.141 0.227 rg 132 438 Td (jenkins_webapp_http_requests_total) Tj ET
-BT /F1 7.4 Tf 0.380 0.439 0.529 rg 389 438 Td (Dashboard only) Tj ET
-BT /F2 7.3 Tf 0.725 0.255 0.294 rg 45 414 Td (ERRORS) Tj ET
-BT /F1 7.4 Tf 0.078 0.141 0.227 rg 132 414 Td (5xx / all requests over 5 minutes) Tj ET
-BT /F2 7.4 Tf 0.078 0.141 0.227 rg 389 414 Td (>5%  |  20+ req  |  10 min) Tj ET
-BT /F2 7.3 Tf 0.722 0.400 0.000 rg 45 390 Td (DURATION) Tj ET
-BT /F1 7.4 Tf 0.078 0.141 0.227 rg 132 390 Td (p95 histogram over 5 minutes) Tj ET
-BT /F2 7.4 Tf 0.078 0.141 0.227 rg 389 390 Td (>300 ms  |  20+ req  |  10 min) Tj ET
-q 0.153 0.455 0.902 rg 32 350 4 14 re f Q
-BT /F2 8 Tf 0.063 0.165 0.263 rg 0.7 Tc 44 353 Td (CONTROLS BY DESIGN) Tj ET
-q 1.000 1.000 1.000 rg 0.863 0.890 0.925 RG 0.7 w 32 181 258 152 re B Q
-q 1.000 1.000 1.000 rg 0.863 0.890 0.925 RG 0.7 w 305 181 258 152 re B Q
-q 0.918 0.949 1.000 rg 48 297 121 20 re f Q
-q 0.918 0.949 1.000 rg 58 307 m 58 312.5228475 53.5228475 317 48 317 c 42.4771525 317 38 312.5228475 38 307 c 38 301.4771525 42.4771525 297 48 297 c 53.5228475 297 58 301.4771525 58 307 c f Q
-q 0.918 0.949 1.000 rg 179 307 m 179 312.5228475 174.5228475 317 169 317 c 163.4771525 317 159 312.5228475 159 307 c 159 301.4771525 163.4771525 297 169 297 c 174.5228475 297 179 301.4771525 179 307 c f Q
-BT /F2 7.4 Tf 0.153 0.455 0.902 rg 0.25 Tc 56 303.5 Td (PRIVACY + CARDINALITY) Tj ET
-BT /F2 9 Tf 0.063 0.165 0.263 rg 48 276 Td (Bounded metrics) Tj ET
-BT /F1 7.6 Tf 0.380 0.439 0.529 rg 48 261 Td (Labels are limited to method, route and status code.) Tj ET
-BT /F1 7.6 Tf 0.380 0.439 0.529 rg 48 250 Td (Trace IDs travel as exemplars, never metric labels.) Tj ET
-BT /F2 9 Tf 0.063 0.165 0.263 rg 48 220 Td (Allowlisted logs) Tj ET
-BT /F1 7.6 Tf 0.380 0.439 0.529 rg 48 205 Td (No bodies, headers, cookies, tokens, query values or) Tj ET
-BT /F1 7.6 Tf 0.380 0.439 0.529 rg 48 194 Td (arbitrary error payloads.) Tj ET
-q 0.910 0.969 0.961 rg 321 297 105 20 re f Q
-q 0.910 0.969 0.961 rg 331 307 m 331 312.5228475 326.5228475 317 321 317 c 315.4771525 317 311 312.5228475 311 307 c 311 301.4771525 315.4771525 297 321 297 c 326.5228475 297 331 301.4771525 331 307 c f Q
-q 0.910 0.969 0.961 rg 436 307 m 436 312.5228475 431.5228475 317 426 317 c 420.4771525 317 416 312.5228475 416 307 c 416 301.4771525 420.4771525 297 426 297 c 431.5228475 297 436 301.4771525 436 307 c f Q
-BT /F2 7.4 Tf 0.075 0.541 0.514 rg 0.25 Tc 329 303.5 Td (EXPORT + SAMPLING) Tj ET
-BT /F2 9 Tf 0.063 0.165 0.263 rg 321 276 Td (Private OTLP only) Tj ET
-BT /F1 7.6 Tf 0.380 0.439 0.529 rg 321 261 Td (Credential-free RFC1918 endpoint on TCP 4318. Invalid) Tj ET
-BT /F1 7.6 Tf 0.380 0.439 0.529 rg 321 250 Td (production configuration fails at startup.) Tj ET
-BT /F2 9 Tf 0.063 0.165 0.263 rg 321 220 Td (Lab-scoped sampling) Tj ET
-BT /F1 7.6 Tf 0.380 0.439 0.529 rg 321 205 Td (parentbased_traceidratio at 100%. Production must reduce) Tj ET
-BT /F1 7.6 Tf 0.380 0.439 0.529 rg 321 194 Td (sampling to match volume and retention.) Tj ET
-q 0.063 0.165 0.263 rg 32 78 531 81 re f Q
-BT /F2 7 Tf 0.494 0.698 1.000 rg 0.7 Tc 48 137 Td (OPERATING MODEL) Tj ET
-BT /F2 12 Tf 1.000 1.000 1.000 rg 48 117 Td (Grafana is the sole alert engine.) Tj ET
-BT /F1 7.6 Tf 0.788 0.843 0.898 rg 48 101 Td (It evaluates every 10 seconds. OpenTelemetry HTTP and Express instrumentation creates server and client spans; Grafana) Tj ET
-BT /F1 7.6 Tf 0.788 0.843 0.898 rg 48 90 Td (resolves exemplars to Jaeger.) Tj ET
-q 0.863 0.890 0.925 RG 0.8 w 32 34 m 563 34 l S Q
-BT /F2 6.8 Tf 0.380 0.439 0.529 rg 0.7 Tc 32 18 Td (AMALI TECH  /  MODULE 10) Tj ET
-BT /F1 6.8 Tf 0.380 0.439 0.529 rg 250 18 Td (OBSERVABILITY & SECURITY REPORT) Tj ET
-BT /F2 7.2 Tf 0.063 0.165 0.263 rg 519 18 Td (01 / 02) Tj ET
+q 1.000 1.000 1.000 rg 0 0 595 842 re f Q
+q 0.137 0.322 0.486 rg 0 834 595 8 re f Q
+BT /F2 26 Tf 0.125 0.149 0.176 rg 42 782 Td (Observability assurance report) Tj ET
+BT /F1 10 Tf 0.384 0.420 0.451 rg 42 756 Td (Module 10 | Monitoring, distributed tracing and incident correlation) Tj ET
+q 0.125 0.149 0.176 RG 1.1 w 42 731 m 553 731 l S Q
+BT /F2 7.3 Tf 0.137 0.322 0.486 rg 0.75 Tc 42 694 Td (EXECUTIVE SUMMARY) Tj ET
+q 0.847 0.867 0.886 RG 0.8 w 42 685 m 553 685 l S Q
+BT /F1 9.7 Tf 0.125 0.149 0.176 rg 42 667 Td (The implementation meets the Module 10 acceptance objective. RED metrics, guarded alerts, distributed) Tj ET
+BT /F1 9.7 Tf 0.125 0.149 0.176 rg 42 653.5 Td (traces and structured logs form a coherent investigation path from a service symptom to its controlled root) Tj ET
+BT /F1 9.7 Tf 0.125 0.149 0.176 rg 42 640 Td (cause.) Tj ET
+BT /F1 9.7 Tf 0.125 0.149 0.176 rg 42 619 Td (Retained deployment evidence confirms the alert lifecycle, cross-tool identifier matching and return to a) Tj ET
+BT /F1 9.7 Tf 0.125 0.149 0.176 rg 42 605.5 Td (healthy state. The design also bounds metric cardinality and excludes sensitive request data from) Tj ET
+BT /F1 9.7 Tf 0.125 0.149 0.176 rg 42 592 Td (telemetry.) Tj ET
+BT /F2 7.3 Tf 0.137 0.322 0.486 rg 0.75 Tc 42 567 Td (KEY FINDINGS) Tj ET
+q 0.847 0.867 0.886 RG 0.8 w 42 558 m 553 558 l S Q
+BT /F2 8.5 Tf 0.137 0.322 0.486 rg 42 539 Td (01) Tj ET
+BT /F2 9.6 Tf 0.125 0.149 0.176 rg 69 539 Td (Actionable alerting) Tj ET
+BT /F1 9.2 Tf 0.384 0.420 0.451 rg 196 539 Td (Grafana evaluates guarded error-rate and latency rules every 10 seconds; a) Tj ET
+BT /F1 9.2 Tf 0.384 0.420 0.451 rg 196 526.8 Td (breach must persist for 10 minutes.) Tj ET
+q 0.847 0.867 0.886 RG 0.6 w 69 508 m 553 508 l S Q
+BT /F2 8.5 Tf 0.137 0.322 0.486 rg 42 490 Td (02) Tj ET
+BT /F2 9.6 Tf 0.125 0.149 0.176 rg 69 490 Td (End-to-end correlation) Tj ET
+BT /F1 9.2 Tf 0.384 0.420 0.451 rg 196 490 Td (The exemplar trace ID resolves to Jaeger; the trace and span IDs then locate) Tj ET
+BT /F1 9.2 Tf 0.384 0.420 0.451 rg 196 477.8 Td (the exact CloudWatch JSON log.) Tj ET
+q 0.847 0.867 0.886 RG 0.6 w 69 459 m 553 459 l S Q
+BT /F2 8.5 Tf 0.137 0.322 0.486 rg 42 441 Td (03) Tj ET
+BT /F2 9.6 Tf 0.125 0.149 0.176 rg 69 441 Td (Bounded telemetry) Tj ET
+BT /F1 9.2 Tf 0.384 0.420 0.451 rg 196 441 Td (Metric labels and log fields are allowlisted, while trace export is) Tj ET
+BT /F1 9.2 Tf 0.384 0.420 0.451 rg 196 428.8 Td (credential-free and limited to a private receiver.) Tj ET
+BT /F2 7.3 Tf 0.137 0.322 0.486 rg 0.75 Tc 42 395 Td (INVESTIGATION PATH) Tj ET
+q 0.847 0.867 0.886 RG 0.8 w 42 386 m 553 386 l S Q
+BT /F2 7 Tf 0.137 0.322 0.486 rg 42 364 Td (01) Tj ET
+BT /F2 8.5 Tf 0.125 0.149 0.176 rg 42 348 Td (Symptom) Tj ET
+BT /F1 7.8 Tf 0.384 0.420 0.451 rg 42 334 Td (Grafana) Tj ET
+q 0.847 0.867 0.886 RG 1 w 122 362 m 136 362 l S Q
+BT /F2 7 Tf 0.137 0.322 0.486 rg 144 364 Td (02) Tj ET
+BT /F2 8.5 Tf 0.125 0.149 0.176 rg 144 348 Td (Alert) Tj ET
+BT /F1 7.8 Tf 0.384 0.420 0.451 rg 144 334 Td (Grafana) Tj ET
+q 0.847 0.867 0.886 RG 1 w 224 362 m 238 362 l S Q
+BT /F2 7 Tf 0.137 0.322 0.486 rg 246 364 Td (03) Tj ET
+BT /F2 8.5 Tf 0.125 0.149 0.176 rg 246 348 Td (Exemplar) Tj ET
+BT /F1 7.8 Tf 0.384 0.420 0.451 rg 246 334 Td (Prometheus) Tj ET
+q 0.847 0.867 0.886 RG 1 w 326 362 m 340 362 l S Q
+BT /F2 7 Tf 0.137 0.322 0.486 rg 348 364 Td (04) Tj ET
+BT /F2 8.5 Tf 0.125 0.149 0.176 rg 348 348 Td (Trace / span) Tj ET
+BT /F1 7.8 Tf 0.384 0.420 0.451 rg 348 334 Td (Jaeger) Tj ET
+q 0.847 0.867 0.886 RG 1 w 428 362 m 442 362 l S Q
+BT /F2 7 Tf 0.137 0.322 0.486 rg 450 364 Td (05) Tj ET
+BT /F2 8.5 Tf 0.125 0.149 0.176 rg 450 348 Td (Correlated log) Tj ET
+BT /F1 7.8 Tf 0.384 0.420 0.451 rg 450 334 Td (CloudWatch) Tj ET
+BT /F2 7.2 Tf 0.384 0.420 0.451 rg 42 304 Td (Correlation key) Tj ET
+BT /F1 8.5 Tf 0.125 0.149 0.176 rg 114 304 Td (Sampled W3C trace ID; span ID identifies the exact operation.) Tj ET
+BT /F2 7.3 Tf 0.137 0.322 0.486 rg 0.75 Tc 42 269 Td (RED SIGNAL AND ALERT POLICY) Tj ET
+q 0.847 0.867 0.886 RG 0.8 w 42 260 m 553 260 l S Q
+q 0.847 0.867 0.886 rg 42 217 511 23 re f Q
+BT /F2 7 Tf 0.125 0.149 0.176 rg 52 225 Td (SIGNAL) Tj ET
+BT /F2 7 Tf 0.125 0.149 0.176 rg 132 225 Td (MEASUREMENT) Tj ET
+BT /F2 7 Tf 0.125 0.149 0.176 rg 377 225 Td (POLICY) Tj ET
+q 0.847 0.867 0.886 RG 0.6 w 42 194 m 553 194 l S Q
+q 0.847 0.867 0.886 RG 0.6 w 42 171 m 553 171 l S Q
+q 0.847 0.867 0.886 RG 0.6 w 42 148 m 553 148 l S Q
+BT /F2 8.3 Tf 0.125 0.149 0.176 rg 52 202 Td (Rate) Tj ET
+BT /F1 8.3 Tf 0.384 0.420 0.451 rg 132 202 Td (Total requests) Tj ET
+BT /F1 8.3 Tf 0.125 0.149 0.176 rg 377 202 Td (Dashboard baseline) Tj ET
+BT /F2 8.3 Tf 0.125 0.149 0.176 rg 52 179 Td (Errors) Tj ET
+BT /F1 8.3 Tf 0.384 0.420 0.451 rg 132 179 Td (5xx / all requests over 5 minutes) Tj ET
+BT /F2 8.3 Tf 0.125 0.149 0.176 rg 377 179 Td (> 5%; 20+ requests; 10 minutes) Tj ET
+BT /F2 8.3 Tf 0.125 0.149 0.176 rg 52 156 Td (Duration) Tj ET
+BT /F1 8.3 Tf 0.384 0.420 0.451 rg 132 156 Td (p95 histogram over 5 minutes) Tj ET
+BT /F2 8.3 Tf 0.125 0.149 0.176 rg 377 156 Td (> 300 ms; 20+ requests; 10 minutes) Tj ET
+BT /F2 6.8 Tf 0.137 0.322 0.486 rg 0.55 Tc 42 122 Td (CONTROL NOTE) Tj ET
+BT /F1 8.2 Tf 0.384 0.420 0.451 rg 134 122 Td (Labels are limited to method, route and status. Logs exclude bodies, headers, cookies, tokens, query) Tj ET
+BT /F1 8.2 Tf 0.384 0.420 0.451 rg 134 111.5 Td (values and arbitrary errors.) Tj ET
+q 0.847 0.867 0.886 RG 0.8 w 42 38 m 553 38 l S Q
+BT /F2 7 Tf 0.384 0.420 0.451 rg 0.4 Tc 42 22 Td (MODULE 10  |  OBSERVABILITY REPORT) Tj ET
+BT /F1 7 Tf 0.384 0.420 0.451 rg 223 22 Td (OBSERVABILITY DESIGN) Tj ET
+BT /F2 7 Tf 0.137 0.322 0.486 rg 531 22 Td (1 / 2) Tj ET
 endstream
 endobj
 5 0 obj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 7 0 R /F2 8 0 R >> >> /Contents 6 0 R >>
 endobj
 6 0 obj
-<< /Length 8333 >>
+<< /Length 6136 >>
 stream
-q 0.965 0.973 0.988 rg 0 0 595 842 re f Q
-q 0.063 0.165 0.263 rg 0 700 595 142 re f Q
-q 0.153 0.455 0.902 rg 0 700 8 142 re f Q
-BT /F2 8 Tf 0.494 0.698 1.000 rg 1.2 Tc 32 815 Td (MODULE 10) Tj ET
-BT /F2 8 Tf 1.000 1.000 1.000 rg 1.2 Tc 102 815 Td (ADVANCED OBSERVABILITY) Tj ET
-BT /F2 27 Tf 1.000 1.000 1.000 rg 32 768 Td (Verified acceptance) Tj ET
-BT /F1 9 Tf 0.788 0.843 0.898 rg 32 742 Td (A complete path from bounded test traffic to confirmed recovery.) Tj ET
-q 0.914 0.969 0.941 rg 447 754 108 20 re f Q
-q 0.914 0.969 0.941 rg 457 764 m 457 769.5228475 452.5228475 774 447 774 c 441.4771525 774 437 769.5228475 437 764 c 437 758.4771525 441.4771525 754 447 754 c 452.5228475 754 457 758.4771525 457 764 c f Q
-q 0.914 0.969 0.941 rg 565 764 m 565 769.5228475 560.5228475 774 555 774 c 549.4771525 774 545 769.5228475 545 764 c 545 758.4771525 549.4771525 754 555 754 c 560.5228475 754 565 758.4771525 565 764 c f Q
-BT /F2 7.4 Tf 0.086 0.514 0.365 rg 0.25 Tc 455 760.5 Td (END-TO-END VERIFIED) Tj ET
-q 0.914 0.969 0.941 rg 32 635 531 48 re f Q
-q 0.086 0.514 0.365 rg 32 635 5 48 re f Q
-BT /F2 7 Tf 0.086 0.514 0.365 rg 0.7 Tc 49 664 Td (VERIFICATION STATUS) Tj ET
-BT /F2 8.2 Tf 0.063 0.165 0.263 rg 49 649 Td (Deployed evidence confirms the alert lifecycle, exemplar, matching Jaeger spans, exact CloudWatch IDs and) Tj ET
-BT /F2 8.2 Tf 0.063 0.165 0.263 rg 49 638 Td (healthy recovery.) Tj ET
-q 0.086 0.514 0.365 rg 32 602 4 14 re f Q
-BT /F2 8 Tf 0.063 0.165 0.263 rg 0.7 Tc 44 605 Td (VERIFIED CAPTURE SEQUENCE) Tj ET
-q 0.863 0.890 0.925 RG 2 w 52 415 m 52 574 l S Q
-q 0.153 0.455 0.902 rg 63 567 m 63 573.07513225 58.07513225 578 52 578 c 45.92486775 578 41 573.07513225 41 567 c 41 560.92486775 45.92486775 556 52 556 c 58.07513225 556 63 560.92486775 63 567 c f Q
-BT /F2 6.5 Tf 1.000 1.000 1.000 rg 45.5 564.3 Td (01) Tj ET
-BT /F2 7.3 Tf 0.063 0.165 0.263 rg 0.45 Tc 76 570 Td (BASELINE) Tj ET
-BT /F1 7.4 Tf 0.380 0.439 0.529 rg 155 570 Td (10-minute normal baseline and healthy scrape state verified.) Tj ET
-q 0.153 0.455 0.902 rg 63 531 m 63 537.07513225 58.07513225 542 52 542 c 45.92486775 542 41 537.07513225 41 531 c 41 524.92486775 45.92486775 520 52 520 c 58.07513225 520 63 524.92486775 63 531 c f Q
-BT /F2 6.5 Tf 1.000 1.000 1.000 rg 45.5 528.3 Td (02) Tj ET
-BT /F2 7.3 Tf 0.063 0.165 0.263 rg 0.45 Tc 76 534 Td (ERROR MODE) Tj ET
-BT /F1 7.4 Tf 0.380 0.439 0.529 rg 155 534 Td (HTTP 500 test observed through Pending, Firing and Resolved.) Tj ET
-q 0.153 0.455 0.902 rg 63 495 m 63 501.07513225 58.07513225 506 52 506 c 45.92486775 506 41 501.07513225 41 495 c 41 488.92486775 45.92486775 484 52 484 c 58.07513225 484 63 488.92486775 63 495 c f Q
-BT /F2 6.5 Tf 1.000 1.000 1.000 rg 45.5 492.3 Td (03) Tj ET
-BT /F2 7.3 Tf 0.063 0.165 0.263 rg 0.45 Tc 76 498 Td (LATENCY MODE) Tj ET
-BT /F1 7.4 Tf 0.380 0.439 0.529 rg 155 498 Td (Independent fixed 400 ms successful response validated.) Tj ET
-q 0.153 0.455 0.902 rg 63 459 m 63 465.07513225 58.07513225 470 52 470 c 45.92486775 470 41 465.07513225 41 459 c 41 452.92486775 45.92486775 448 52 448 c 58.07513225 448 63 452.92486775 63 459 c f Q
-BT /F2 6.5 Tf 1.000 1.000 1.000 rg 45.5 456.3 Td (04) Tj ET
-BT /F2 7.3 Tf 0.063 0.165 0.263 rg 0.45 Tc 76 462 Td (CORRELATE) Tj ET
-BT /F1 7.4 Tf 0.380 0.439 0.529 rg 155 462 Td (Exemplar, Jaeger spans and exact-match JSON log IDs verified.) Tj ET
-q 0.075 0.541 0.514 rg 63 423 m 63 429.07513225 58.07513225 434 52 434 c 45.92486775 434 41 429.07513225 41 423 c 41 416.92486775 45.92486775 412 52 412 c 58.07513225 412 63 416.92486775 63 423 c f Q
-BT /F2 6.5 Tf 1.000 1.000 1.000 rg 45.5 420.3 Td (05) Tj ET
-BT /F2 7.3 Tf 0.063 0.165 0.263 rg 0.45 Tc 76 426 Td (RECOVER) Tj ET
-BT /F1 7.4 Tf 0.380 0.439 0.529 rg 155 426 Td (Ordinary traces, health, versions and alert recovery confirmed.) Tj ET
-q 0.086 0.514 0.365 rg 32 387 4 14 re f Q
-BT /F2 8 Tf 0.063 0.165 0.263 rg 0.7 Tc 44 390 Td (VERIFIED CONTROLLED BEHAVIOR) Tj ET
-q 1.000 1.000 1.000 rg 0.863 0.890 0.925 RG 0.7 w 32 292 258 78 re B Q
-q 1.000 1.000 1.000 rg 0.863 0.890 0.925 RG 0.7 w 305 292 258 78 re B Q
-q 0.992 0.925 0.937 rg 59 348 m 59 351.86599325 55.86599325 355 52 355 c 48.13400675 355 45 351.86599325 45 348 c 45 344.13400675 48.13400675 341 52 341 c 55.86599325 341 59 344.13400675 59 348 c f Q
-q 0.725 0.255 0.294 rg 55 348 m 55 349.65685425 53.65685425 351 52 351 c 50.34314575 351 49 349.65685425 49 348 c 49 346.34314575 50.34314575 345 52 345 c 53.65685425 345 55 346.34314575 55 348 c f Q
-BT /F2 7.4 Tf 0.725 0.255 0.294 rg 0.5 Tc 68 345 Td (ERROR MODE) Tj ET
-BT /F2 11 Tf 0.063 0.165 0.263 rg 48 325 Td (Deliberate HTTP 500) Tj ET
-BT /F1 7.4 Tf 0.380 0.439 0.529 rg 48 309 Td (Selected /test mode confirmed as root cause; stopping) Tj ET
-BT /F1 7.4 Tf 0.380 0.439 0.529 rg 48 299 Td (controlled traffic restored service.) Tj ET
-q 1.000 0.953 0.839 rg 332 348 m 332 351.86599325 328.86599325 355 325 355 c 321.13400675 355 318 351.86599325 318 348 c 318 344.13400675 321.13400675 341 325 341 c 328.86599325 341 332 344.13400675 332 348 c f Q
-q 0.722 0.400 0.000 rg 328 348 m 328 349.65685425 326.65685425 351 325 351 c 323.34314575 351 322 349.65685425 322 348 c 322 346.34314575 323.34314575 345 325 345 c 326.65685425 345 328 346.34314575 328 348 c f Q
-BT /F2 7.4 Tf 0.722 0.400 0.000 rg 0.5 Tc 341 345 Td (LATENCY MODE) Tj ET
-BT /F2 11 Tf 0.063 0.165 0.263 rg 321 325 Td (Fixed 400 ms success) Tj ET
-BT /F1 7.4 Tf 0.380 0.439 0.529 rg 321 309 Td (Validated separately from error mode without suppressing or) Tj ET
-BT /F1 7.4 Tf 0.380 0.439 0.529 rg 321 299 Td (bypassing the alert.) Tj ET
-q 0.153 0.455 0.902 rg 32 261 4 14 re f Q
-BT /F2 8 Tf 0.063 0.165 0.263 rg 0.7 Tc 44 264 Td (EVIDENCE CHAIN) Tj ET
-q 0.918 0.949 1.000 rg 32 224 92 25 re f Q
-BT /F2 6.6 Tf 0.153 0.455 0.902 rg 0.35 Tc 41 233 Td (UTC SYMPTOM) Tj ET
-q 0.380 0.439 0.529 RG 1.5 w 127 236.5 m 130 236.5 l S Q
-q 0.380 0.439 0.529 rg 128 240 m 135 236.5 l 128 233 l f Q
-q 0.910 0.969 0.961 rg 138 224 88 25 re f Q
-BT /F2 6.6 Tf 0.075 0.541 0.514 rg 0.35 Tc 147 233 Td (ALERT STATE) Tj ET
-q 0.380 0.439 0.529 RG 1.5 w 229 236.5 m 232 236.5 l S Q
-q 0.380 0.439 0.529 rg 230 240 m 237 236.5 l 230 233 l f Q
-q 0.918 0.949 1.000 rg 240 224 88 25 re f Q
-BT /F2 6.6 Tf 0.153 0.455 0.902 rg 0.35 Tc 249 233 Td (EXEMPLAR) Tj ET
-q 0.380 0.439 0.529 RG 1.5 w 331 236.5 m 334 236.5 l S Q
-q 0.380 0.439 0.529 rg 332 240 m 339 236.5 l 332 233 l f Q
-q 0.910 0.969 0.961 rg 342 224 88 25 re f Q
-BT /F2 6.6 Tf 0.075 0.541 0.514 rg 0.35 Tc 351 233 Td (JAEGER) Tj ET
-q 0.380 0.439 0.529 RG 1.5 w 433 236.5 m 436 236.5 l S Q
-q 0.380 0.439 0.529 rg 434 240 m 441 236.5 l 434 233 l f Q
-q 0.918 0.949 1.000 rg 444 224 119 25 re f Q
-BT /F2 6.6 Tf 0.153 0.455 0.902 rg 0.35 Tc 453 233 Td (CLOUDWATCH ID) Tj ET
-q 0.153 0.455 0.902 rg 32 196 4 14 re f Q
-BT /F2 8 Tf 0.063 0.165 0.263 rg 0.7 Tc 44 199 Td (ACCEPTANCE BOUNDARY) Tj ET
-q 1.000 1.000 1.000 rg 0.863 0.890 0.925 RG 0.7 w 32 70 531 109 re B Q
-q 0.914 0.969 0.941 rg 32 70 265.5 109 re f Q
-BT /F2 7 Tf 0.086 0.514 0.365 rg 0.6 Tc 48 157 Td (PROVEN IN REPOSITORY) Tj ET
-BT /F1 7.5 Tf 0.078 0.141 0.227 rg 48 138 Td (HTTP server/client tracing; RED metrics and exemplars;) Tj ET
-BT /F1 7.5 Tf 0.078 0.141 0.227 rg 48 127 Td (Jaeger/Grafana provisioning; both 10-minute alerts;) Tj ET
-BT /F1 7.5 Tf 0.078 0.141 0.227 rg 48 116 Td (temporary phase routes removed.) Tj ET
-BT /F2 7 Tf 0.086 0.514 0.365 rg 48 91 Td (Durable demo surface) Tj ET
-BT /F1 7 Tf 0.380 0.439 0.529 rg 143 91 Td (POST /test remains documented.) Tj ET
-BT /F2 7 Tf 0.153 0.455 0.902 rg 0.6 Tc 314 157 Td (VERIFIED IN DEPLOYMENT) Tj ET
-BT /F1 7.5 Tf 0.078 0.141 0.227 rg 314 138 Td (Healthy Jaeger; populated panels; full alert lifecycle;) Tj ET
-BT /F1 7.5 Tf 0.078 0.141 0.227 rg 314 127 Td (trace links; exact CloudWatch correlation; versions;) Tj ET
-BT /F1 7.5 Tf 0.078 0.141 0.227 rg 314 116 Td (recovery and ordinary traces.) Tj ET
-BT /F2 7 Tf 0.153 0.455 0.902 rg 314 91 Td (Limits) Tj ET
-BT /F1 7 Tf 0.380 0.439 0.529 rg 348 91 Td (Non-durable Jaeger; 100% lab sampling; DB N/A.) Tj ET
-q 0.863 0.890 0.925 RG 0.8 w 32 34 m 563 34 l S Q
-BT /F2 6.8 Tf 0.380 0.439 0.529 rg 0.7 Tc 32 18 Td (AMALI TECH  /  MODULE 10) Tj ET
-BT /F1 6.8 Tf 0.380 0.439 0.529 rg 250 18 Td (SANITIZED EVIDENCE  /  evidence/mod10/) Tj ET
-BT /F2 7.2 Tf 0.063 0.165 0.263 rg 519 18 Td (02 / 02) Tj ET
+q 1.000 1.000 1.000 rg 0 0 595 842 re f Q
+q 0.137 0.322 0.486 rg 0 834 595 8 re f Q
+BT /F2 26 Tf 0.125 0.149 0.176 rg 42 782 Td (Evidence and conclusion) Tj ET
+BT /F1 10 Tf 0.384 0.420 0.451 rg 42 756 Td (Controlled validation, correlation chain and acceptance boundary) Tj ET
+q 0.125 0.149 0.176 RG 1.1 w 42 731 m 553 731 l S Q
+BT /F2 7.3 Tf 0.137 0.322 0.486 rg 0.75 Tc 42 684 Td (CONTROLLED VALIDATION) Tj ET
+q 0.847 0.867 0.886 RG 0.8 w 42 675 m 553 675 l S Q
+q 0.847 0.867 0.886 rg 42 637 511 23 re f Q
+BT /F2 7 Tf 0.125 0.149 0.176 rg 52 645 Td (TEST) Tj ET
+BT /F2 7 Tf 0.125 0.149 0.176 rg 172 645 Td (OBSERVED EFFECT) Tj ET
+BT /F2 7 Tf 0.125 0.149 0.176 rg 328 645 Td (VERIFICATION AND RECOVERY) Tj ET
+q 0.847 0.867 0.886 RG 0.6 w 42 584 m 553 584 l S Q
+q 0.847 0.867 0.886 RG 0.6 w 42 530 m 553 530 l S Q
+BT /F2 9 Tf 0.125 0.149 0.176 rg 52 618 Td (Error mode) Tj ET
+BT /F1 7.8 Tf 0.384 0.420 0.451 rg 52 603 Td (POST /test | value=error) Tj ET
+BT /F2 8.7 Tf 0.125 0.149 0.176 rg 172 618 Td (Deliberate HTTP 500) Tj ET
+BT /F1 7.8 Tf 0.384 0.420 0.451 rg 172 603 Td (Assessed as a bounded run) Tj ET
+BT /F1 8.2 Tf 0.384 0.420 0.451 rg 328 618 Td (Pending, Firing and Resolved states captured.) Tj ET
+BT /F1 8.2 Tf 0.384 0.420 0.451 rg 328 606.8 Td (Stopping controlled traffic restored service.) Tj ET
+BT /F2 9 Tf 0.125 0.149 0.176 rg 52 564 Td (Latency mode) Tj ET
+BT /F1 7.8 Tf 0.384 0.420 0.451 rg 52 549 Td (POST /test | value=latency) Tj ET
+BT /F2 8.7 Tf 0.125 0.149 0.176 rg 172 564 Td (Fixed 400 ms success) Tj ET
+BT /F1 7.8 Tf 0.384 0.420 0.451 rg 172 549 Td (Assessed independently) Tj ET
+BT /F1 8.2 Tf 0.384 0.420 0.451 rg 328 564 Td (Alert behavior verified without suppression, bypass) Tj ET
+BT /F1 8.2 Tf 0.384 0.420 0.451 rg 328 552.8 Td (or configuration change.) Tj ET
+BT /F2 7.3 Tf 0.137 0.322 0.486 rg 0.75 Tc 42 495 Td (CORRELATION CHAIN) Tj ET
+q 0.847 0.867 0.886 RG 0.8 w 42 486 m 553 486 l S Q
+BT /F2 7 Tf 0.137 0.322 0.486 rg 42 464 Td (01) Tj ET
+BT /F2 8.4 Tf 0.125 0.149 0.176 rg 42 448 Td (Alert state) Tj ET
+BT /F1 7.8 Tf 0.384 0.420 0.451 rg 42 434 Td (UTC marker) Tj ET
+q 0.847 0.867 0.886 RG 1 w 122 462 m 136 462 l S Q
+BT /F2 7 Tf 0.137 0.322 0.486 rg 144 464 Td (02) Tj ET
+BT /F2 8.4 Tf 0.125 0.149 0.176 rg 144 448 Td (Exemplar) Tj ET
+BT /F1 7.8 Tf 0.384 0.420 0.451 rg 144 434 Td (Trace ID) Tj ET
+q 0.847 0.867 0.886 RG 1 w 224 462 m 238 462 l S Q
+BT /F2 7 Tf 0.137 0.322 0.486 rg 246 464 Td (03) Tj ET
+BT /F2 8.4 Tf 0.125 0.149 0.176 rg 246 448 Td (Jaeger) Tj ET
+BT /F1 7.8 Tf 0.384 0.420 0.451 rg 246 434 Td (Matching span) Tj ET
+q 0.847 0.867 0.886 RG 1 w 326 462 m 340 462 l S Q
+BT /F2 7 Tf 0.137 0.322 0.486 rg 348 464 Td (04) Tj ET
+BT /F2 8.4 Tf 0.125 0.149 0.176 rg 348 448 Td (CloudWatch) Tj ET
+BT /F1 7.8 Tf 0.384 0.420 0.451 rg 348 434 Td (Exact IDs) Tj ET
+q 0.847 0.867 0.886 RG 1 w 428 462 m 442 462 l S Q
+BT /F2 7 Tf 0.137 0.322 0.486 rg 450 464 Td (05) Tj ET
+BT /F2 8.4 Tf 0.125 0.149 0.176 rg 450 448 Td (Root cause) Tj ET
+BT /F1 7.8 Tf 0.384 0.420 0.451 rg 450 434 Td (/test mode) Tj ET
+BT /F1 9.2 Tf 0.125 0.149 0.176 rg 42 403 Td (The same identifier links the metric exemplar, Jaeger trace and structured log. Route-stable span names and the) Tj ET
+BT /F1 9.2 Tf 0.125 0.149 0.176 rg 42 390.5 Td (selected test mode establish causality.) Tj ET
+BT /F2 7.3 Tf 0.137 0.322 0.486 rg 0.75 Tc 42 357 Td (VERIFICATION SEQUENCE) Tj ET
+q 0.847 0.867 0.886 RG 0.8 w 42 348 m 553 348 l S Q
+BT /F2 7.5 Tf 0.137 0.322 0.486 rg 42 329 Td (01) Tj ET
+BT /F2 8.7 Tf 0.125 0.149 0.176 rg 75 329 Td (Baseline) Tj ET
+BT /F1 8.7 Tf 0.384 0.420 0.451 rg 166 329 Td (Healthy scrape state and 10-minute normal baseline.) Tj ET
+BT /F2 7.5 Tf 0.137 0.322 0.486 rg 42 305 Td (02) Tj ET
+BT /F2 8.7 Tf 0.125 0.149 0.176 rg 75 305 Td (Error mode) Tj ET
+BT /F1 8.7 Tf 0.384 0.420 0.451 rg 166 305 Td (Bounded 500 traffic; full alert lifecycle captured.) Tj ET
+BT /F2 7.5 Tf 0.137 0.322 0.486 rg 42 281 Td (03) Tj ET
+BT /F2 8.7 Tf 0.125 0.149 0.176 rg 75 281 Td (Latency mode) Tj ET
+BT /F1 8.7 Tf 0.384 0.420 0.451 rg 166 281 Td (Fixed 400 ms successes assessed separately.) Tj ET
+BT /F2 7.5 Tf 0.137 0.322 0.486 rg 42 257 Td (04) Tj ET
+BT /F2 8.7 Tf 0.125 0.149 0.176 rg 75 257 Td (Correlate) Tj ET
+BT /F1 8.7 Tf 0.384 0.420 0.451 rg 166 257 Td (Exemplar, spans and exact log IDs matched.) Tj ET
+BT /F2 7.5 Tf 0.137 0.322 0.486 rg 42 233 Td (05) Tj ET
+BT /F2 8.7 Tf 0.125 0.149 0.176 rg 75 233 Td (Recover) Tj ET
+BT /F1 8.7 Tf 0.384 0.420 0.451 rg 166 233 Td (Ordinary traffic, versions and healthy state reconfirmed.) Tj ET
+BT /F2 7.3 Tf 0.137 0.322 0.486 rg 0.75 Tc 42 190 Td (ACCEPTANCE BOUNDARY) Tj ET
+q 0.847 0.867 0.886 RG 0.8 w 42 181 m 553 181 l S Q
+BT /F2 7.1 Tf 0.137 0.322 0.486 rg 0.45 Tc 42 162 Td (PROVEN IN REPOSITORY) Tj ET
+BT /F1 8.5 Tf 0.125 0.149 0.176 rg 42 143 Td (HTTP server/client spans, RED metrics and exemplars;) Tj ET
+BT /F1 8.5 Tf 0.125 0.149 0.176 rg 42 131.6 Td (Jaeger and Grafana provisioning; both alert rules.) Tj ET
+q 0.847 0.867 0.886 RG 0.8 w 296 112 m 296 165 l S Q
+BT /F2 7.1 Tf 0.137 0.322 0.486 rg 0.45 Tc 316 162 Td (VERIFIED IN DEPLOYMENT) Tj ET
+BT /F1 8.5 Tf 0.125 0.149 0.176 rg 316 143 Td (Populated panels, alert lifecycles, trace links and) Tj ET
+BT /F1 8.5 Tf 0.125 0.149 0.176 rg 316 131.6 Td (exact log IDs; recovery, ordinary traces, health and) Tj ET
+BT /F1 8.5 Tf 0.125 0.149 0.176 rg 316 120.2 Td (versions.) Tj ET
+q 0.125 0.149 0.176 RG 1.1 w 42 98 m 553 98 l S Q
+BT /F2 7.1 Tf 0.137 0.322 0.486 rg 0.55 Tc 42 78 Td (CONCLUSION) Tj ET
+BT /F2 9.1 Tf 0.125 0.149 0.176 rg 126 78 Td (Acceptance evidence is complete and the service returned to a healthy state.) Tj ET
+BT /F2 6.8 Tf 0.384 0.420 0.451 rg 0.55 Tc 42 60 Td (LIMITS) Tj ET
+BT /F1 8.2 Tf 0.384 0.420 0.451 rg 126 60 Td (Non-durable lab Jaeger; 100% lab sampling; database tracing not applicable.) Tj ET
+q 0.847 0.867 0.886 RG 0.8 w 42 38 m 553 38 l S Q
+BT /F2 7 Tf 0.384 0.420 0.451 rg 0.4 Tc 42 22 Td (MODULE 10  |  OBSERVABILITY REPORT) Tj ET
+BT /F1 7 Tf 0.384 0.420 0.451 rg 223 22 Td (SANITIZED EVIDENCE  |  evidence/mod10/) Tj ET
+BT /F2 7 Tf 0.137 0.322 0.486 rg 531 22 Td (2 / 2) Tj ET
 endstream
 endobj
 7 0 obj
@@ -239,22 +190,34 @@ endobj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
 endobj
 9 0 obj
-<< /Title (Module 10 Observability and Security Report) /Author (AMALI TECH) /Subject (Advanced observability design and controlled acceptance) /Creator (Dependency-free Node.js PDF renderer) >>
+<< /Title (Observability Assurance Report) /Subject (Module 10 monitoring, distributed tracing and incident correlation) /Keywords (Prometheus, Grafana, Jaeger, OpenTelemetry, CloudWatch) /Creator (Dependency-free Node.js PDF renderer) >>
+endobj
+10 0 obj
+<< /Type /Outlines /First 11 0 R /Last 12 0 R /Count 2 >>
+endobj
+11 0 obj
+<< /Title (Observability design) /Parent 10 0 R /Next 12 0 R /Dest [3 0 R /Fit] >>
+endobj
+12 0 obj
+<< /Title (Evidence and conclusion) /Parent 10 0 R /Prev 11 0 R /Dest [5 0 R /Fit] >>
 endobj
 xref
-0 10
+0 13
 0000000000 65535 f 
 0000000015 00000 n 
-0000000083 00000 n 
-0000000146 00000 n 
-0000000282 00000 n 
-0000009658 00000 n 
-0000009794 00000 n 
-0000018179 00000 n 
-0000018276 00000 n 
-0000018378 00000 n 
+0000000165 00000 n 
+0000000228 00000 n 
+0000000364 00000 n 
+0000006129 00000 n 
+0000006265 00000 n 
+0000012453 00000 n 
+0000012550 00000 n 
+0000012652 00000 n 
+0000012906 00000 n 
+0000012980 00000 n 
+0000013079 00000 n 
 trailer
-<< /Size 10 /Root 1 0 R /Info 9 0 R >>
+<< /Size 13 /Root 1 0 R /Info 9 0 R >>
 startxref
-18588
+13181
 %%EOF
