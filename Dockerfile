@@ -14,6 +14,10 @@ ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3000
 
+# Remediate CVE-2026-14456 in the pinned base image. Alpine repositories
+# replace superseded revisions, so permit newer security updates as well.
+RUN apk add --no-cache 'libcrypto3>=3.5.9-r0' 'libssl3>=3.5.9-r0'
+
 RUN addgroup -g 10001 -S appgroup \
     && adduser -u 10001 -S -D -H -G appgroup appuser
 

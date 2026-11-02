@@ -1,0 +1,11 @@
+[extend]
+useDefault = true
+
+[allowlist]
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)security-reports/''',
+  '''(^|/)test-results/''',
+  '''(^|/)\.scannerwork/''',
+  '''(^|/)\.git/'''
+]

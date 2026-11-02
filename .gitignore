@@ -47,3 +47,8 @@ evidence/**/*-secret.*
 Thumbs.db
 .idea/
 .vscode/
+
+# Generated security reports may contain sensitive findings
+security-reports/
+.sonar/
+.scannerwork/

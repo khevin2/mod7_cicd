@@ -87,7 +87,7 @@ pipeline {
             --skip-files '**/*.tfplan' \
             /workspace
 
-          # Block only fixable HIGH/CRITICAL dependency or configuration issues.
+          # Block HIGH/CRITICAL issues, including those without a known fix.
           docker run --rm \
             --volume "$WORKSPACE:/workspace:ro" \
             --volume "$TRIVY_CACHE_VOLUME:/root/.cache/trivy" \
@@ -95,7 +95,6 @@ pipeline {
             --db-repository "$TRIVY_DB_REPOSITORY" \
             --scanners vuln,misconfig \
             --severity HIGH,CRITICAL \
-            --ignore-unfixed \
             --exit-code 1 \
             --skip-dirs /workspace/.git \
             --skip-dirs /workspace/node_modules \
@@ -154,7 +153,6 @@ pipeline {
             --db-repository "$TRIVY_DB_REPOSITORY" \
             --scanners vuln \
             --severity HIGH,CRITICAL \
-            --ignore-unfixed \
             --exit-code 1 \
             "$IMAGE_REF"
 
@@ -174,6 +172,7 @@ pipeline {
     }
     stage('Push Image') {
       steps {
+        error('Release disabled until the complete Phase 2/3 security gates are integrated in Phase 6.')
         withCredentials([usernamePassword(credentialsId: 'registry_creds', usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_TOKEN')]) {
           sh '''#!/usr/bin/env bash
             set -Eeuo pipefail

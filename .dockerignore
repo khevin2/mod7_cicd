@@ -5,6 +5,9 @@ node_modules
 coverage
 test
 evidence
+security-reports
+.scannerwork
+.sonar
 infra
 docs
 .env
