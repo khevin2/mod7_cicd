@@ -66,3 +66,13 @@ variable "log_retention_days" {
   type    = number
   default = 14
 }
+
+variable "alarm_actions" {
+  description = "Optional existing SNS topic ARNs for alarm and recovery notifications; empty disables notifications."
+  type        = list(string)
+  default     = []
+  validation {
+    condition     = alltrue([for arn in var.alarm_actions : can(regex("^arn:aws:sns:[a-z0-9-]+:[0-9]{12}:[A-Za-z0-9_-]+$", arn))])
+    error_message = "Alarm actions must be SNS topic ARNs."
+  }
+}

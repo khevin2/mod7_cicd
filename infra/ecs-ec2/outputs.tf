@@ -25,3 +25,9 @@ output "ecs_host_asg_name" {
 output "vpc_id" {
   value = aws_vpc.app.id
 }
+output "monitoring_alarm_names" {
+  value = [aws_cloudwatch_metric_alarm.high_error_rate.alarm_name, aws_cloudwatch_metric_alarm.high_latency.alarm_name, aws_cloudwatch_metric_alarm.unhealthy_targets.alarm_name, aws_cloudwatch_metric_alarm.no_healthy_targets.alarm_name]
+}
+output "monitoring_dashboard_name" {
+  value = aws_cloudwatch_dashboard.app.dashboard_name
+}

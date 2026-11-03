@@ -1,0 +1,56 @@
+# Jenkins release and ECS monitoring
+
+This is a local implementation, not proof of an executed Jenkins or AWS deployment. Phase 3 scanner validation and Phases 4–5 provisioning remain prerequisites. Jenkins, credentials, AWS CLI access, the service and alert destination must be configured and verified before live use. The user must explicitly authorize any cloud-changing action; no commit, push, or cloud change is authorized by this document.
+
+## Jenkins job
+
+Configure a dedicated Pipeline-from-SCM job for `feature/secure-ecs-ec2`, with a complete clone and the GitHub push trigger. Only grant job administration and manual-build permissions to approved users. Push-triggered builds scan and test only. To authorize publication and deployment, the user must explicitly approve that particular release and an authorized operator must start the job manually with `RELEASE_APPROVED=true`; the pipeline rejects release requests without a manual user cause. A checked parameter authorizes both publishing to ECR and updating the ECS service for that build. Do not check it until the user has explicitly approved both actions. Keep the default false and do not provide release credentials to untrusted jobs.
+
+The pipeline uses the existing `NodeJS24` Jenkins tool and executables `gitleaks`, `trivy`, `syft`, `snyk`, `sonar-scanner`, `aws`, `jq`, Python 3, Docker, and curl on a trusted agent. Versions are checked before scanning: Gitleaks 8.28.0, Trivy 0.73.0 and Syft 1.38.0; configure the tested Snyk and SonarScanner versions as `EXPECTED_SNYK_VERSION` and `EXPECTED_SONAR_SCANNER_VERSION`. Pin the agent's actual tools and verify checksums or image digests when provisioning it; setting an expected version does not itself install or authenticate a binary. Record the SonarQube server version and verify its issue API and severity mapping before release.
+
+Jenkins requires these secret text credential IDs:
+
+| ID | Purpose |
+| --- | --- |
+| `sonarqube-token` | SAST token used only in the SAST stage |
+| `snyk-token` | SCA token used only in the SCA stage |
+
+Configure `SONAR_HOST_URL` for the approved SonarQube server. Snyk communicates dependency metadata to its service. Do not put tokens in the Jenkinsfile, global plaintext variables, source control, reports, or command arguments. Lock down Jenkins artifact access: even redacted reports and AWS metadata can reveal internal details. Gitleaks runs with 100% redaction; SonarScanner's raw log is not archived. Check reports before copying them into submission evidence.
+
+Set these **non-secret job environment variables** from reviewed Terraform outputs and the confirmed AWS account:
+
+| Variable | Value |
+| --- | --- |
+| `AWS_ACCOUNT_ID` | Approved 12-digit account ID |
+| `ECR_REPOSITORY` | ECR repository name, e.g. `mod9-ecs` |
+| `ECS_CLUSTER` / `ECS_SERVICE` | Existing cluster and service names |
+| `ECS_FAMILY` | Task definition family, e.g. `mod9-ecs-app` |
+| `TASK_EXECUTION_ROLE_ARN` | Approved ECS execution role ARN |
+| `ECS_LOG_GROUP` | Application log group, e.g. `/ecs/mod9-ecs` |
+| `APP_HEALTH_URL` | Approved reachable ALB endpoint ending in `/health` |
+
+The pipeline fixes `AWS_REGION=eu-north-1` and checks the AWS caller's account before any release mutation. Arrange role-based Jenkins agent access with the minimum ECR push, ECS registration/service update/describe, `iam:PassRole` for the named execution role, ELB target-health describe, and STS identity permissions. Grant no permissions to change infrastructure or unrelated roles. Verify the policy with a reviewed IAM plan; this repository does not create or attach the Jenkins role. Ensure the ALB security group accepts health requests from the Jenkins agent.
+
+Each run records its source commit, build number, local image ID, tool versions, scan reports and SBOM. A release pushes a commit-and-build tag and pulls the resulting ECR digest to confirm it matches the scanned image ID. It registers a task definition containing that digest, updates the existing service, waits for stability, then confirms the requested revision is the completed primary deployment, each running task has that revision and digest, its ALB target is healthy, and `/health` succeeds. A waiter returning successfully after rollback does **not** count as a successful release. The verifier expects the single-architecture image produced by the current Docker build; multi-platform manifest-list digests need additional child-digest validation before use.
+
+Artifacts are archived in Jenkins `post { always { ... } }` so failure reports and intermediate deployment evidence survive a failed stage. A failed SonarQube analysis produces an archived, fixed-category JSON diagnostic; its raw log stays out of the archive. Image secret findings are scanned in a private temporary file and only the count and exit status are archived. After archiving, Jenkins attempts to remove only the local image tag whose identity matches this build's recorded image ID; it does not prune other images. Do not claim that a green scan-only build deployed an image. Tool or scanner failures block release; SAST/SCA credentials and the exact SonarQube API behavior must still be validated. The optional `build-metadata` directory contains environment-specific identifiers; sanitize before publishing evidence.
+
+## Monitoring configuration
+
+Terraform in `infra/ecs-ec2/monitoring.tf` creates a CloudWatch dashboard and four alarms. These are proposed lab resources and incur charges after approval and apply.
+
+- Target-generated 5xx rate greater than 5% and target p95 response time greater than 300 ms, each for two five-minute periods and only when each period has at least 20 requests.
+- Unhealthy target count above zero, and no healthy targets (including missing target metrics) for three minutes.
+- Dashboard panels for request/5xx counts, target p95, target health, and ECS CPU/memory.
+
+This adapts the prior project's alert thresholds to ALB metrics. It does not import its Prometheus/Grafana deployment or its application instrumentation: target response time is measured by ALB until response headers and is not identical to the prior application histogram. ALB-generated 5xx responses are outside the target 5xx metric; use the target-availability alarm and add an ALB-generated 5xx alarm if that signal is required. The no-healthy-target alarm intentionally enters ALARM during the foundations-only stage before a service is running, or when target metrics disappear. Account for that during provisioning.
+
+`alarm_actions` accepts existing SNS topic ARNs; it defaults to an empty list, so alarms have **no notifications** until a permitted destination and subscriptions are configured. This stack does not create subscriptions or send test messages. Validate permissions and delivery with the destination owner before enabling it. The app's `awslogs` stream prefix is `app`; the stream name includes the task ID. Match it to the running task and the recorded revision/image digest when capturing logs. Log retention is configured in the ECS Terraform root.
+
+## Future live validation and recovery
+
+After the foundations and a security-approved baseline service exist, review and obtain explicit permission for the exact Terraform plan that adds the alarms. Verify dimensions and dashboard data against the new ALB and service. In a controlled lab with an approved test workload and traffic generator, send at least 20 requests per five-minute window with >5% target 5xx for two windows, verify the alarm transition and any explicitly authorized notification, then stop fault injection and verify recovery. Use an isolated approved test workload; the current application has no fault-injection route. Never infer a successful notification from an alarm state alone.
+
+For rollback validation, retain a known-good task revision and image. After explicit permission for the exact test deployment, register a task definition using the same security-approved image but an intentionally failing test command or health check; update the lab service, observe circuit-breaker rollback, and verify the prior revision and healthy target recover. The Jenkins verifier must fail the attempted release even if `services-stable` returns after rollback. Do not perform this test in a production service. ECS instance draining/replacement also changes cloud state and requires separate explicit permission and adequate capacity. Record the starting and restored revision, target health, logs, time, and alert status.
+
+No live alarm, notification, deployment, rollback, or host-replacement evidence has been collected yet. Automated local tests use a fake AWS CLI and do not establish AWS or Jenkins behavior.

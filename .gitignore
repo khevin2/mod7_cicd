@@ -56,3 +56,7 @@ security-reports/
 # Local ECS lab inputs and Terraform state
 infra/ecs-ec2/*.tfvars
 !infra/ecs-ec2/*.tfvars.example
+
+# Local release metadata and generated ECS task input
+build-metadata/
+task-definition.rendered.json

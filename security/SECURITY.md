@@ -1,16 +1,17 @@
 # Security policy and local scans
 
-The assignment requires SAST, SCA, image scanning, secret detection and an image SBOM. All release gates must complete successfully before publication. `Jenkinsfile` intentionally stops before push while these gates are being validated and integrated; do not remove that stop until all required controls are wired and tested in Phase 6.
+The assignment requires SAST, SCA, image scanning, secret detection and an image SBOM. All release gates must complete successfully before publication. `Jenkinsfile` runs scans on pushes and permits publication/deployment only for an explicitly approved manually started build; the complete gates and Jenkins integration still require live validation before any release. See `docs/SECURE_ECS_PIPELINE.md`.
 
 ## Gate policy
 
 | Gate | Scope and blocking condition | Report |
 | --- | --- | --- |
-| SonarQube SAST | `src` and `test` as configured in `sonar-project.properties`. Wait for analysis and the configured quality gate; additionally query unresolved project-wide `VULNERABILITY` issues with Sonar severity `BLOCKER` or `CRITICAL`, mapped here to the assignment's Critical/High. Any issue blocks. Verify mapping and API compatibility with the chosen server before release. | `sonarqube-analysis.log`, `sonarqube-quality-gate.json`, `sonarqube-issues.json` |
+| SonarQube SAST | `src` and `test` as configured in `sonar-project.properties`. Wait for analysis and the configured quality gate; additionally query unresolved project-wide `VULNERABILITY` issues with Sonar severity `BLOCKER` or `CRITICAL`, mapped here to the assignment's Critical/High. Any issue blocks. Verify mapping and API compatibility with the chosen server before release. | `sonarqube-quality-gate.json`, `sonarqube-issues.json`; `sonarqube-failure.json` on scanner failure. The raw `sonarqube-analysis.log` is local and must not be archived. |
 | Snyk SCA | `package-lock.json`, including development dependencies (`--dev`). Block High and Critical regardless of whether a fix exists. Snyk token and connectivity required; no `--fail-on` fixability filter. | `snyk.json` |
 | Gitleaks | Git history reachable through local refs and the current working tree, including untracked files. Any secret finding blocks. Standard rules are extended with path exclusions for generated files, dependencies and `.git`. | `gitleaks-history.json`, `gitleaks-worktree.json`, with matches redacted |
-| Trivy filesystem | Source dependency manifests/lockfiles, excluding installed `node_modules` and generated reports; High/Critical including unfixed block. Existing Jenkins repository scan also checks configuration. | `trivy-repository.json` |
-| Trivy image | OS and language packages in the exact built image; High/Critical including unfixed block. | `trivy-image.json` |
+| Trivy filesystem | Source dependency manifests/lockfiles, excluding installed `node_modules` and generated reports; High/Critical including unfixed block. | `trivy-repository.json` |
+| Trivy misconfiguration | Repository configuration including Dockerfile and Terraform; High/Critical findings block. Generated dependencies, Terraform providers and reports are excluded. | `trivy-misconfig.json` |
+| Trivy image | OS and language packages in the exact built image; High/Critical including unfixed block. Image secrets of any severity also block. | `trivy-image.json`; `trivy-image-secrets.json` contains only the finding count and scanner exit code. Raw secret findings remain in a temporary file and are removed. |
 | Syft | Generate CycloneDX JSON from the exact image; a missing, invalid or empty component inventory blocks. The SBOM is inventory, not a vulnerability gate. | `sbom.cdx.json` |
 
 Every scanner must return success and its expected report must exist and parse; missing credentials, unavailable tools, analysis errors and malformed reports fail closed. Resolve findings rather than adding broad exclusions. Scanner versions/digests and advisory database dates must be pinned and recorded before Jenkins release integration. SonarQube's built-in gate may address only new code: the separate project-wide issue check is required too. Review applicable security hotspots manually; they are not equivalent to confirmed vulnerabilities.
@@ -24,7 +25,9 @@ scripts/security-scan.sh secrets
 scripts/security-scan.sh sast
 scripts/security-scan.sh sca
 scripts/security-scan.sh repository
+scripts/security-scan.sh misconfig
 IMAGE_REF=mod9-baseline:local scripts/security-scan.sh image
+IMAGE_REF=mod9-baseline:local scripts/security-scan.sh image-secrets
 IMAGE_REF=mod9-baseline:local scripts/security-scan.sh sbom
 ```
 

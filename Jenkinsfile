@@ -5,298 +5,142 @@ pipeline {
     timestamps()
     skipDefaultCheckout()
     buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '5'))
-    timeout(time: 30, unit: 'MINUTES')
+    timeout(time: 60, unit: 'MINUTES')
     disableConcurrentBuilds()
   }
-  triggers {
-    githubPush()
-  }
+  triggers { githubPush() }
   parameters {
-    string(name: 'DEPLOY_HOST', defaultValue: '', trim: true, description: 'Required EC2 host.')
-    string(name: 'DEPLOY_USER', defaultValue: 'ec2-user', trim: true, description: 'SSH user.')
-    string(name: 'DEPLOY_PORT', defaultValue: '80', trim: true, description: 'Application host port.')
+    booleanParam(name: 'RELEASE_APPROVED', defaultValue: false,
+      description: 'For a manually started build only: explicitly authorize this build to publish to ECR and update the ECS service.')
   }
   environment {
-    APP_NAME = 'jenkins-webapp'
-    APP_CONTAINER_PORT = '3000'
-    REGISTRY_HOST = 'ghcr.io'
-    IMAGE_REPOSITORY = 'khevin2/jenkins-webapp'
-    TRIVY_IMAGE = 'aquasec/trivy:0.73.0@sha256:7cced7cae583819fc7806d4cbc0dbbc7cad18b99f7d3e235192e6da8c091045c'
-    TRIVY_DB_REPOSITORY = 'ghcr.io/aquasecurity/trivy-db:2'
+    AWS_REGION = 'eu-north-1'
   }
   stages {
     stage('Checkout') {
       steps {
         deleteDir()
-        checkout scm
         script {
+          def source = checkout scm
+          env.CHECKED_OUT_BRANCH = env.BRANCH_NAME ?: source.GIT_BRANCH ?: ''
           env.GIT_SHA = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-          env.GIT_SHORT_SHA = sh(script: 'git rev-parse --short=12 HEAD', returnStdout: true).trim()
-          env.SOURCE_URL = sh(script: 'git config --get remote.origin.url || true', returnStdout: true).trim()
-          env.IMAGE_REF = "${env.REGISTRY_HOST}/${env.IMAGE_REPOSITORY}:${env.GIT_SHA}"
+          env.IMAGE_REF = "mod9-jenkins-webapp:${env.GIT_SHA}-${env.BUILD_NUMBER}"
+          if (!(env.CHECKED_OUT_BRANCH in ['feature/secure-ecs-ec2', 'origin/feature/secure-ecs-ec2'])) {
+            error("Configure this job to check out feature/secure-ecs-ec2; got ${env.CHECKED_OUT_BRANCH}")
+          }
+          if (params.RELEASE_APPROVED && currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause').isEmpty()) {
+            error('Release authorization is accepted only for a manually started build.')
+          }
         }
         sh '''#!/usr/bin/env bash
           set -Eeuo pipefail
-          mkdir -p build-metadata
+          mkdir -p build-metadata security-reports
           printf '%s\n' "$GIT_SHA" > build-metadata/git-commit.txt
-          printf '%s\n' "$GIT_SHORT_SHA" > build-metadata/git-short-commit.txt
-          printf '%s\n' "$IMAGE_REF" > build-metadata/image-reference.txt
-          printf '%s\n' "$SOURCE_URL" > build-metadata/source-url.txt
+          printf '%s\n' "$BUILD_NUMBER" > build-metadata/jenkins-build.txt
+          printf '%s\n' "$IMAGE_REF" > build-metadata/local-image-tag.txt
+          : "${EXPECTED_SNYK_VERSION:?Set the approved Snyk CLI version in Jenkins}"
+          : "${EXPECTED_SONAR_SCANNER_VERSION:?Set the approved SonarScanner CLI version in Jenkins}"
+          for tool in gitleaks trivy syft snyk sonar-scanner aws; do
+            command -v "$tool" >/dev/null || { echo "Missing required tool: $tool" >&2; exit 1; }
+            version=$("$tool" --version 2>&1)
+            printf '%s: %s\n' "$tool" "$version" >> build-metadata/tool-versions.txt
+            case "$tool" in
+              gitleaks) expected='8.28.0' ;;
+              trivy) expected='0.73.0' ;;
+              syft) expected='1.38.0' ;;
+              snyk) expected="$EXPECTED_SNYK_VERSION" ;;
+              sonar-scanner) expected="$EXPECTED_SONAR_SCANNER_VERSION" ;;
+              *) continue ;;
+            esac
+            [[ "$expected" =~ ^[0-9]+([.][0-9]+)+$ ]] || { echo "Invalid version pin for $tool" >&2; exit 1; }
+            expected_pattern=${expected//./[.]}
+            [[ "$version" =~ (^|[^0-9.])${expected_pattern}([^0-9.]|$) ]] || { echo "Unexpected version for $tool" >&2; exit 1; }
+          done
         '''
       }
     }
-    stage('Install and Validate') {
+    stage('Secret scan') {
+      steps { sh 'scripts/security-scan.sh secrets' }
+    }
+    stage('Install and test') {
       steps {
         sh '''#!/usr/bin/env bash
           set -Eeuo pipefail
-          npm ci
+          npm ci --no-audit --no-fund
           npm run check
-        '''
-      }
-    }
-    stage('Test') {
-      steps {
-        sh '''#!/usr/bin/env bash
-          set -Eeuo pipefail
           npm test -- --ci --runInBand
         '''
       }
     }
-    stage('Trivy Repository Scan') {
+    stage('SAST') {
+      steps {
+        withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+          sh 'scripts/security-scan.sh sast'
+        }
+      }
+    }
+    stage('Dependency scan') {
+      steps {
+        withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
+          sh 'scripts/security-scan.sh sca'
+        }
+        sh 'scripts/security-scan.sh repository'
+        sh 'scripts/security-scan.sh misconfig'
+      }
+    }
+    stage('Build image') {
       steps {
         sh '''#!/usr/bin/env bash
           set -Eeuo pipefail
-          mkdir -p security-reports
-          TRIVY_CACHE_VOLUME="${APP_NAME}-trivy-cache-${BUILD_NUMBER}"
-          docker volume create "$TRIVY_CACHE_VOLUME" >/dev/null
-
-          # Archive vulnerability and misconfiguration findings without secret
-          # matches, which must never be retained as build artifacts.
-          docker run --rm \
-            --volume "$WORKSPACE:/workspace:ro" \
-            --volume "$WORKSPACE/security-reports:/reports" \
-            --volume "$TRIVY_CACHE_VOLUME:/root/.cache/trivy" \
-            "$TRIVY_IMAGE" fs \
-            --db-repository "$TRIVY_DB_REPOSITORY" \
-            --scanners vuln,misconfig \
-            --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL \
-            --format json \
-            --output /reports/trivy-repository.json \
-            --skip-dirs /workspace/.git \
-            --skip-dirs /workspace/node_modules \
-            --skip-files '**/*.tfplan' \
-            /workspace
-
-          # Block HIGH/CRITICAL issues, including those without a known fix.
-          docker run --rm \
-            --volume "$WORKSPACE:/workspace:ro" \
-            --volume "$TRIVY_CACHE_VOLUME:/root/.cache/trivy" \
-            "$TRIVY_IMAGE" fs \
-            --db-repository "$TRIVY_DB_REPOSITORY" \
-            --scanners vuln,misconfig \
-            --severity HIGH,CRITICAL \
-            --exit-code 1 \
-            --skip-dirs /workspace/.git \
-            --skip-dirs /workspace/node_modules \
-            --skip-files '**/*.tfplan' \
-            /workspace
-
-          # Keep secret matches inside the ephemeral scanner container so a
-          # failed scan cannot publish credential material in Jenkins artifacts.
-          docker run --rm \
-            --volume "$WORKSPACE:/workspace:ro" \
-            --volume "$TRIVY_CACHE_VOLUME:/root/.cache/trivy" \
-            "$TRIVY_IMAGE" fs \
-            --db-repository "$TRIVY_DB_REPOSITORY" \
-            --scanners secret \
-            --severity HIGH,CRITICAL \
-            --exit-code 1 \
-            --format json \
-            --output /tmp/trivy-secrets.json \
-            --skip-dirs /workspace/.git \
-            --skip-dirs /workspace/node_modules \
-            --skip-files '**/*.tfplan' \
-            /workspace
+          docker build --label "org.opencontainers.image.revision=$GIT_SHA" --tag "$IMAGE_REF" .
+          docker image inspect --format '{{.Id}}' "$IMAGE_REF" > build-metadata/scanned-image-id.txt
         '''
       }
     }
-    stage('Docker Build') {
+    stage('Image scan and SBOM') {
       steps {
         sh '''#!/usr/bin/env bash
           set -Eeuo pipefail
-          docker build --label "org.opencontainers.image.revision=$GIT_SHA" --label "org.opencontainers.image.source=$SOURCE_URL" --tag "$IMAGE_REF" .
+          scripts/security-scan.sh image
+          scripts/security-scan.sh image-secrets
+          scripts/security-scan.sh sbom
+          [[ "$(docker image inspect --format '{{.Id}}' "$IMAGE_REF")" == "$(<build-metadata/scanned-image-id.txt)" ]]
         '''
       }
     }
-    stage('Trivy Image Scan') {
-      steps {
-        sh '''#!/usr/bin/env bash
-          set -Eeuo pipefail
-          TRIVY_CACHE_VOLUME="${APP_NAME}-trivy-cache-${BUILD_NUMBER}"
-
-          docker run --rm \
-            --volume /var/run/docker.sock:/var/run/docker.sock \
-            --volume "$WORKSPACE/security-reports:/reports" \
-            --volume "$TRIVY_CACHE_VOLUME:/root/.cache/trivy" \
-            "$TRIVY_IMAGE" image \
-            --db-repository "$TRIVY_DB_REPOSITORY" \
-            --scanners vuln \
-            --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL \
-            --format json \
-            --output /reports/trivy-image.json \
-            "$IMAGE_REF"
-
-          docker run --rm \
-            --volume /var/run/docker.sock:/var/run/docker.sock \
-            --volume "$TRIVY_CACHE_VOLUME:/root/.cache/trivy" \
-            "$TRIVY_IMAGE" image \
-            --db-repository "$TRIVY_DB_REPOSITORY" \
-            --scanners vuln \
-            --severity HIGH,CRITICAL \
-            --exit-code 1 \
-            "$IMAGE_REF"
-
-          docker run --rm \
-            --volume /var/run/docker.sock:/var/run/docker.sock \
-            --volume "$TRIVY_CACHE_VOLUME:/root/.cache/trivy" \
-            "$TRIVY_IMAGE" image \
-            --db-repository "$TRIVY_DB_REPOSITORY" \
-            --scanners secret \
-            --severity HIGH,CRITICAL \
-            --exit-code 1 \
-            --format json \
-            --output /tmp/trivy-image-secrets.json \
-            "$IMAGE_REF"
-        '''
-      }
+    stage('Publish approved image to ECR') {
+      when { expression { params.RELEASE_APPROVED } }
+      steps { sh 'scripts/publish-ecr.sh' }
     }
-    stage('Push Image') {
-      steps {
-        error('Release disabled until the complete Phase 2/3 security gates are integrated in Phase 6.')
-        withCredentials([usernamePassword(credentialsId: 'registry_creds', usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_TOKEN')]) {
-          sh '''#!/usr/bin/env bash
-            set -Eeuo pipefail
-            trap 'docker logout "$REGISTRY_HOST" >/dev/null 2>&1 || true' EXIT
-            printf '%s' "$REGISTRY_TOKEN" | docker login "$REGISTRY_HOST" --username "$REGISTRY_USERNAME" --password-stdin
-            docker push "$IMAGE_REF"
-            IMAGE_DIGEST="$(docker image inspect --format='{{index .RepoDigests 0}}' "$IMAGE_REF")"
-            [[ "$IMAGE_DIGEST" == "${REGISTRY_HOST}/${IMAGE_REPOSITORY}@sha256:"* ]]
-            printf '%s\n' "$IMAGE_DIGEST" > build-metadata/image-digest.txt
-          '''
-        }
-      }
-    }
-    stage('Deploy') {
-      steps {
-        script {
-          env.DEPLOY_HOST = params.DEPLOY_HOST?.trim() ?: env.APPLICATION_DEPLOY_HOST?.trim()
-          if (!env.DEPLOY_HOST) {
-            error('Set DEPLOY_HOST for a manual run or APPLICATION_DEPLOY_HOST in Jenkins Global properties.')
-          }
-        }
-        withCredentials([usernamePassword(credentialsId: 'registry_creds', usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_TOKEN')]) {
-          sshagent(credentials: ['ec2_ssh']) {
-            sh '''#!/usr/bin/env bash
-              set -Eeuo pipefail
-              DEPLOY_IMAGE_REF="$(< build-metadata/image-digest.txt)"
-              remote_command=$(printf 'REGISTRY_HOST=%q DEPLOY_IMAGE_REF=%q APP_NAME=%q DEPLOY_PORT=%q APP_CONTAINER_PORT=%q bash -c %q' "$REGISTRY_HOST" "$DEPLOY_IMAGE_REF" "$APP_NAME" "$DEPLOY_PORT" "$APP_CONTAINER_PORT" 'IFS= read -r REGISTRY_USERNAME; IFS= read -r REGISTRY_TOKEN; export REGISTRY_USERNAME REGISTRY_TOKEN; exec bash -s')
-              {
-                printf '%s\n%s\n' "$REGISTRY_USERNAME" "$REGISTRY_TOKEN"
-                cat <<'REMOTE'
-#!/usr/bin/env bash
-set -Eeuo pipefail
-candidate="${APP_NAME}-candidate"
-previous=''
-rollback=false
-cleanup() { docker rm -f "$candidate" >/dev/null 2>&1 || true; docker logout "$REGISTRY_HOST" >/dev/null 2>&1 || true; unset REGISTRY_TOKEN; }
-recover() {
-  status="$1"
-  if [[ "$rollback" == true && -n "$previous" ]]; then
-    echo "Deployment failed; rolling back to ${previous}."
-    docker rm -f "$APP_NAME" >/dev/null 2>&1 || true
-    docker run -d --name "$APP_NAME" --restart unless-stopped -p "${DEPLOY_PORT}:${APP_CONTAINER_PORT}" "$previous" >/dev/null
-  elif [[ "$rollback" == true ]]; then docker rm -f "$APP_NAME" >/dev/null 2>&1 || true; fi
-  cleanup
-  exit "$status"
-}
-trap 'status=$?; if (( status != 0 )); then recover "$status"; else cleanup; fi' EXIT
-printf '%s' "$REGISTRY_TOKEN" | docker login "$REGISTRY_HOST" --username "$REGISTRY_USERNAME" --password-stdin
-docker pull "$DEPLOY_IMAGE_REF"
-docker rm -f "$candidate" >/dev/null 2>&1 || true
-docker run -d --rm --name "$candidate" "$DEPLOY_IMAGE_REF" >/dev/null
-for attempt in {1..12}; do
-  [[ "$(docker inspect --format='{{.State.Health.Status}}' "$candidate")" == healthy ]] && break
-  sleep 5
-done
-[[ "$(docker inspect --format='{{.State.Health.Status}}' "$candidate")" == healthy ]]
-docker rm -f "$candidate" >/dev/null
-if docker container inspect "$APP_NAME" >/dev/null 2>&1; then
-  previous="$(docker inspect --format='{{.Config.Image}}' "$APP_NAME")"
-  docker tag "$previous" "${APP_NAME}:rollback"
-  echo "Rollback command: docker run -d --name ${APP_NAME} --restart unless-stopped -p ${DEPLOY_PORT}:${APP_CONTAINER_PORT} ${previous}"
-fi
-rollback=true
-docker rm -f "$APP_NAME" >/dev/null 2>&1 || true
-docker run -d --name "$APP_NAME" --restart unless-stopped -p "${DEPLOY_PORT}:${APP_CONTAINER_PORT}" "$DEPLOY_IMAGE_REF" >/dev/null
-for attempt in {1..12}; do
-  if curl --fail --silent --show-error --max-time 3 "http://127.0.0.1:${DEPLOY_PORT}/health" >/dev/null; then rollback=false; exit 0; fi
-  sleep 5
-done
-exit 1
-REMOTE
-              } | ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" "${DEPLOY_USER}@${DEPLOY_HOST}" "$remote_command"
-            '''
-          }
-        }
-      }
-    }
-    stage('Runtime Cleanup') {
-      steps {
-        script {
-          env.DEPLOY_HOST = params.DEPLOY_HOST?.trim() ?: env.APPLICATION_DEPLOY_HOST?.trim()
-          if (!env.DEPLOY_HOST) {
-            error('Set DEPLOY_HOST for a manual run or APPLICATION_DEPLOY_HOST in Jenkins Global properties.')
-          }
-        }
-        sshagent(credentials: ['ec2_ssh']) {
-          sh '''#!/usr/bin/env bash
-            set -Eeuo pipefail
-            remote_command=$(printf 'REGISTRY_HOST=%q APP_NAME=%q DEPLOY_PORT=%q bash -s' "$REGISTRY_HOST" "$APP_NAME" "$DEPLOY_PORT")
-            ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" "${DEPLOY_USER}@${DEPLOY_HOST}" "$remote_command" <<'REMOTE'
-#!/usr/bin/env bash
-set -Eeuo pipefail
-candidate="${APP_NAME}-candidate"
-
-# The approved host-retention policy is intentionally narrow: remove only the
-# deployment candidate and dangling layers. Immutable, tagged images are left
-# in place so the active image and its previous known-good rollback image stay
-# available. Do not replace this with a broad image/container prune.
-docker rm -f "$candidate" >/dev/null 2>&1 || true
-docker image prune --force
-docker logout "$REGISTRY_HOST" >/dev/null 2>&1 || true
-
-running_count="$(docker ps --filter "name=^/${APP_NAME}$" --filter 'status=running' --format '{{.ID}}' | wc -l | tr -d '[:space:]')"
-[[ "$running_count" == '1' ]]
-[[ "$(docker inspect --format='{{.State.Health.Status}}' "$APP_NAME")" == 'healthy' ]]
-curl --fail --silent --show-error --max-time 10 "http://127.0.0.1:${DEPLOY_PORT}/health"
-df -h /
-REMOTE
-          '''
-        }
-      }
+    stage('Deploy approved revision to ECS') {
+      when { expression { params.RELEASE_APPROVED } }
+      steps { sh 'scripts/deploy-ecs.sh' }
     }
   }
   post {
     always {
-      junit allowEmptyResults: true, testResults: 'test-results/*.xml'
-      archiveArtifacts allowEmptyArchive: true, artifacts: 'build-metadata/*,security-reports/*.json'
-      sh '''#!/usr/bin/env bash
-        set -Eeuo pipefail
-        [[ -z "${IMAGE_REF:-}" ]] || docker image rm -f "$IMAGE_REF" >/dev/null 2>&1 || true
-        docker volume rm -f "${APP_NAME}-trivy-cache-${BUILD_NUMBER}" >/dev/null 2>&1 || true
-        docker image rm -f "$TRIVY_IMAGE" >/dev/null 2>&1 || true
-      '''
-      deleteDir()
+      script {
+        try {
+          junit allowEmptyResults: true, testResults: 'test-results/*.xml'
+        } finally {
+          try {
+            // Reports can reveal findings and repository details. Restrict artifact access.
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'build-metadata/*,security-reports/*.json'
+          } finally {
+            def cleanupStatus = sh(script: 'if [ -f scripts/cleanup-build-image.sh ]; then scripts/cleanup-build-image.sh; fi', returnStatus: true)
+            if (cleanupStatus != 0) {
+              echo 'Could not remove the build-specific local image tag; inspect the agent.'
+            }
+          }
+        }
+      }
+    }
+    success {
+      script {
+        if (!params.RELEASE_APPROVED) {
+          echo 'Validation completed; no release was authorized for this build.'
+        }
+      }
     }
   }
 }

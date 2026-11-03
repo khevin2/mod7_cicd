@@ -13,9 +13,27 @@ case "${1:-}" in
     command -v sonar-scanner >/dev/null
     command -v curl >/dev/null
     command -v jq >/dev/null
-    rm -f "$reports/sonarqube-analysis.log" "$reports/sonarqube-quality-gate.json" "$reports/sonarqube-issues.json"
-    # Keep a log even if analysis or the quality gate fails.
-    sonar-scanner -Dsonar.qualitygate.wait=true > "$reports/sonarqube-analysis.log" 2>&1 || { echo 'SonarQube analysis/quality gate failed; inspect the local report.' >&2; exit 1; }
+    rm -f "$reports/sonarqube-analysis.log" "$reports/sonarqube-quality-gate.json" "$reports/sonarqube-issues.json" "$reports/sonarqube-failure.json"
+    # The raw log can contain sensitive details and is never archived. Write
+    # only a fixed-category diagnostic to the JSON artifacts on failure.
+    if sonar-scanner -Dsonar.qualitygate.wait=true > "$reports/sonarqube-analysis.log" 2>&1; then
+      :
+    else
+      scan_status=$?
+      category=analysis_error
+      if grep -Eiq 'QUALITY GATE.*FAIL|QUALITY GATE STATUS: ERROR' "$reports/sonarqube-analysis.log"; then
+        category=quality_gate_failed
+      elif grep -Eiq 'timed? out|timeout' "$reports/sonarqube-analysis.log"; then
+        category=timeout
+      elif grep -Eiq 'not authorized|unauthorized|authentication|HTTP (401|403)' "$reports/sonarqube-analysis.log"; then
+        category=authentication_error
+      fi
+      jq -n --arg category "$category" --argjson exitCode "$scan_status" \
+        '{scanner:"sonarqube", status:"failed", category:$category, exitCode:$exitCode, diagnostic:"Inspect the restricted local scanner log for details."}' \
+        > "$reports/sonarqube-failure.json"
+      echo "SonarQube analysis failed ($category); see the sanitized failure report." >&2
+      exit "$scan_status"
+    fi
     # Request open security vulnerabilities for the entire project, not just new code.
     # Curl reads authentication from standard input so the token is not an argument.
     [[ "$SONAR_TOKEN" =~ ^[a-zA-Z0-9_.-]+$ ]] || { echo 'Unsupported Sonar token format' >&2; exit 2; }
@@ -53,12 +71,45 @@ case "${1:-}" in
     trivy fs --scanners vuln --include-dev-deps --skip-dirs node_modules --skip-dirs security-reports --severity HIGH,CRITICAL --exit-code 1 --format json --output "$reports/trivy-repository.json" .
     jq -e 'type == "object" and (.SchemaVersion | type == "number") and (.ArtifactName | type == "string") and (.Results | type == "array" or . == null)' "$reports/trivy-repository.json" >/dev/null
     ;;
+  misconfig)
+    command -v trivy >/dev/null
+    command -v jq >/dev/null
+    rm -f "$reports/trivy-misconfig.json"
+    trivy fs --scanners misconfig --skip-dirs node_modules --skip-dirs security-reports --skip-dirs build-metadata --skip-dirs '**/.terraform' --severity HIGH,CRITICAL --exit-code 1 --format json --output "$reports/trivy-misconfig.json" .
+    jq -e 'type == "object" and (.SchemaVersion | type == "number") and (.ArtifactName | type == "string") and (.Results | type == "array" or . == null)' "$reports/trivy-misconfig.json" >/dev/null
+    ;;
   image)
     : "${IMAGE_REF:?Set IMAGE_REF to the local image to scan}"
     command -v trivy >/dev/null
     rm -f "$reports/trivy-image.json"
     trivy image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --format json --output "$reports/trivy-image.json" "$IMAGE_REF"
     jq -e 'type == "object" and (.SchemaVersion | type == "number") and (.ArtifactName | type == "string") and (.Results | type == "array" or . == null)' "$reports/trivy-image.json" >/dev/null
+    ;;
+  image-secrets)
+    : "${IMAGE_REF:?Set IMAGE_REF to the local image to scan}"
+    command -v trivy >/dev/null
+    command -v jq >/dev/null
+    rm -f "$reports/trivy-image-secrets.json"
+    private_dir=$(mktemp -d)
+    raw_report="$private_dir/report.json"
+    trap 'rm -f "$raw_report"; rmdir "$private_dir"' EXIT
+    if trivy image --scanners secret --exit-code 1 --format json --output "$raw_report" "$IMAGE_REF"; then
+      scan_status=0
+    else
+      scan_status=$?
+    fi
+    # Only a count is retained: raw findings include matched secret values.
+    if [[ -s "$raw_report" ]] && jq -e 'type == "object" and (.SchemaVersion | type == "number") and (.ArtifactName | type == "string") and (.Results | type == "array" or . == null)' "$raw_report" >/dev/null; then
+      jq --argjson exitCode "$scan_status" '{scanner:"trivy-image-secrets", exitCode:$exitCode, findingCount:([.Results[]?.Secrets[]?] | length)}' "$raw_report" > "$reports/trivy-image-secrets.json"
+    else
+      jq -n --argjson exitCode "$scan_status" '{scanner:"trivy-image-secrets", exitCode:$exitCode, status:"invalid_or_missing_report"}' > "$reports/trivy-image-secrets.json"
+      echo 'Image secret scan did not produce a valid report.' >&2
+      exit 1
+    fi
+    if (( scan_status != 0 )); then
+      exit "$scan_status"
+    fi
+    jq -e '.findingCount == 0' "$reports/trivy-image-secrets.json" >/dev/null
     ;;
   sbom)
     : "${IMAGE_REF:?Set IMAGE_REF to the local image to catalog}"
@@ -67,5 +118,5 @@ case "${1:-}" in
     syft "$IMAGE_REF" -o cyclonedx-json="$reports/sbom.cdx.json"
     jq -e '.bomFormat == "CycloneDX" and (.specVersion | type == "string") and (.components | type == "array") and (.components | length > 0)' "$reports/sbom.cdx.json" >/dev/null
     ;;
-  *) echo "Usage: $0 {sast|sca|secrets|repository|image|sbom}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {sast|sca|secrets|repository|misconfig|image|image-secrets|sbom}" >&2; exit 2 ;;
 esac

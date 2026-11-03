@@ -1,5 +1,12 @@
 # Jenkins CI/CD web service
 
+> **ECS migration in progress:** The current Jenkinsfile targets ECR and ECS on
+> EC2. The GHCR and SSH deployment instructions and screenshots below document
+> the earlier baseline, not the current pipeline. See the
+> [secure ECS pipeline runbook](docs/SECURE_ECS_PIPELINE.md) and
+> [ECS infrastructure guide](infra/ecs-ec2/README.md) for the new workflow.
+> A live ECS deployment and monitoring validation have not yet been completed.
+
 This Express service is built, scanned, published, and deployed by Jenkins on a
 small dedicated controller-runner. GitHub push events trigger the pipeline through
 a HTTPS webhook; deployment uses an immutable GHCR image digest and strict SSH to
