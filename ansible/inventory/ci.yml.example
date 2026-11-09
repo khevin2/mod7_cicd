@@ -1,0 +1,17 @@
+all:
+  children:
+    ci_demo:
+      hosts:
+        mod9_ci:
+          ansible_host: REPLACE_WITH_TERRAFORM_PUBLIC_IP
+          ansible_user: ec2-user
+          ansible_python_interpreter: /usr/bin/python3
+          # A single-host demo does not need SSH master connection caching.
+          ansible_ssh_args: -C -o ControlMaster=no -o ControlPath=none
+          ansible_ssh_pipelining: true
+          ansible_ssh_private_key_file: keys/mod9-ci
+          ansible_ssh_common_args: >-
+            -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes
+            -o ConnectTimeout=10 -o ConnectionAttempts=1
+            -o ServerAliveInterval=15 -o ServerAliveCountMax=2
+            -o UserKnownHostsFile=ansible/inventory/known_hosts

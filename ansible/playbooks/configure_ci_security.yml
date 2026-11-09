@@ -1,0 +1,146 @@
+---
+- name: Configure scanners and SonarQube reproducibly on the existing CI host
+  hosts: ci_demo
+  become: true
+  gather_facts: true
+  vars_files:
+    - ../vars/ci-versions.yml
+    - ../vars/ci-security-tools.yml
+
+  pre_tasks:
+    - name: Validate private inputs without displaying their values
+      ansible.builtin.import_tasks: ../tasks/ci-validate-private-inputs.yml
+      tags: [validate_inputs]
+
+    - name: Verify the existing Jenkins administrator input before provisioning
+      ansible.builtin.uri:
+        url: 'http://127.0.0.1:8080/api/json?tree=useSecurity'
+        user: '{{ ci_jenkins_admin_id }}'
+        password: '{{ ci_jenkins_admin_password }}'
+        force_basic_auth: true
+        timeout: 10
+      no_log: true
+
+    - name: Require the configured AL2023 x86_64 foundation
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['distribution'] == 'Amazon'
+          - ansible_facts['distribution_major_version'] == '2023'
+          - ansible_facts['architecture'] == 'x86_64'
+
+    - name: Verify the foundation helper exists
+      ansible.builtin.stat:
+        path: /usr/local/sbin/mod9-sonar
+      register: ci_foundation_helper
+
+    - name: Require the foundation playbook first
+      ansible.builtin.assert:
+        that:
+          - ci_foundation_helper.stat.exists
+        fail_msg: Run configure_ci_demo.yml successfully before the security configuration playbook.
+
+  tasks:
+    - name: Install pinned scanner executables
+      ansible.builtin.import_tasks: ../tasks/ci-security-tools.yml
+
+    - name: Install the private-input SonarQube bootstrap helper
+      ansible.builtin.copy:
+        src: ../files/configure-sonarqube.py
+        dest: /usr/local/lib/mod9-configure-sonarqube.py
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Stop Jenkins during first SonarQube configuration to free memory
+      ansible.builtin.systemd:
+        name: jenkins
+        state: stopped
+
+    - name: Configure SonarQube and Jenkins scanner credentials with bounded service lifetime
+      block:
+        - name: Start SonarQube and wait until its API is ready
+          ansible.builtin.command: /usr/local/sbin/mod9-sonar start
+          changed_when: true
+
+        - name: Converge project, quality gate, analysis user and token
+          ansible.builtin.command:
+            argv: [python3, /usr/local/lib/mod9-configure-sonarqube.py]
+            stdin: >-
+              {{ {'admin_password': ci_sonar_admin_password,
+                  'analysis_password': ci_sonar_analysis_password,
+                  'token_file': '/etc/jenkins/ci-secrets/CI_SONAR_TOKEN'} | to_json }}
+          register: ci_sonar_bootstrap
+          changed_when: ci_sonar_bootstrap.rc == 0 and (ci_sonar_bootstrap.stdout | from_json).changed
+          no_log: true
+
+        - name: Store sanitized bootstrap metadata
+          ansible.builtin.copy:
+            content: '{{ ci_sonar_bootstrap.stdout | from_json | to_nice_json }}'
+            dest: /etc/mod9-ci/sonar-bootstrap-status.json
+            owner: root
+            group: root
+            mode: '0600'
+
+        - name: Permit Jenkins to read only the analysis token
+          ansible.builtin.file:
+            path: /etc/jenkins/ci-secrets/CI_SONAR_TOKEN
+            owner: root
+            group: jenkins
+            mode: '0640'
+
+        - name: Store Snyk token from Vault for the JCasC file secret source
+          ansible.builtin.copy:
+            content: '{{ ci_snyk_token }}'
+            dest: /etc/jenkins/ci-secrets/CI_SNYK_TOKEN
+            owner: root
+            group: jenkins
+            mode: '0640'
+          no_log: true
+          diff: false
+
+        - name: Declare Jenkins scanner credentials and expected versions
+          ansible.builtin.template:
+            src: ../templates/ci-jenkins-casc.yml.j2
+            dest: /etc/jenkins/mod9-casc.yml
+            owner: root
+            group: jenkins
+            mode: '0640'
+          vars:
+            ci_casc_credentials_ready: true
+
+      rescue:
+        - name: Show only sanitized bootstrap diagnostics
+          ansible.builtin.debug:
+            msg: '{{ ci_sonar_bootstrap.stderr | default("SonarQube startup or configuration failed; inspect service logs privately.", true) }}'
+
+        - name: Fail closed on incomplete security configuration
+          ansible.builtin.fail:
+            msg: Security configuration did not complete. Do not enable the pipeline or release an image.
+
+      always:
+        - name: Stop SonarQube and PostgreSQL after configuration
+          ansible.builtin.command: /usr/local/sbin/mod9-sonar stop
+          changed_when: true
+
+        - name: Restore Jenkins with the declared configuration
+          ansible.builtin.systemd:
+            name: jenkins
+            state: started
+
+    - name: Verify Jenkins authenticated startup after credential configuration
+      ansible.builtin.uri:
+        url: 'http://127.0.0.1:8080/api/json?tree=numExecutors,useSecurity'
+        user: '{{ ci_jenkins_admin_id }}'
+        password: '{{ ci_jenkins_admin_password }}'
+        force_basic_auth: true
+      register: ci_security_jenkins_ready
+      until: ci_security_jenkins_ready.status == 200
+      retries: 120
+      delay: 5
+      no_log: true
+
+    - name: Require one executor and authentication
+      ansible.builtin.assert:
+        that:
+          - ci_security_jenkins_ready.json.numExecutors == 1
+          - ci_security_jenkins_ready.json.useSecurity

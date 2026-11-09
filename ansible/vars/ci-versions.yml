@@ -1,0 +1,9 @@
+# Explicit versions for this demo host. Refresh deliberately with validation.
+ci_amazon_linux_release: "2023.12.20261102"
+ci_java_rpm: "java-21-amazon-corretto-headless-21.0.13.0.11-1.amzn2023.1.x86_64"
+ci_docker_rpm: "docker-25.0.18-1.amzn2023.0.2.x86_64"
+ci_nodejs_version: "24.18.0"
+ci_jenkins_admin_id: "labadmin"
+ci_jenkins_url: "http://localhost:8080/"
+ci_nodejs_sha256: "55aa7153f9d88f28d765fcdad5ae6945b5c0f98a36881703817e4c450fa76742"
+ci_jenkins_signing_sha256: "d3b7e4096fed593eebdba3a2554c8cb9aafebe736910584e69e924b143e7b3d4"

@@ -1,0 +1,109 @@
+---
+- name: Install the complete plugin lock on the controller
+  ansible.builtin.copy:
+    src: ../vars/ci-jenkins-plugins.json
+    dest: /etc/jenkins/plugins.lock.json
+    owner: root
+    group: jenkins
+    mode: '0640'
+
+- name: Install plugin audit helper
+  ansible.builtin.copy:
+    src: ../files/audit-jenkins-plugins.py
+    dest: /usr/local/lib/mod9-audit-jenkins-plugins.py
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Audit installed plugins against checksums
+  ansible.builtin.command:
+    argv: [python3, /usr/local/lib/mod9-audit-jenkins-plugins.py, /etc/jenkins/plugins.lock.json, /var/lib/jenkins/plugins]
+  register: ci_plugin_audit
+  changed_when: false
+
+- name: Refuse unmanaged or disabled plugins rather than silently deleting them
+  ansible.builtin.assert:
+    that:
+      - (ci_plugin_audit.stdout | from_json).unexpected | length == 0
+      - (ci_plugin_audit.stdout | from_json).disabled | length == 0
+    fail_msg: 'Plugin drift requires review: {{ ci_plugin_audit.stdout }}. No unmanaged plugins will be removed automatically.'
+
+- name: Stop Jenkins before replacing plugin archives
+  ansible.builtin.systemd:
+    name: jenkins
+    state: stopped
+  when: (ci_plugin_audit.stdout | from_json).mismatched | length > 0
+
+- name: Install every locked plugin including transitive dependencies
+  ansible.builtin.get_url:
+    url: '{{ item.url }}'
+    dest: '/var/lib/jenkins/plugins/{{ item.name }}.jpi'
+    checksum: 'sha256:{{ item.sha256 }}'
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+    timeout: 120
+  loop: '{{ ci_jenkins_plugins }}'
+  loop_control:
+    label: '{{ item.name }}:{{ item.version }}'
+  register: ci_plugin_download
+  until: ci_plugin_download is succeeded
+  retries: 3
+  delay: 5
+  notify: Restart demo Jenkins
+
+- name: Recheck all installed archive checksums
+  ansible.builtin.command:
+    argv: [python3, /usr/local/lib/mod9-audit-jenkins-plugins.py, /etc/jenkins/plugins.lock.json, /var/lib/jenkins/plugins]
+  register: ci_plugin_check
+  changed_when: false
+  failed_when: >-
+    (ci_plugin_check.stdout | from_json).mismatched | length > 0 or
+    (ci_plugin_check.stdout | from_json).unexpected | length > 0 or
+    (ci_plugin_check.stdout | from_json).disabled | length > 0
+
+- name: Configure administrator password from Vault using the JCasC file secret source
+  ansible.builtin.copy:
+    content: '{{ ci_jenkins_admin_password }}'
+    dest: /etc/jenkins/ci-secrets/CI_JENKINS_ADMIN_PASSWORD
+    owner: root
+    group: jenkins
+    mode: '0640'
+  no_log: true
+  diff: false
+  notify: Restart demo Jenkins
+
+- name: Inspect provisioned scanner credential files
+  ansible.builtin.stat:
+    path: '/etc/jenkins/ci-secrets/{{ item }}'
+  loop: [CI_SONAR_TOKEN, CI_SNYK_TOKEN]
+  register: ci_scanner_secrets
+
+- name: Preserve scanner credential declarations on later foundation reruns
+  ansible.builtin.set_fact:
+    ci_casc_credentials_ready: >-
+      {{ ci_scanner_secrets.results | selectattr('stat.exists') | list | length == 2 }}
+
+- name: Render managed Jenkins configuration
+  ansible.builtin.template:
+    src: ../templates/ci-jenkins-casc.yml.j2
+    dest: /etc/jenkins/mod9-casc.yml
+    owner: root
+    group: jenkins
+    mode: '0640'
+  notify: Restart demo Jenkins
+
+- name: Render disabled branch-specific pipeline job
+  ansible.builtin.template:
+    src: ../templates/ci-jenkins-job.groovy.j2
+    dest: /etc/jenkins/mod9-pipeline.groovy
+    owner: root
+    group: jenkins
+    mode: '0640'
+  notify: Restart demo Jenkins
+
+- name: Remove the replaced executor-only bootstrap
+  ansible.builtin.file:
+    path: /var/lib/jenkins/init.groovy.d/10-mod9-executor.groovy
+    state: absent
+  notify: Restart demo Jenkins

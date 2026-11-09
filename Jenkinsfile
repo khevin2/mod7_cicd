@@ -74,8 +74,24 @@ pipeline {
     }
     stage('SAST') {
       steps {
+        sh '''#!/usr/bin/env bash
+          set -Eeuo pipefail
+          if [ "${MANAGE_LOCAL_SONAR:-false}" = true ]; then
+            sudo -n /usr/local/sbin/mod9-sonar start
+          fi
+        '''
         withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
           sh 'scripts/security-scan.sh sast'
+        }
+      }
+      post {
+        always {
+          sh '''#!/usr/bin/env bash
+            set -Eeuo pipefail
+            if [ "${MANAGE_LOCAL_SONAR:-false}" = true ]; then
+              sudo -n /usr/local/sbin/mod9-sonar stop
+            fi
+          '''
         }
       }
     }

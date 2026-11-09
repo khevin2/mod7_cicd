@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Wait for the final TCP listener, not PostgreSQL's temporary init socket.
+set -Eeuo pipefail
+for ((attempt=0; attempt<45; attempt++)); do
+  if /usr/bin/docker exec mod9-ci-db pg_isready \
+      -h 127.0.0.1 -p 5432 -U sonar -d sonar -t 1 >/dev/null 2>&1; then
+    exit 0
+  fi
+  sleep 1
+done
+echo 'PostgreSQL TCP readiness timed out; inspect mod9-sonar-db service logs.' >&2
+exit 1

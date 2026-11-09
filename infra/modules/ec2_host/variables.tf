@@ -52,6 +52,26 @@ variable "instance_type" {
   type        = string
 }
 
+variable "ami_id" {
+  description = "Optional immutable AMI ID. Null retains automatic AL2023 selection for existing callers."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.ami_id == null ? true : can(regex("^ami-[0-9a-f]+$", var.ami_id))
+    error_message = "Provide a valid AMI ID or null."
+  }
+}
+
+variable "cpu_credit_mode" {
+  description = "Optional burstable CPU credit policy. Null preserves the existing instance default."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.cpu_credit_mode == null ? true : contains(["standard", "unlimited"], var.cpu_credit_mode)
+    error_message = "CPU credit mode must be null, standard, or unlimited."
+  }
+}
+
 variable "root_volume_size_gib" {
   description = "Encrypted gp3 root-volume size in GiB."
   type        = number

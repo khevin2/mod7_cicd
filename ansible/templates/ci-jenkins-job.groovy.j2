@@ -1,0 +1,20 @@
+// Managed by Ansible. Keep disabled until remote source and all gates are ready.
+pipelineJob('mod9-secure-ecs') {
+    description('Secure ECS lab. Source branch and release controls require verification before enabling.')
+    disabled({{ 'false' if ci_pipeline_enabled | default(false) else 'true' }})
+    parameters {
+        booleanParam('RELEASE_APPROVED', false, 'Authorize publication and deployment only for an explicitly approved manual release.')
+    }
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    remote { url('https://github.com/khevin2/mod7_cicd.git') }
+                    branch('*/feature/secure-ecs-ec2')
+                }
+            }
+            scriptPath('Jenkinsfile')
+            lightweight(false)
+        }
+    }
+}

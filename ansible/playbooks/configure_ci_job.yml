@@ -1,0 +1,43 @@
+---
+- name: Configure the existing managed Jenkins job enabled state
+  hosts: ci_demo
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../vars/ci-versions.yml
+  tasks:
+    - name: Require explicit boolean job state and the existing Jenkins password
+      ansible.builtin.assert:
+        that:
+          - ci_pipeline_enabled is defined
+          - ci_pipeline_enabled is boolean
+          - ci_jenkins_admin_password | default('') | length > 0
+      no_log: true
+
+    - name: Render the managed branch-specific job
+      ansible.builtin.template:
+        src: ../templates/ci-jenkins-job.groovy.j2
+        dest: /etc/jenkins/mod9-pipeline.groovy
+        owner: root
+        group: jenkins
+        mode: '0640'
+      register: ci_job_template
+
+    - name: Restart Jenkins to apply the managed job definition
+      ansible.builtin.systemd:
+        name: jenkins
+        state: restarted
+      when: ci_job_template.changed
+
+    - name: Verify authenticated job availability and declared enabled state
+      ansible.builtin.uri:
+        url: 'http://127.0.0.1:8080/job/mod9-secure-ecs/api/json?tree=disabled'
+        user: '{{ ci_jenkins_admin_id }}'
+        password: '{{ ci_jenkins_admin_password }}'
+        force_basic_auth: true
+        timeout: 10
+      register: ci_job_check
+      until: ci_job_check.status | default(0) == 200 and ci_job_check.json.disabled | default(true) == (not ci_pipeline_enabled)
+      retries: 60
+      delay: 5
+      no_log: true

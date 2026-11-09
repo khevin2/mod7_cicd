@@ -1,0 +1,25 @@
+# Resolved 2026-11-09 from official vendor metadata; no moving versions at install.
+# SonarScanner checksum computed from its official JVM-only distribution archive.
+ci_tool_archives:
+- name: gitleaks
+  version: 8.28.0
+  url: https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz
+  sha256: a65b5253807a68ac0cafa4414031fd740aeb55f54fb7e55f386acb52e6a840eb
+  filename: gitleaks_8.28.0_linux_x64.tar.gz
+- name: trivy
+  version: 0.73.0
+  url: https://github.com/aquasecurity/trivy/releases/download/v0.73.0/trivy_0.73.0_Linux-64bit.tar.gz
+  sha256: 2edd39da482bb4e9831962487b68f68e3928ec3137794757f54d00383d79547b
+  filename: trivy_0.73.0_Linux-64bit.tar.gz
+- name: syft
+  version: 1.38.0
+  url: https://github.com/anchore/syft/releases/download/v1.38.0/syft_1.38.0_linux_amd64.tar.gz
+  sha256: bc664debb00db1b9b4b9dae4ba1a29d99621e33b641b94b78b9048374b812a3d
+  filename: syft_1.38.0_linux_amd64.tar.gz
+ci_snyk_version: 1.1308.4
+ci_snyk_url: https://downloads.snyk.io/cli/v1.1308.4/snyk-linux
+ci_snyk_sha256: 979172ee128903f50e43fff221f22a0689579f22c086dabaa0d1a5416485b9ba
+ci_sonar_scanner_version: 8.1.0.6389
+ci_sonar_scanner_url: https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-8.1.0.6389.zip
+ci_sonar_scanner_sha256: ab76ab3c360025e9108be5b55be066f304a164f8b2850d2f2f333915db51bc1b
+ci_awscli_rpm: awscli-2-2.38.0-1.amzn2023.0.1.noarch

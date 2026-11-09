@@ -76,3 +76,9 @@ variable "alarm_actions" {
     error_message = "Alarm actions must be SNS topic ARNs."
   }
 }
+
+variable "enable_untagged_image_expiry" {
+  description = "Opt in to untagged ECR image expiry only after verifying active, rollback, and multi-architecture image references are protected."
+  type        = bool
+  default     = false
+}

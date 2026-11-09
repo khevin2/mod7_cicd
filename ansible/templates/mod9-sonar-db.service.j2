@@ -1,0 +1,17 @@
+[Unit]
+Description=PostgreSQL for the SonarQube demo
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=120
+ExecStartPre=-/usr/bin/docker rm -f mod9-ci-db
+ExecStart=/usr/bin/docker run --rm --name mod9-ci-db --network mod9-ci --log-opt max-size=10m --log-opt max-file=3 --env-file /etc/mod9-ci/database.env -v mod9-ci-postgres:/var/lib/postgresql/data {{ ci_postgres_image }} postgres -c shared_buffers=64MB -c max_connections=20
+ExecStartPost=/usr/local/lib/mod9-wait-for-sonar-db
+ExecStop=/usr/bin/docker stop --time 90 mod9-ci-db
+
+[Install]
+WantedBy=multi-user.target

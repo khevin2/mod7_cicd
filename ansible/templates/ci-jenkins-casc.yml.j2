@@ -1,0 +1,53 @@
+jenkins:
+  systemMessage: "Managed by Ansible and JCasC. Change the repository configuration to reproduce this lab."
+  numExecutors: 1
+  mode: NORMAL
+  slaveAgentPort: -1
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: {{ ci_jenkins_admin_id | to_json }}
+          password: "${CI_JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  globalNodeProperties:
+    - envVars:
+        env:
+          - key: MANAGE_LOCAL_SONAR
+            value: "true"
+          - key: SONAR_HOST_URL
+            value: "http://127.0.0.1:9000"
+          - key: SONAR_SCANNER_JAVA_OPTS
+            value: "-Xmx256m"
+          - key: EXPECTED_SNYK_VERSION
+            value: {{ ci_snyk_version | to_json }}
+          - key: EXPECTED_SONAR_SCANNER_VERSION
+            value: {{ ci_sonar_scanner_version | to_json }}
+{% if ci_casc_credentials_ready | default(false) %}
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - string:
+              scope: GLOBAL
+              id: "sonarqube-token"
+              description: "Dedicated SonarQube analysis account; managed by Ansible"
+              secret: "${CI_SONAR_TOKEN}"
+          - string:
+              scope: GLOBAL
+              id: "snyk-token"
+              description: "Snyk API token from Ansible Vault"
+              secret: "${CI_SNYK_TOKEN}"
+{% endif %}
+tool:
+  nodejs:
+    installations:
+      - name: "NodeJS24"
+        home: "/opt/node-v{{ ci_nodejs_version }}-linux-x64"
+unclassified:
+  location:
+    url: {{ ci_jenkins_url | to_json }}
+jobs:
+  - file: /etc/jenkins/mod9-pipeline.groovy

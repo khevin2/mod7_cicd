@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Root-owned helper: Jenkins may invoke only these three exact subcommands.
+set -Eeuo pipefail
+[[ $# == 1 ]] || exit 2
+case "$1" in
+  start)
+    systemctl start mod9-sonar-db.service mod9-sonarqube.service
+    # Starting systemd units does not mean background analysis is available yet.
+    for ((attempt=0; attempt<240; attempt++)); do
+      if curl --fail --silent --max-time 5 http://127.0.0.1:9000/api/system/status |
+          jq -e '.status == "UP"' >/dev/null; then
+        exit 0
+      fi
+      sleep 5
+    done
+    echo 'SonarQube did not become ready; inspect service and container logs.' >&2
+    exit 1
+    ;;
+  stop)
+    systemctl stop mod9-sonarqube.service
+    systemctl stop mod9-sonar-db.service
+    ;;
+  status)
+    systemctl --no-pager status mod9-sonarqube.service mod9-sonar-db.service
+    ;;
+  *) exit 2 ;;
+esac

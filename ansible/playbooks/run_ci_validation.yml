@@ -1,0 +1,117 @@
+---
+- name: Require the intended pipeline source to be committed and published
+  hosts: localhost
+  connection: local
+  become: false
+  gather_facts: false
+  vars:
+    ci_repo_root: '{{ playbook_dir }}/../..'
+  tasks:
+    - name: Require committed pipeline and application inputs
+      ansible.builtin.command:
+        argv: [git, diff, --exit-code, --quiet, HEAD, --, Jenkinsfile, scripts, src, test, package.json, package-lock.json, Dockerfile, sonar-project.properties]
+        chdir: '{{ ci_repo_root }}'
+      changed_when: false
+
+    - name: Read the local source commit
+      ansible.builtin.command:
+        argv: [git, rev-parse, HEAD]
+        chdir: '{{ ci_repo_root }}'
+      register: ci_local_commit
+      changed_when: false
+
+    - name: Read the published working branch commit
+      ansible.builtin.command:
+        argv: [git, ls-remote, origin, refs/heads/feature/secure-ecs-ec2]
+        chdir: '{{ ci_repo_root }}'
+      register: ci_published_commit
+      changed_when: false
+
+    - name: Require the published branch to match the local commit
+      ansible.builtin.assert:
+        that:
+          - ci_published_commit.stdout.split() | length == 2
+          - ci_published_commit.stdout.split()[0] == ci_local_commit.stdout
+        fail_msg: Commit and push the intended source to feature/secure-ecs-ec2 before running Jenkins.
+
+- name: Enable the managed scan job
+  ansible.builtin.import_playbook: configure_ci_job.yml
+  vars:
+    ci_pipeline_enabled: true
+
+- name: Execute and wait for the scan-only Jenkins build
+  hosts: ci_demo
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../vars/ci-versions.yml
+  module_defaults:
+    ansible.builtin.uri:
+      user: '{{ ci_jenkins_admin_id }}'
+      password: '{{ ci_jenkins_admin_password }}'
+      force_basic_auth: true
+      timeout: 15
+  tasks:
+    - name: Obtain a CSRF crumb and session cookie
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8080/crumbIssuer/api/json
+      register: ci_crumb
+      no_log: true
+
+    - name: Queue a build with release explicitly disabled
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8080/job/mod9-secure-ecs/buildWithParameters
+        method: POST
+        headers: '{{ {ci_crumb.json.crumbRequestField: ci_crumb.json.crumb, "Cookie": ci_crumb.cookies_string} }}'
+        body_format: form-urlencoded
+        body:
+          RELEASE_APPROVED: 'false'
+        status_code: 201
+        follow_redirects: none
+      register: ci_build_queue
+      no_log: true
+
+    - name: Extract the queued build identifier
+      ansible.builtin.set_fact:
+        ci_queue_id: '{{ ci_build_queue.location | regex_search("/queue/item/([0-9]+)/", "\\1") | first }}'
+      no_log: true
+
+    - name: Wait for the queued build to start
+      ansible.builtin.uri:
+        url: 'http://127.0.0.1:8080/queue/item/{{ ci_queue_id }}/api/json'
+      register: ci_queue_status
+      until: ci_queue_status.json.executable is defined or ci_queue_status.json.cancelled | default(false)
+      retries: 120
+      delay: 5
+      no_log: true
+
+    - name: Require a started build
+      ansible.builtin.assert:
+        that: ci_queue_status.json.executable is defined
+        fail_msg: The queued Jenkins build was cancelled.
+
+    - name: Record the build number
+      ansible.builtin.set_fact:
+        ci_validation_build: '{{ ci_queue_status.json.executable.number }}'
+
+    - name: Show the build console address
+      ansible.builtin.debug:
+        msg: 'Scan-only build {{ ci_validation_build }} started. Console via SSH tunnel: http://localhost:8080/job/mod9-secure-ecs/{{ ci_validation_build }}/console'
+
+    - name: Wait for scan-only build completion
+      ansible.builtin.uri:
+        url: 'http://127.0.0.1:8080/job/mod9-secure-ecs/{{ ci_validation_build }}/api/json?tree=building,result'
+      register: ci_validation_result
+      until: ci_validation_result.json.building is defined and not ci_validation_result.json.building
+      retries: 780
+      delay: 5
+      no_log: true
+
+    - name: Report the build result
+      ansible.builtin.debug:
+        msg: 'Build {{ ci_validation_build }}: {{ ci_validation_result.json.result }}. Console: http://localhost:8080/job/mod9-secure-ecs/{{ ci_validation_build }}/console'
+
+    - name: Require a successful scan-only build
+      ansible.builtin.assert:
+        that: ci_validation_result.json.result == 'SUCCESS'
+        fail_msg: The build failed or was aborted. Inspect its console and archived reports; publication and deployment were not authorized.

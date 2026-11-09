@@ -1,0 +1,2170 @@
+{
+  "ci_jenkins_version": "2.580.2",
+  "ci_jenkins_plugin_metadata": "https://updates.jenkins.io/current/plugin-versions.json",
+  "ci_jenkins_plugin_roots": [
+    "configuration-as-code",
+    "credentials-binding",
+    "git",
+    "github",
+    "job-dsl",
+    "junit",
+    "nodejs",
+    "timestamper",
+    "workflow-aggregator"
+  ],
+  "ci_jenkins_plugins": [
+    {
+      "name": "antisamy-markup-formatter",
+      "version": "173.v680e3a_b_69ff3",
+      "url": "https://archives.jenkins.io/plugins/antisamy-markup-formatter/173.v680e3a_b_69ff3/antisamy-markup-formatter.hpi",
+      "sha256": "29b4765797f26c44574a2732ddf9d7d98ea0283295352497dd9eef84aed0102f",
+      "required_core": "2.479.1",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "apache-httpcomponents-client-4-api",
+      "version": "4.5.14-269.vfa_2321039a_83",
+      "url": "https://archives.jenkins.io/plugins/apache-httpcomponents-client-4-api/4.5.14-269.vfa_2321039a_83/apache-httpcomponents-client-4-api.hpi",
+      "sha256": "cea2f61cc72890b962fd4b767c31778c6cb30015b4a8758b4c26b62e51ca9533",
+      "required_core": "2.479.1",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "asm-api",
+      "version": "9.11.1-226.vff833a_e4c58e",
+      "url": "https://archives.jenkins.io/plugins/asm-api/9.11.1-226.vff833a_e4c58e/asm-api.hpi",
+      "sha256": "ba315fe727be0311cd5115205a09a2abb550b73287cc4ee07af5f7ef6502f1f8",
+      "required_core": "2.492.3",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "bootstrap5-api",
+      "version": "5.3.8-1048.va_c299057e35c",
+      "url": "https://archives.jenkins.io/plugins/bootstrap5-api/5.3.8-1048.va_c299057e35c/bootstrap5-api.hpi",
+      "sha256": "4027b4cecbdb400c4cdf6beed351cb27a2e0ef4c39d27618e342fad76a4490df",
+      "required_core": "2.555.1",
+      "dependencies": [
+        "commons-lang3-api",
+        "commons-text-api",
+        "font-awesome-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.20.0-109.ve43756e2d2b_4"
+        },
+        {
+          "name": "commons-text-api",
+          "version": "1.15.0-218.va_61573470393"
+        },
+        {
+          "name": "font-awesome-api",
+          "version": "7.2.0-983.v3f63c34eddb_9"
+        }
+      ]
+    },
+    {
+      "name": "bouncycastle-api",
+      "version": "2.30.1.86.2-310.v4655f6742752",
+      "url": "https://archives.jenkins.io/plugins/bouncycastle-api/2.30.1.86.2-310.v4655f6742752/bouncycastle-api.hpi",
+      "sha256": "57cc5cf1585f9a8f29c5a1e3985f07dace5d5359545d788e72ecaa3636515a58",
+      "required_core": "2.479.1",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "branch-api",
+      "version": "2.1303.v9f3b_95dc329d",
+      "url": "https://archives.jenkins.io/plugins/branch-api/2.1303.v9f3b_95dc329d/branch-api.hpi",
+      "sha256": "6ecfc3d335cec791008a2d06ca933c6ccc97db1c14a4aee5030affebb97482e0",
+      "required_core": "2.504.3",
+      "dependencies": [
+        "caffeine-api",
+        "commons-lang3-api",
+        "ionicons-api",
+        "cloudbees-folder",
+        "scm-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "caffeine-api",
+          "version": "3.2.3-194.v31a_b_f7a_b_5a_81"
+        },
+        {
+          "name": "commons-lang3-api",
+          "version": "3.19.0-104.v12125f33a_255"
+        },
+        {
+          "name": "ionicons-api",
+          "version": "94.vcc3065403257"
+        },
+        {
+          "name": "cloudbees-folder",
+          "version": "6.1053.vd62fb_b_f7367b_"
+        },
+        {
+          "name": "scm-api",
+          "version": "724.v7d839074eb_5c"
+        }
+      ]
+    },
+    {
+      "name": "caffeine-api",
+      "version": "3.3.1-214.v18eb_56b_34920",
+      "url": "https://archives.jenkins.io/plugins/caffeine-api/3.3.1-214.v18eb_56b_34920/caffeine-api.hpi",
+      "sha256": "768ed05774f12d85bf8ecff5d509f037810d1359de8b4fb1385624f6f547c90b",
+      "required_core": "2.479.1",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "checks-api",
+      "version": "438.v9fcc0f0e2013",
+      "url": "https://archives.jenkins.io/plugins/checks-api/438.v9fcc0f0e2013/checks-api.hpi",
+      "sha256": "44bc962e27e86d8ae79dd27304344c1713b460d1f347453aa0892214f67d9770",
+      "required_core": "2.555.3",
+      "dependencies": [
+        "commons-lang3-api",
+        "commons-text-api",
+        "plugin-util-api",
+        "workflow-step-api",
+        "workflow-support",
+        "display-url-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.21.0-122.v6a_ea_4fd34049"
+        },
+        {
+          "name": "commons-text-api",
+          "version": "1.15.0-218.va_61573470393"
+        },
+        {
+          "name": "plugin-util-api",
+          "version": "7.1403.vd380b_c42e90c"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "724.v538c2362b_dfb_"
+        },
+        {
+          "name": "workflow-support",
+          "version": "1015.v785e5a_b_b_8b_22"
+        },
+        {
+          "name": "display-url-api",
+          "version": "2.217.va_6b_de84cc74b_"
+        }
+      ]
+    },
+    {
+      "name": "cloudbees-folder",
+      "version": "6.1107.v31f8955765c8",
+      "url": "https://archives.jenkins.io/plugins/cloudbees-folder/6.1107.v31f8955765c8/cloudbees-folder.hpi",
+      "sha256": "e420a2a6f15e8b2e16d38c79a4f2fdeca70cec2dff835e8ea337f3085b723f48",
+      "required_core": "2.528.1",
+      "dependencies": [
+        "ionicons-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "ionicons-api",
+          "version": "94.vcc3065403257"
+        }
+      ]
+    },
+    {
+      "name": "commons-lang3-api",
+      "version": "3.21.0-122.v6a_ea_4fd34049",
+      "url": "https://archives.jenkins.io/plugins/commons-lang3-api/3.21.0-122.v6a_ea_4fd34049/commons-lang3-api.hpi",
+      "sha256": "4d6194f8d3b3f2b69264f0403fe5a51846236a41f4e363f6aae45f82f7761657",
+      "required_core": "2.479.3",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "commons-text-api",
+      "version": "1.15.0-218.va_61573470393",
+      "url": "https://archives.jenkins.io/plugins/commons-text-api/1.15.0-218.va_61573470393/commons-text-api.hpi",
+      "sha256": "ae2abdf957694f4aa39b9ba0b539edabc384f3da277551879e34ffb22fb13764",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "commons-lang3-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.18.0-98.v3a_674c06072d"
+        }
+      ]
+    },
+    {
+      "name": "config-file-provider",
+      "version": "1013.v73c323e52b_1f",
+      "url": "https://archives.jenkins.io/plugins/config-file-provider/1013.v73c323e52b_1f/config-file-provider.hpi",
+      "sha256": "82807ddf80599b2b7aaf24dc5c16cd7652fc5a6f83f5237114af01aca0818021",
+      "required_core": "2.555.1",
+      "dependencies": [
+        "ionicons-api",
+        "credentials-binding",
+        "credentials",
+        "plain-credentials",
+        "script-security",
+        "ssh-credentials",
+        "token-macro"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "ionicons-api",
+          "version": "94.vcc3065403257"
+        },
+        {
+          "name": "credentials-binding",
+          "version": "725.ve52b_2328a_fde"
+        },
+        {
+          "name": "credentials",
+          "version": "1502.v5c95e620ddfe"
+        },
+        {
+          "name": "plain-credentials",
+          "version": "199.v9f8e1f741799"
+        },
+        {
+          "name": "script-security",
+          "version": "1402.v94c9ce464861"
+        },
+        {
+          "name": "ssh-credentials",
+          "version": "372.va_250881b_08cd"
+        },
+        {
+          "name": "token-macro",
+          "version": "477.vd4f0dc3cb_cf1"
+        }
+      ]
+    },
+    {
+      "name": "configuration-as-code",
+      "version": "2147.v8a_8d38668c72",
+      "url": "https://archives.jenkins.io/plugins/configuration-as-code/2147.v8a_8d38668c72/configuration-as-code.hpi",
+      "sha256": "d84318da9ceee043736415a9af5814f9c0324fb269905e2e2bd42237830263ff",
+      "required_core": "2.541.1",
+      "dependencies": [
+        "caffeine-api",
+        "commons-lang3-api",
+        "commons-text-api",
+        "json-api",
+        "prism-api",
+        "snakeyaml-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "caffeine-api",
+          "version": "3.2.3-194.v31a_b_f7a_b_5a_81"
+        },
+        {
+          "name": "commons-lang3-api",
+          "version": "3.20.0-109.ve43756e2d2b_4"
+        },
+        {
+          "name": "commons-text-api",
+          "version": "1.15.0-218.va_61573470393"
+        },
+        {
+          "name": "json-api",
+          "version": "20251224-185.v0cc18490c62c"
+        },
+        {
+          "name": "prism-api",
+          "version": "1.30.0-717.vb_f8360844b_53"
+        },
+        {
+          "name": "snakeyaml-api",
+          "version": "2.5-149.v72471e9c6371"
+        }
+      ]
+    },
+    {
+      "name": "credentials",
+      "version": "1514.vb_01eb_014e7d4",
+      "url": "https://archives.jenkins.io/plugins/credentials/1514.vb_01eb_014e7d4/credentials.hpi",
+      "sha256": "b6e0a05d107fe492bb57baea75fb585fb65dd90c2456a6432b90b87226997457",
+      "required_core": "2.555.3",
+      "dependencies": [
+        "commons-lang3-api",
+        "commons-text-api",
+        "ionicons-api",
+        "bouncycastle-api",
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.20.0-109.ve43756e2d2b_4"
+        },
+        {
+          "name": "commons-text-api",
+          "version": "1.15.0-218.va_61573470393"
+        },
+        {
+          "name": "ionicons-api",
+          "version": "94.vcc3065403257"
+        },
+        {
+          "name": "bouncycastle-api",
+          "version": "2.30.1.84-291.v9f17b_21896e2"
+        },
+        {
+          "name": "structs",
+          "version": "362.va_b_695ef4fdf9"
+        }
+      ]
+    },
+    {
+      "name": "credentials-binding",
+      "version": "728.v902a_273b_8947",
+      "url": "https://archives.jenkins.io/plugins/credentials-binding/728.v902a_273b_8947/credentials-binding.hpi",
+      "sha256": "bd7d1a187e35c8e2b6619cd50f2f8c5d28aafc4ef8fd9de572fb2cfa464f466d",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "workflow-step-api",
+        "credentials",
+        "plain-credentials",
+        "ssh-credentials",
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "workflow-step-api",
+          "version": "704.ve4f0967e98fa_"
+        },
+        {
+          "name": "credentials",
+          "version": "1415.v831096eb_5534"
+        },
+        {
+          "name": "plain-credentials",
+          "version": "199.v9f8e1f741799"
+        },
+        {
+          "name": "ssh-credentials",
+          "version": "359.v2191c4cf635f"
+        },
+        {
+          "name": "structs",
+          "version": "350.v3b_30f09f2363"
+        }
+      ]
+    },
+    {
+      "name": "display-url-api",
+      "version": "2.217.va_6b_de84cc74b_",
+      "url": "https://archives.jenkins.io/plugins/display-url-api/2.217.va_6b_de84cc74b_/display-url-api.hpi",
+      "sha256": "07eeaae738b451bade4756900b48561c6c493a42c7ba07a45b22a2dce71ac0ca",
+      "required_core": "2.479.1",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "durable-task",
+      "version": "686.v80ff80875b_82",
+      "url": "https://archives.jenkins.io/plugins/durable-task/686.v80ff80875b_82/durable-task.hpi",
+      "sha256": "1f5bb92ee5784ee01a4e4e0307e806fa1e260db8aceba56fe8d277e939278dfa",
+      "required_core": "2.504.3",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "echarts-api",
+      "version": "6.1.0-1321.v86c4c5114494",
+      "url": "https://archives.jenkins.io/plugins/echarts-api/6.1.0-1321.v86c4c5114494/echarts-api.hpi",
+      "sha256": "280663806fd6538a16284fc61668a42af4272b7e96b66f48ec82409975cff51b",
+      "required_core": "2.555.3",
+      "dependencies": [
+        "bootstrap5-api",
+        "commons-lang3-api",
+        "commons-text-api",
+        "font-awesome-api",
+        "jackson3-api",
+        "jquery3-api",
+        "plugin-util-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "bootstrap5-api",
+          "version": "5.3.8-1048.va_c299057e35c"
+        },
+        {
+          "name": "commons-lang3-api",
+          "version": "3.20.0-109.ve43756e2d2b_4"
+        },
+        {
+          "name": "commons-text-api",
+          "version": "1.15.0-218.va_61573470393"
+        },
+        {
+          "name": "font-awesome-api",
+          "version": "7.3.1-1013.v0835a_879ec6d"
+        },
+        {
+          "name": "jackson3-api",
+          "version": "3.2.2-96.v599957900a_1a_"
+        },
+        {
+          "name": "jquery3-api",
+          "version": "3.7.1-687.v68d468e40b_30"
+        },
+        {
+          "name": "plugin-util-api",
+          "version": "7.1341.v039f146993d9"
+        }
+      ]
+    },
+    {
+      "name": "font-awesome-api",
+      "version": "7.3.1-1013.v0835a_879ec6d",
+      "url": "https://archives.jenkins.io/plugins/font-awesome-api/7.3.1-1013.v0835a_879ec6d/font-awesome-api.hpi",
+      "sha256": "7ee382c678545f5fd5b022e5dbb75d129a97db2b0180fb42f17edcebdfdbbf5a",
+      "required_core": "2.555.3",
+      "dependencies": [
+        "commons-lang3-api",
+        "commons-text-api",
+        "plugin-util-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.20.0-109.ve43756e2d2b_4"
+        },
+        {
+          "name": "commons-text-api",
+          "version": "1.15.0-218.va_61573470393"
+        },
+        {
+          "name": "plugin-util-api",
+          "version": "7.1341.v039f146993d9"
+        }
+      ]
+    },
+    {
+      "name": "git",
+      "version": "5.11.0",
+      "url": "https://archives.jenkins.io/plugins/git/5.11.0/git.hpi",
+      "sha256": "bf4639abb65e6ca210bd0d7cb9b6570e93717894bdcd008b2e7e5a916dd818f6",
+      "required_core": "2.504.3",
+      "dependencies": [
+        "commons-lang3-api",
+        "ionicons-api",
+        "workflow-scm-step",
+        "workflow-step-api",
+        "credentials",
+        "git-client",
+        "mailer",
+        "scm-api",
+        "script-security",
+        "ssh-credentials",
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.20.0-109.ve43756e2d2b_4"
+        },
+        {
+          "name": "ionicons-api",
+          "version": "94.vcc3065403257"
+        },
+        {
+          "name": "workflow-scm-step",
+          "version": "466.va_d69e602552b_"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "710.v3e456cc85233"
+        },
+        {
+          "name": "credentials",
+          "version": "1480.v2246fd131e83"
+        },
+        {
+          "name": "git-client",
+          "version": "6.5.0"
+        },
+        {
+          "name": "mailer",
+          "version": "525.v2458b_d8a_1a_71"
+        },
+        {
+          "name": "scm-api",
+          "version": "724.v7d839074eb_5c"
+        },
+        {
+          "name": "script-security",
+          "version": "1385.v7d2d9ec4d909"
+        },
+        {
+          "name": "ssh-credentials",
+          "version": "361.vb_f6760818e8c"
+        },
+        {
+          "name": "structs",
+          "version": "362.va_b_695ef4fdf9"
+        }
+      ]
+    },
+    {
+      "name": "git-client",
+      "version": "6.6.1",
+      "url": "https://archives.jenkins.io/plugins/git-client/6.6.1/git-client.hpi",
+      "sha256": "69ab80e3bd51e2e4e676a18722c02c7b163eb11a758b52ecf179d58e1ca1738f",
+      "required_core": "2.516.3",
+      "dependencies": [
+        "mina-sshd-api-common",
+        "mina-sshd-api-core",
+        "commons-lang3-api",
+        "gson-api",
+        "apache-httpcomponents-client-4-api",
+        "credentials",
+        "script-security",
+        "ssh-credentials",
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "mina-sshd-api-common",
+          "version": "2.16.0-167.va_269f38cc024"
+        },
+        {
+          "name": "mina-sshd-api-core",
+          "version": "2.16.0-167.va_269f38cc024"
+        },
+        {
+          "name": "commons-lang3-api",
+          "version": "3.20.0-109.ve43756e2d2b_4"
+        },
+        {
+          "name": "gson-api",
+          "version": "2.13.2-173.va_a_092315913c"
+        },
+        {
+          "name": "apache-httpcomponents-client-4-api",
+          "version": "4.5.14-269.vfa_2321039a_83"
+        },
+        {
+          "name": "credentials",
+          "version": "1487.va_d001ede2c31"
+        },
+        {
+          "name": "script-security",
+          "version": "1399.ve6a_66547f6e1"
+        },
+        {
+          "name": "ssh-credentials",
+          "version": "361.vb_f6760818e8c"
+        },
+        {
+          "name": "structs",
+          "version": "362.va_b_695ef4fdf9"
+        }
+      ]
+    },
+    {
+      "name": "github",
+      "version": "1.47.0",
+      "url": "https://archives.jenkins.io/plugins/github/1.47.0/github.hpi",
+      "sha256": "b9f040a3280977f2012c0057b48db712959c665e685b74e79fa1cf43833878da",
+      "required_core": "2.504.3",
+      "dependencies": [
+        "caffeine-api",
+        "commons-lang3-api",
+        "okhttp-api",
+        "instance-identity",
+        "credentials",
+        "display-url-api",
+        "git",
+        "github-api",
+        "plain-credentials",
+        "scm-api",
+        "token-macro"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "caffeine-api",
+          "version": "3.2.3-194.v31a_b_f7a_b_5a_81"
+        },
+        {
+          "name": "commons-lang3-api",
+          "version": "3.20.0-109.ve43756e2d2b_4"
+        },
+        {
+          "name": "okhttp-api",
+          "version": "4.12.0-195.vc02552c04ffd"
+        },
+        {
+          "name": "instance-identity",
+          "version": "203.v15e81a_1b_7a_38"
+        },
+        {
+          "name": "credentials",
+          "version": "1480.v2246fd131e83"
+        },
+        {
+          "name": "display-url-api",
+          "version": "2.217.va_6b_de84cc74b_"
+        },
+        {
+          "name": "git",
+          "version": "5.8.1"
+        },
+        {
+          "name": "github-api",
+          "version": "1.330-492.v3941a_032db_2a_"
+        },
+        {
+          "name": "plain-credentials",
+          "version": "199.v9f8e1f741799"
+        },
+        {
+          "name": "scm-api",
+          "version": "724.v7d839074eb_5c"
+        },
+        {
+          "name": "token-macro",
+          "version": "477.vd4f0dc3cb_cf1"
+        }
+      ]
+    },
+    {
+      "name": "github-api",
+      "version": "1.330-492.v3941a_032db_2a_",
+      "url": "https://archives.jenkins.io/plugins/github-api/1.330-492.v3941a_032db_2a_/github-api.hpi",
+      "sha256": "1f815342410006bbfc65adb4a027be91bfb4d7ea7460d59ac3278f67819261ba",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "commons-lang3-api",
+        "okhttp-api",
+        "jackson2-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.18.0-98.v3a_674c06072d"
+        },
+        {
+          "name": "okhttp-api",
+          "version": "4.11.0-189.v976fa_d3379d6"
+        },
+        {
+          "name": "jackson2-api",
+          "version": "2.18.3-402.v74c4eb_f122b_2"
+        }
+      ]
+    },
+    {
+      "name": "gson-api",
+      "version": "2.15.0-212.v085f60a_8093b_",
+      "url": "https://archives.jenkins.io/plugins/gson-api/2.15.0-212.v085f60a_8093b_/gson-api.hpi",
+      "sha256": "db390356191cd010beccf9f775c78b206b5a5d132d5c2ceda6a49dfab82dd631",
+      "required_core": "2.492.3",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "instance-identity",
+      "version": "203.v15e81a_1b_7a_38",
+      "url": "https://archives.jenkins.io/plugins/instance-identity/203.v15e81a_1b_7a_38/instance-identity.hpi",
+      "sha256": "df2b3205a6177248f12b294650a60405f65ba2cd503ca9599b2dcb72c1de5018",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "bouncycastle-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "bouncycastle-api",
+          "version": "2.30.1.80-256.vf98926042a_9b_"
+        }
+      ]
+    },
+    {
+      "name": "ionicons-api",
+      "version": "94.vcc3065403257",
+      "url": "https://archives.jenkins.io/plugins/ionicons-api/94.vcc3065403257/ionicons-api.hpi",
+      "sha256": "95f3504375d628d887425ccdf32d5606a230261ee42dc683f13958d8e973ac3f",
+      "required_core": "2.504.1",
+      "dependencies": [
+        "commons-lang3-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.18.0-98.v3a_674c06072d"
+        }
+      ]
+    },
+    {
+      "name": "jackson-annotations2-api",
+      "version": "2.22-19.v10a_a_582ea_26e",
+      "url": "https://archives.jenkins.io/plugins/jackson-annotations2-api/2.22-19.v10a_a_582ea_26e/jackson-annotations2-api.hpi",
+      "sha256": "f13d0a17af6f8c8939a6edd30952006b77dca4760b1f40e0289c363918b7d17d",
+      "required_core": "2.479.1",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "jackson2-api",
+      "version": "2.22.4-449.v4ee9f4ec4123",
+      "url": "https://archives.jenkins.io/plugins/jackson2-api/2.22.4-449.v4ee9f4ec4123/jackson2-api.hpi",
+      "sha256": "3333380ef2117532473792dbdd1c206d68e8a2c1b534c5a5a48d1fa5920503ae",
+      "required_core": "2.528.3",
+      "dependencies": [
+        "jackson-annotations2-api",
+        "jakarta-activation-api",
+        "jakarta-xml-bind-api",
+        "javax-activation-api",
+        "jaxb",
+        "json-api",
+        "snakeyaml-api",
+        "woodstox-core-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "jackson-annotations2-api",
+          "version": "2.22-19.v10a_a_582ea_26e"
+        },
+        {
+          "name": "jakarta-activation-api",
+          "version": "2.1.4-1"
+        },
+        {
+          "name": "jakarta-xml-bind-api",
+          "version": "4.0.9-19.v2b_a_5b_44d9a_1c"
+        },
+        {
+          "name": "javax-activation-api",
+          "version": "1.2.0-8"
+        },
+        {
+          "name": "jaxb",
+          "version": "2.3.9-143.v5979df3304e6"
+        },
+        {
+          "name": "json-api",
+          "version": "20251224-185.v0cc18490c62c"
+        },
+        {
+          "name": "snakeyaml-api",
+          "version": "2.5-149.v72471e9c6371"
+        },
+        {
+          "name": "woodstox-core-api",
+          "version": "7.2.1-6.v3718a_a_11f5c4"
+        }
+      ]
+    },
+    {
+      "name": "jackson3-api",
+      "version": "3.2.4-103.vf5a_b_3f4ea_cec",
+      "url": "https://archives.jenkins.io/plugins/jackson3-api/3.2.4-103.vf5a_b_3f4ea_cec/jackson3-api.hpi",
+      "sha256": "4397f73c11ba5085a40280555b519c9427cf8d69d63d5d60f4f623f72f953fe2",
+      "required_core": "2.528.3",
+      "dependencies": [
+        "jackson-annotations2-api",
+        "snakeyaml-engine-api",
+        "woodstox-core-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "jackson-annotations2-api",
+          "version": "2.22-19.v10a_a_582ea_26e"
+        },
+        {
+          "name": "snakeyaml-engine-api",
+          "version": "3.0.1-5.vd98ea_ff3b_92e"
+        },
+        {
+          "name": "woodstox-core-api",
+          "version": "7.2.1-6.v3718a_a_11f5c4"
+        }
+      ]
+    },
+    {
+      "name": "jakarta-activation-api",
+      "version": "2.1.4-1",
+      "url": "https://archives.jenkins.io/plugins/jakarta-activation-api/2.1.4-1/jakarta-activation-api.hpi",
+      "sha256": "e62298341742f14b374045387ba641ad8a19376793c76bdafebb4a05b5099712",
+      "required_core": "2.479.1",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "jakarta-mail-api",
+      "version": "2.1.5-1",
+      "url": "https://archives.jenkins.io/plugins/jakarta-mail-api/2.1.5-1/jakarta-mail-api.hpi",
+      "sha256": "244735ea85a51332c079d235a5713e70d3810bea62332894002acc39914ce11b",
+      "required_core": "2.479.1",
+      "dependencies": [
+        "jakarta-activation-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "jakarta-activation-api",
+          "version": "2.1.4-1"
+        }
+      ]
+    },
+    {
+      "name": "jakarta-xml-bind-api",
+      "version": "4.0.9-19.v2b_a_5b_44d9a_1c",
+      "url": "https://archives.jenkins.io/plugins/jakarta-xml-bind-api/4.0.9-19.v2b_a_5b_44d9a_1c/jakarta-xml-bind-api.hpi",
+      "sha256": "2f59227936687ec00f7ea62b550e7a6e9c86cda3423f3567ffe66bbdf235ffb5",
+      "required_core": "2.479.1",
+      "dependencies": [
+        "jakarta-activation-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "jakarta-activation-api",
+          "version": "2.1.3-2"
+        }
+      ]
+    },
+    {
+      "name": "javax-activation-api",
+      "version": "1.2.0-8",
+      "url": "https://archives.jenkins.io/plugins/javax-activation-api/1.2.0-8/javax-activation-api.hpi",
+      "sha256": "e96e88c52edf07ba00fb45b26cc411a7a95fa3d4491aaa1a5d36637665880560",
+      "required_core": "2.479.1",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "jaxb",
+      "version": "2.3.9-143.v5979df3304e6",
+      "url": "https://archives.jenkins.io/plugins/jaxb/2.3.9-143.v5979df3304e6/jaxb.hpi",
+      "sha256": "38ddf4cf5db61a591044130c2f7ccb2b7aa9abebc8fcd8a6953f8da550d002ed",
+      "required_core": "2.479.1",
+      "dependencies": [
+        "javax-activation-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "javax-activation-api",
+          "version": "1.2.0-8"
+        }
+      ]
+    },
+    {
+      "name": "job-dsl",
+      "version": "3732.v9a_c49a_61a_313",
+      "url": "https://archives.jenkins.io/plugins/job-dsl/3732.v9a_c49a_61a_313/job-dsl.hpi",
+      "sha256": "4991233cade18498ae3dc9cac4c7a880e5b5ac6077e45e181b231ab2cd69975b",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "commons-lang3-api",
+        "commons-text-api",
+        "branch-api",
+        "cloudbees-folder",
+        "script-security",
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.18.0-98.v3a_674c06072d"
+        },
+        {
+          "name": "commons-text-api",
+          "version": "1.13.1-176.v74d88f22034b_"
+        },
+        {
+          "name": "branch-api",
+          "version": "2.1229.ve86b_d02b_5e56"
+        },
+        {
+          "name": "cloudbees-folder",
+          "version": "6.1026.ve06dfa_cf31c3"
+        },
+        {
+          "name": "script-security",
+          "version": "1373.vb_b_4a_a_c26fa_00"
+        },
+        {
+          "name": "structs",
+          "version": "350.v3b_30f09f2363"
+        }
+      ]
+    },
+    {
+      "name": "joda-time-api",
+      "version": "2.15.1-211.ve499f52b_da_33",
+      "url": "https://archives.jenkins.io/plugins/joda-time-api/2.15.1-211.ve499f52b_da_33/joda-time-api.hpi",
+      "sha256": "29555985df3306fc9a7d1c6a6da855b19063694a5ea15a463a302634dedb6197",
+      "required_core": "2.492.3",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "jquery3-api",
+      "version": "3.7.1-687.v68d468e40b_30",
+      "url": "https://archives.jenkins.io/plugins/jquery3-api/3.7.1-687.v68d468e40b_30/jquery3-api.hpi",
+      "sha256": "16716d59a3df872a3b8700337de9e8306b2d5104320e6916731aa7185d3de880",
+      "required_core": "2.555.1",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "json-api",
+      "version": "20260814-226.v20f9685d642c",
+      "url": "https://archives.jenkins.io/plugins/json-api/20260814-226.v20f9685d642c/json-api.hpi",
+      "sha256": "c5ac5ecfddd35c07087b3333ae05ec4167a70abae8bf0ebcb7338b6b54540889",
+      "required_core": "2.492.1",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "json-path-api",
+      "version": "3.0.0-218.vcd4dd1355de2",
+      "url": "https://archives.jenkins.io/plugins/json-path-api/3.0.0-218.vcd4dd1355de2/json-path-api.hpi",
+      "sha256": "c032db1c87e36a57246bce59837f399f8d5f4f53be3483689a69b5c3ac0a0125",
+      "required_core": "2.492.3",
+      "dependencies": [
+        "asm-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "asm-api",
+          "version": "9.8-163.vb_2a_96d3f9c3c"
+        }
+      ]
+    },
+    {
+      "name": "junit",
+      "version": "1458.v38661c0638e2",
+      "url": "https://archives.jenkins.io/plugins/junit/1458.v38661c0638e2/junit.hpi",
+      "sha256": "674ef6595168e4b12a7b0e9351c62978ff6dbc83a97dc9045da20b8d3bad3628",
+      "required_core": "2.555.3",
+      "dependencies": [
+        "bootstrap5-api",
+        "checks-api",
+        "echarts-api",
+        "ionicons-api",
+        "jackson3-api",
+        "plugin-util-api",
+        "prism-api",
+        "workflow-api",
+        "workflow-step-api",
+        "antisamy-markup-formatter",
+        "display-url-api",
+        "script-security"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "bootstrap5-api",
+          "version": "5.3.8-1048.va_c299057e35c"
+        },
+        {
+          "name": "checks-api",
+          "version": "434.va_a_3dd79d7723"
+        },
+        {
+          "name": "echarts-api",
+          "version": "6.1.0-1321.v86c4c5114494"
+        },
+        {
+          "name": "ionicons-api",
+          "version": "94.vcc3065403257"
+        },
+        {
+          "name": "jackson3-api",
+          "version": "3.2.4-103.vf5a_b_3f4ea_cec"
+        },
+        {
+          "name": "plugin-util-api",
+          "version": "7.1403.vd380b_c42e90c"
+        },
+        {
+          "name": "prism-api",
+          "version": "1.30.0-741.v034eb_0b_0a_a_fa_"
+        },
+        {
+          "name": "workflow-api",
+          "version": "1413.v2ff1a_5e720fa_"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "724.v538c2362b_dfb_"
+        },
+        {
+          "name": "antisamy-markup-formatter",
+          "version": "173.v680e3a_b_69ff3"
+        },
+        {
+          "name": "display-url-api",
+          "version": "2.217.va_6b_de84cc74b_"
+        },
+        {
+          "name": "script-security",
+          "version": "1436.v1082791135e4"
+        }
+      ]
+    },
+    {
+      "name": "mailer",
+      "version": "534.v1b_36f5864073",
+      "url": "https://archives.jenkins.io/plugins/mailer/534.v1b_36f5864073/mailer.hpi",
+      "sha256": "5426a66a3f879d25fcb4baff678a28422afbabff22cd6e4f0f998fc67a3dc3fa",
+      "required_core": "2.504.3",
+      "dependencies": [
+        "jakarta-mail-api",
+        "instance-identity",
+        "display-url-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "jakarta-mail-api",
+          "version": "2.1.3-2"
+        },
+        {
+          "name": "instance-identity",
+          "version": "203.v15e81a_1b_7a_38"
+        },
+        {
+          "name": "display-url-api",
+          "version": "2.217.va_6b_de84cc74b_"
+        }
+      ]
+    },
+    {
+      "name": "mina-sshd-api-common",
+      "version": "2.20.1-199.v8ce76b_c93542",
+      "url": "https://archives.jenkins.io/plugins/mina-sshd-api-common/2.20.1-199.v8ce76b_c93542/mina-sshd-api-common.hpi",
+      "sha256": "d9db07feb1f05b46f2595cef06d3167f9c63b5e43f2a672c61e98b2817291606",
+      "required_core": "2.479.3",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "mina-sshd-api-core",
+      "version": "2.20.1-199.v8ce76b_c93542",
+      "url": "https://archives.jenkins.io/plugins/mina-sshd-api-core/2.20.1-199.v8ce76b_c93542/mina-sshd-api-core.hpi",
+      "sha256": "b47c79efc0d435716a6df6c5e1bdefe73e3d8ee8ea884842e203ee36ac41f532",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "mina-sshd-api-common"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "mina-sshd-api-common",
+          "version": "2.20.1-199.v8ce76b_c93542"
+        }
+      ]
+    },
+    {
+      "name": "nodejs",
+      "version": "1.6.6",
+      "url": "https://archives.jenkins.io/plugins/nodejs/1.6.6/nodejs.hpi",
+      "sha256": "0df3fc01dbd647a4e6d71692f4013160507f1f8d954c1d628ee0694b4ec5584c",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "commons-lang3-api",
+        "config-file-provider",
+        "plain-credentials",
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.18.0-98.v3a_674c06072d"
+        },
+        {
+          "name": "config-file-provider",
+          "version": "988.v0461fcc2b_9d1"
+        },
+        {
+          "name": "plain-credentials",
+          "version": "199.v9f8e1f741799"
+        },
+        {
+          "name": "structs",
+          "version": "350.v3b_30f09f2363"
+        }
+      ]
+    },
+    {
+      "name": "okhttp-api",
+      "version": "5.5.0-242.v1482d48d3ea_3",
+      "url": "https://archives.jenkins.io/plugins/okhttp-api/5.5.0-242.v1482d48d3ea_3/okhttp-api.hpi",
+      "sha256": "d870037d472dd6cfdcb5d8bf6e701f0a241d6991ec8b5aeb8ded6ae6e3e6cbcc",
+      "required_core": "2.479.1",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "pipeline-build-step",
+      "version": "601.v6d4c6d1a_9dc7",
+      "url": "https://archives.jenkins.io/plugins/pipeline-build-step/601.v6d4c6d1a_9dc7/pipeline-build-step.hpi",
+      "sha256": "1b61a1820844f3f72f9dfcd6d7eeab66fa0fbcee5e3923b912cd1ed10fbf63c5",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "workflow-api",
+        "workflow-step-api",
+        "workflow-support",
+        "script-security",
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "workflow-api",
+          "version": "1363.v03f731255494"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "686.v603d058a_e148"
+        },
+        {
+          "name": "workflow-support",
+          "version": "944.v5a_859593b_98a_"
+        },
+        {
+          "name": "script-security",
+          "version": "1369.v9b_98a_4e95b_2d"
+        },
+        {
+          "name": "structs",
+          "version": "338.v848422169819"
+        }
+      ]
+    },
+    {
+      "name": "pipeline-groovy-lib",
+      "version": "822.vc95f70dea_db_7",
+      "url": "https://archives.jenkins.io/plugins/pipeline-groovy-lib/822.vc95f70dea_db_7/pipeline-groovy-lib.hpi",
+      "sha256": "a633824da17e95fe2a9f03e8d951a771c70a729e987fc51874146723f3b6343b",
+      "required_core": "2.555.1",
+      "dependencies": [
+        "workflow-api",
+        "workflow-cps",
+        "workflow-scm-step",
+        "workflow-step-api",
+        "cloudbees-folder",
+        "scm-api",
+        "script-security",
+        "structs",
+        "variant"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "workflow-api",
+          "version": "1398.v67030756d3fb_"
+        },
+        {
+          "name": "workflow-cps",
+          "version": "4275.vb_0565eb_a_3d36"
+        },
+        {
+          "name": "workflow-scm-step",
+          "version": "466.va_d69e602552b_"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "710.v3e456cc85233"
+        },
+        {
+          "name": "cloudbees-folder",
+          "version": "6.1079.vc0975c2de294"
+        },
+        {
+          "name": "scm-api",
+          "version": "728.vc30dcf7a_0df5"
+        },
+        {
+          "name": "script-security",
+          "version": "1399.ve6a_66547f6e1"
+        },
+        {
+          "name": "structs",
+          "version": "362.va_b_695ef4fdf9"
+        },
+        {
+          "name": "variant",
+          "version": "70.va_d9f17f859e0"
+        }
+      ]
+    },
+    {
+      "name": "pipeline-input-step",
+      "version": "560.v56198a_642157",
+      "url": "https://archives.jenkins.io/plugins/pipeline-input-step/560.v56198a_642157/pipeline-input-step.hpi",
+      "sha256": "7c61bb745ecd1e4e5c7864dc7c8352148d9b2281bcca5a48fd3a7cca7290a135",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "workflow-api",
+        "workflow-step-api",
+        "workflow-support",
+        "credentials",
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "workflow-api",
+          "version": "1336.vee415d95c521"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "678.v3ee58b_469476"
+        },
+        {
+          "name": "workflow-support",
+          "version": "936.v9fa_77211ca_e1"
+        },
+        {
+          "name": "credentials",
+          "version": "1405.vb_cda_74a_f8974"
+        },
+        {
+          "name": "structs",
+          "version": "338.v848422169819"
+        }
+      ]
+    },
+    {
+      "name": "pipeline-milestone-step",
+      "version": "152.v6e22b_8cfc66c",
+      "url": "https://archives.jenkins.io/plugins/pipeline-milestone-step/152.v6e22b_8cfc66c/pipeline-milestone-step.hpi",
+      "sha256": "cb3187809e219f01b42068f277058a818033f3cfd14da7ec59c86f028fc38386",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "workflow-api",
+        "workflow-step-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "workflow-api",
+          "version": "1363.v03f731255494"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "686.v603d058a_e148"
+        }
+      ]
+    },
+    {
+      "name": "pipeline-model-api",
+      "version": "2.2293.v6e7193cec599",
+      "url": "https://archives.jenkins.io/plugins/pipeline-model-api/2.2293.v6e7193cec599/pipeline-model-api.hpi",
+      "sha256": "cdd72a69bf2863a1683b282febd0256d5d266111134c3803a8c4a051b6b4c133",
+      "required_core": "2.504.3",
+      "dependencies": [
+        "commons-lang3-api",
+        "commons-text-api",
+        "joda-time-api",
+        "workflow-step-api",
+        "jackson2-api",
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.18.0-98.v3a_674c06072d"
+        },
+        {
+          "name": "commons-text-api",
+          "version": "1.14.0-194.v804a_dc3a_1b_d8"
+        },
+        {
+          "name": "joda-time-api",
+          "version": "2.14.0-149.v1c3ce991d1b_9"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "706.v518c5dcb_24c0"
+        },
+        {
+          "name": "jackson2-api",
+          "version": "2.19.2-408.v18248a_324cfe"
+        },
+        {
+          "name": "structs",
+          "version": "353.v261ea_40a_80fb_"
+        }
+      ]
+    },
+    {
+      "name": "pipeline-model-definition",
+      "version": "2.2293.v6e7193cec599",
+      "url": "https://archives.jenkins.io/plugins/pipeline-model-definition/2.2293.v6e7193cec599/pipeline-model-definition.hpi",
+      "sha256": "9f4f62e0a13fefc9c5736a20ad5124af2a324357294fd8ea8d8f848b7c497f92",
+      "required_core": "2.504.3",
+      "dependencies": [
+        "commons-lang3-api",
+        "ionicons-api",
+        "pipeline-groovy-lib",
+        "workflow-api",
+        "workflow-basic-steps",
+        "workflow-cps",
+        "workflow-durable-task-step",
+        "workflow-multibranch",
+        "workflow-scm-step",
+        "workflow-support",
+        "credentials-binding",
+        "credentials",
+        "mailer",
+        "pipeline-input-step",
+        "pipeline-stage-step",
+        "scm-api",
+        "structs",
+        "pipeline-model-api",
+        "pipeline-model-extensions",
+        "pipeline-stage-tags-metadata"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.18.0-98.v3a_674c06072d"
+        },
+        {
+          "name": "ionicons-api",
+          "version": "94.vcc3065403257"
+        },
+        {
+          "name": "pipeline-groovy-lib",
+          "version": "752.vdddedf804e72"
+        },
+        {
+          "name": "workflow-api",
+          "version": "1384.vdc05a_48f535f"
+        },
+        {
+          "name": "workflow-basic-steps",
+          "version": "1079.vce64b_a_929c5a_"
+        },
+        {
+          "name": "workflow-cps",
+          "version": "4183.v94b_6fd39da_c1"
+        },
+        {
+          "name": "workflow-durable-task-step",
+          "version": "1458.va_2e10a_a_b_7c4d"
+        },
+        {
+          "name": "workflow-multibranch",
+          "version": "811.vcd33d074c2a_0"
+        },
+        {
+          "name": "workflow-scm-step",
+          "version": "437.v05a_f66b_e5ef8"
+        },
+        {
+          "name": "workflow-support",
+          "version": "976.vb_d9493c2eb_09"
+        },
+        {
+          "name": "credentials-binding",
+          "version": "702.vfe613e537e88"
+        },
+        {
+          "name": "credentials",
+          "version": "1442.v292d4234d1b_f"
+        },
+        {
+          "name": "mailer",
+          "version": "522.va_995fa_cfb_8b_d"
+        },
+        {
+          "name": "pipeline-input-step",
+          "version": "534.v352f0a_e98918"
+        },
+        {
+          "name": "pipeline-stage-step",
+          "version": "322.vecffa_99f371c"
+        },
+        {
+          "name": "scm-api",
+          "version": "707.v749f968369d4"
+        },
+        {
+          "name": "structs",
+          "version": "353.v261ea_40a_80fb_"
+        },
+        {
+          "name": "pipeline-model-api",
+          "version": "2.2293.v6e7193cec599"
+        },
+        {
+          "name": "pipeline-model-extensions",
+          "version": "2.2293.v6e7193cec599"
+        },
+        {
+          "name": "pipeline-stage-tags-metadata",
+          "version": "2.2293.v6e7193cec599"
+        }
+      ]
+    },
+    {
+      "name": "pipeline-model-extensions",
+      "version": "2.2293.v6e7193cec599",
+      "url": "https://archives.jenkins.io/plugins/pipeline-model-extensions/2.2293.v6e7193cec599/pipeline-model-extensions.hpi",
+      "sha256": "00fbf0938ef13f6aedaa0900ec4cd03fcc986e34b1820bf13f761c2f29831861",
+      "required_core": "2.504.3",
+      "dependencies": [
+        "commons-lang3-api",
+        "workflow-cps",
+        "workflow-job",
+        "credentials-binding",
+        "credentials",
+        "pipeline-stage-step",
+        "pipeline-model-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.18.0-98.v3a_674c06072d"
+        },
+        {
+          "name": "workflow-cps",
+          "version": "4183.v94b_6fd39da_c1"
+        },
+        {
+          "name": "workflow-job",
+          "version": "1546.v62a_c59c112dd"
+        },
+        {
+          "name": "credentials-binding",
+          "version": "702.vfe613e537e88"
+        },
+        {
+          "name": "credentials",
+          "version": "1442.v292d4234d1b_f"
+        },
+        {
+          "name": "pipeline-stage-step",
+          "version": "322.vecffa_99f371c"
+        },
+        {
+          "name": "pipeline-model-api",
+          "version": "2.2293.v6e7193cec599"
+        }
+      ]
+    },
+    {
+      "name": "pipeline-stage-step",
+      "version": "345.va_96187909426",
+      "url": "https://archives.jenkins.io/plugins/pipeline-stage-step/345.va_96187909426/pipeline-stage-step.hpi",
+      "sha256": "2eba433b28f2dfc90519e233b14264890f97b93b78e25c664d56607141fcd94b",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "workflow-api",
+        "workflow-step-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "workflow-api",
+          "version": "1336.vee415d95c521"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "678.v3ee58b_469476"
+        }
+      ]
+    },
+    {
+      "name": "pipeline-stage-tags-metadata",
+      "version": "2.2293.v6e7193cec599",
+      "url": "https://archives.jenkins.io/plugins/pipeline-stage-tags-metadata/2.2293.v6e7193cec599/pipeline-stage-tags-metadata.hpi",
+      "sha256": "032f011fc50cb273b300d44fb6c2800e3dbdf0d78548b15e0f192ba7cc95d178",
+      "required_core": "2.504.3",
+      "dependencies": [
+        "workflow-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "workflow-api",
+          "version": "1384.vdc05a_48f535f"
+        }
+      ]
+    },
+    {
+      "name": "plain-credentials",
+      "version": "199.v9f8e1f741799",
+      "url": "https://archives.jenkins.io/plugins/plain-credentials/199.v9f8e1f741799/plain-credentials.hpi",
+      "sha256": "b5e5e35cf93ad3b818a983916cbcdf3f7866699410a4df923e6a2968ecc3a448",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "credentials"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "credentials",
+          "version": "1408.va_622a_b_f5b_1b_1"
+        }
+      ]
+    },
+    {
+      "name": "plugin-util-api",
+      "version": "7.1403.vd380b_c42e90c",
+      "url": "https://archives.jenkins.io/plugins/plugin-util-api/7.1403.vd380b_c42e90c/plugin-util-api.hpi",
+      "sha256": "06ea312ee4c012ed5c2b8f091a6e6f7db7ccc714ab25d25d751f30dc22ad8307",
+      "required_core": "2.555.3",
+      "dependencies": [
+        "commons-lang3-api",
+        "commons-text-api",
+        "workflow-api",
+        "workflow-step-api",
+        "workflow-support"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.20.0-109.ve43756e2d2b_4"
+        },
+        {
+          "name": "commons-text-api",
+          "version": "1.15.0-218.va_61573470393"
+        },
+        {
+          "name": "workflow-api",
+          "version": "1413.v2ff1a_5e720fa_"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "724.v538c2362b_dfb_"
+        },
+        {
+          "name": "workflow-support",
+          "version": "1015.v785e5a_b_b_8b_22"
+        }
+      ]
+    },
+    {
+      "name": "prism-api",
+      "version": "1.30.0-741.v034eb_0b_0a_a_fa_",
+      "url": "https://archives.jenkins.io/plugins/prism-api/1.30.0-741.v034eb_0b_0a_a_fa_/prism-api.hpi",
+      "sha256": "2b7aa7809e0f656afce98c0b6a0a9b62885af6ae85ad90bed67a4f18f18e8354",
+      "required_core": "2.555.1",
+      "dependencies": [
+        "bootstrap5-api",
+        "commons-lang3-api",
+        "commons-text-api",
+        "font-awesome-api",
+        "plugin-util-api",
+        "antisamy-markup-formatter"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "bootstrap5-api",
+          "version": "5.3.8-1024.v127320880c60"
+        },
+        {
+          "name": "commons-lang3-api",
+          "version": "3.20.0-109.ve43756e2d2b_4"
+        },
+        {
+          "name": "commons-text-api",
+          "version": "1.15.0-218.va_61573470393"
+        },
+        {
+          "name": "font-awesome-api",
+          "version": "7.2.0-983.v3f63c34eddb_9"
+        },
+        {
+          "name": "plugin-util-api",
+          "version": "7.1330.v47b_46ee2047a_"
+        },
+        {
+          "name": "antisamy-markup-formatter",
+          "version": "173.v680e3a_b_69ff3"
+        }
+      ]
+    },
+    {
+      "name": "scm-api",
+      "version": "728.vc30dcf7a_0df5",
+      "url": "https://archives.jenkins.io/plugins/scm-api/728.vc30dcf7a_0df5/scm-api.hpi",
+      "sha256": "1336472987daa2fa912210aba00e1e37b739ce03f75c973a6794d1a0f55c0326",
+      "required_core": "2.504.3",
+      "dependencies": [
+        "asm-api",
+        "commons-lang3-api",
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "asm-api",
+          "version": "9.9-185.va_6c6b_3348b_c3"
+        },
+        {
+          "name": "commons-lang3-api",
+          "version": "3.19.0-104.v12125f33a_255"
+        },
+        {
+          "name": "structs",
+          "version": "353.v261ea_40a_80fb_"
+        }
+      ]
+    },
+    {
+      "name": "script-security",
+      "version": "1436.v1082791135e4",
+      "url": "https://archives.jenkins.io/plugins/script-security/1436.v1082791135e4/script-security.hpi",
+      "sha256": "c2292e200c5796675c16d19325469aac4a5460c7ad23974952b9823f62066f6a",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "caffeine-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "caffeine-api",
+          "version": "3.1.8-133.v17b_1ff2e0599"
+        }
+      ]
+    },
+    {
+      "name": "snakeyaml-api",
+      "version": "2.7-152.vc672728cf536",
+      "url": "https://archives.jenkins.io/plugins/snakeyaml-api/2.7-152.vc672728cf536/snakeyaml-api.hpi",
+      "sha256": "bfa595a283634c8dd63aa8d1b039cf3d3f52e0952048058fc0b9a4826ca06508",
+      "required_core": "2.479.3",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "snakeyaml-engine-api",
+      "version": "3.2-18.v885ed7ff698f",
+      "url": "https://archives.jenkins.io/plugins/snakeyaml-engine-api/3.2-18.v885ed7ff698f/snakeyaml-engine-api.hpi",
+      "sha256": "89c14c0ac2816c1efc192dd333b4b26d97ae58d2ab1d492e8b52feca406e220e",
+      "required_core": "2.504.1",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "ssh-credentials",
+      "version": "372.va_250881b_08cd",
+      "url": "https://archives.jenkins.io/plugins/ssh-credentials/372.va_250881b_08cd/ssh-credentials.hpi",
+      "sha256": "7b4d035b05b331038f3dfa99ddfef0cabbacede8f0ad2a6ca9611fb0844108a9",
+      "required_core": "2.479.1",
+      "dependencies": [
+        "bouncycastle-api",
+        "credentials",
+        "variant"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "bouncycastle-api",
+          "version": "2.30.1.79-254.vfdb_814e7791e"
+        },
+        {
+          "name": "credentials",
+          "version": "1405.vb_cda_74a_f8974"
+        },
+        {
+          "name": "variant",
+          "version": "60.v7290fc0eb_b_cd"
+        }
+      ]
+    },
+    {
+      "name": "structs",
+      "version": "362.va_b_695ef4fdf9",
+      "url": "https://archives.jenkins.io/plugins/structs/362.va_b_695ef4fdf9/structs.hpi",
+      "sha256": "a0a5db44f2cb082a9ec6572c088340521f033fff8c351fc7eba9ef7f07dbbf8d",
+      "required_core": "2.479.3",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "timestamper",
+      "version": "1.30",
+      "url": "https://archives.jenkins.io/plugins/timestamper/1.30/timestamper.hpi",
+      "sha256": "b4d6589e7a169f06b26bc7e15bc37ef2fb3986dc20b502cb91c2a9918eaf980b",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "commons-lang3-api",
+        "workflow-api",
+        "workflow-step-api",
+        "antisamy-markup-formatter"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.17.0-87.v5cf526e63b_8b_"
+        },
+        {
+          "name": "workflow-api",
+          "version": "1373.v7b_813f10efa_b_"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "700.v6e45cb_a_5a_a_21"
+        },
+        {
+          "name": "antisamy-markup-formatter",
+          "version": "173.v680e3a_b_69ff3"
+        }
+      ]
+    },
+    {
+      "name": "token-macro",
+      "version": "477.vd4f0dc3cb_cf1",
+      "url": "https://archives.jenkins.io/plugins/token-macro/477.vd4f0dc3cb_cf1/token-macro.hpi",
+      "sha256": "ef98e47b467571e7968925ace1c40d1103baefe230f5d4cf44250769b7b6b42b",
+      "required_core": "2.492.3",
+      "dependencies": [
+        "commons-lang3-api",
+        "commons-text-api",
+        "json-path-api",
+        "workflow-step-api",
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.18.0-98.v3a_674c06072d"
+        },
+        {
+          "name": "commons-text-api",
+          "version": "1.13.1-176.v74d88f22034b_"
+        },
+        {
+          "name": "json-path-api",
+          "version": "2.9.0-148.v22a_7ffe323ce"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "704.ve4f0967e98fa_"
+        },
+        {
+          "name": "structs",
+          "version": "350.v3b_30f09f2363"
+        }
+      ]
+    },
+    {
+      "name": "variant",
+      "version": "70.va_d9f17f859e0",
+      "url": "https://archives.jenkins.io/plugins/variant/70.va_d9f17f859e0/variant.hpi",
+      "sha256": "12e214ea694469a4461b55881ecb4074ae5dfb04797dbc0dad390f6f4bc75aaf",
+      "required_core": "2.479.1",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "woodstox-core-api",
+      "version": "7.3.0-16.v017f30ed004c",
+      "url": "https://archives.jenkins.io/plugins/woodstox-core-api/7.3.0-16.v017f30ed004c/woodstox-core-api.hpi",
+      "sha256": "fca0ce7cd19274833df226cd6746d71ce4025b784a81bd5b8512730f5d34a9df",
+      "required_core": "2.479.1",
+      "dependencies": [],
+      "minimum_dependencies": []
+    },
+    {
+      "name": "workflow-aggregator",
+      "version": "608.v67378e9d3db_1",
+      "url": "https://archives.jenkins.io/plugins/workflow-aggregator/608.v67378e9d3db_1/workflow-aggregator.hpi",
+      "sha256": "7b94227c1afa01bb262c14919ad4a333412f1b51d947c0f21909ec2daff357dc",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "pipeline-groovy-lib",
+        "workflow-basic-steps",
+        "workflow-cps",
+        "workflow-durable-task-step",
+        "workflow-job",
+        "workflow-multibranch",
+        "pipeline-build-step",
+        "pipeline-input-step",
+        "pipeline-milestone-step",
+        "pipeline-stage-step",
+        "pipeline-model-definition"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "pipeline-groovy-lib",
+          "version": "744.v5b_556ee7c253"
+        },
+        {
+          "name": "workflow-basic-steps",
+          "version": "1058.vcb_fc1e3a_21a_9"
+        },
+        {
+          "name": "workflow-cps",
+          "version": "4002.v80ca_d0f47d7f"
+        },
+        {
+          "name": "workflow-durable-task-step",
+          "version": "1398.vf6c9e89e5988"
+        },
+        {
+          "name": "workflow-job",
+          "version": "1472.ve4d5eca_143c4"
+        },
+        {
+          "name": "workflow-multibranch",
+          "version": "795.ve0cb_1f45ca_9a_"
+        },
+        {
+          "name": "pipeline-build-step",
+          "version": "540.vb_e8849e1a_b_d8"
+        },
+        {
+          "name": "pipeline-input-step",
+          "version": "495.ve9c153f6067b_"
+        },
+        {
+          "name": "pipeline-milestone-step",
+          "version": "119.vdfdc43fc3b_9a_"
+        },
+        {
+          "name": "pipeline-stage-step",
+          "version": "312.v8cd10304c27a_"
+        },
+        {
+          "name": "pipeline-model-definition",
+          "version": "2.2218.v56d0cda_37c72"
+        }
+      ]
+    },
+    {
+      "name": "workflow-api",
+      "version": "1429.v7a_1b_efb_a_f7c5",
+      "url": "https://archives.jenkins.io/plugins/workflow-api/1429.v7a_1b_efb_a_f7c5/workflow-api.hpi",
+      "sha256": "79001c37c117dc29cd2de2b19684d19e6fe77aa5439b609ba2111de5a81df9fb",
+      "required_core": "2.541.3",
+      "dependencies": [
+        "workflow-step-api",
+        "scm-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "workflow-step-api",
+          "version": "724.v538c2362b_dfb_"
+        },
+        {
+          "name": "scm-api",
+          "version": "728.vc30dcf7a_0df5"
+        }
+      ]
+    },
+    {
+      "name": "workflow-basic-steps",
+      "version": "1129.v60e3c7e6654d",
+      "url": "https://archives.jenkins.io/plugins/workflow-basic-steps/1129.v60e3c7e6654d/workflow-basic-steps.hpi",
+      "sha256": "2bf01de85b659efe382560237e3c49760cb6e539074e6af31afcd5e7c2787527",
+      "required_core": "2.568.3",
+      "dependencies": [
+        "commons-lang3-api",
+        "jakarta-mail-api",
+        "workflow-api",
+        "workflow-durable-task-step",
+        "workflow-step-api",
+        "apache-httpcomponents-client-4-api",
+        "mailer",
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "commons-lang3-api",
+          "version": "3.20.0-109.ve43756e2d2b_4"
+        },
+        {
+          "name": "jakarta-mail-api",
+          "version": "2.1.5-1"
+        },
+        {
+          "name": "workflow-api",
+          "version": "1413.v2ff1a_5e720fa_"
+        },
+        {
+          "name": "workflow-durable-task-step",
+          "version": "1479.v56e587f413a_7"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "724.v538c2362b_dfb_"
+        },
+        {
+          "name": "apache-httpcomponents-client-4-api",
+          "version": "4.5.14-269.vfa_2321039a_83"
+        },
+        {
+          "name": "mailer",
+          "version": "534.v1b_36f5864073"
+        },
+        {
+          "name": "structs",
+          "version": "362.va_b_695ef4fdf9"
+        }
+      ]
+    },
+    {
+      "name": "workflow-cps",
+      "version": "4403.v471713a_cea_19",
+      "url": "https://archives.jenkins.io/plugins/workflow-cps/4403.v471713a_cea_19/workflow-cps.hpi",
+      "sha256": "5deef96aedaee29851a42144e7848f40c5c48816f6117a6e34b425d18bb6b526",
+      "required_core": "2.568.1",
+      "dependencies": [
+        "ionicons-api",
+        "workflow-api",
+        "workflow-scm-step",
+        "workflow-step-api",
+        "workflow-support",
+        "scm-api",
+        "script-security",
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "ionicons-api",
+          "version": "94.vcc3065403257"
+        },
+        {
+          "name": "workflow-api",
+          "version": "1413.v2ff1a_5e720fa_"
+        },
+        {
+          "name": "workflow-scm-step",
+          "version": "487.v41313a_96b_65d"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "724.v538c2362b_dfb_"
+        },
+        {
+          "name": "workflow-support",
+          "version": "1015.v785e5a_b_b_8b_22"
+        },
+        {
+          "name": "scm-api",
+          "version": "728.vc30dcf7a_0df5"
+        },
+        {
+          "name": "script-security",
+          "version": "1436.v1082791135e4"
+        },
+        {
+          "name": "structs",
+          "version": "362.va_b_695ef4fdf9"
+        }
+      ]
+    },
+    {
+      "name": "workflow-durable-task-step",
+      "version": "1479.v56e587f413a_7",
+      "url": "https://archives.jenkins.io/plugins/workflow-durable-task-step/1479.v56e587f413a_7/workflow-durable-task-step.hpi",
+      "sha256": "a0f0f1464ce3592f76d0f0079ce9fc2d4272594f995bf3d1a7ede4cd5031452e",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "workflow-api",
+        "workflow-step-api",
+        "workflow-support",
+        "durable-task",
+        "scm-api",
+        "script-security",
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "workflow-api",
+          "version": "1363.v03f731255494"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "686.v603d058a_e148"
+        },
+        {
+          "name": "workflow-support",
+          "version": "944.v5a_859593b_98a_"
+        },
+        {
+          "name": "durable-task",
+          "version": "581.v299a_5609d767"
+        },
+        {
+          "name": "scm-api",
+          "version": "703.v72ff4b_259600"
+        },
+        {
+          "name": "script-security",
+          "version": "1369.v9b_98a_4e95b_2d"
+        },
+        {
+          "name": "structs",
+          "version": "338.v848422169819"
+        }
+      ]
+    },
+    {
+      "name": "workflow-job",
+      "version": "1622.vc41c189cb_e5f",
+      "url": "https://archives.jenkins.io/plugins/workflow-job/1622.vc41c189cb_e5f/workflow-job.hpi",
+      "sha256": "e67c1ab5862b0d0a24c478feea4a420af787de08721853b014b58f8b5b8d04ab",
+      "required_core": "2.568.1",
+      "dependencies": [
+        "ionicons-api",
+        "workflow-api",
+        "workflow-step-api",
+        "workflow-support"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "ionicons-api",
+          "version": "94.vcc3065403257"
+        },
+        {
+          "name": "workflow-api",
+          "version": "1413.v2ff1a_5e720fa_"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "724.v538c2362b_dfb_"
+        },
+        {
+          "name": "workflow-support",
+          "version": "1015.v785e5a_b_b_8b_22"
+        }
+      ]
+    },
+    {
+      "name": "workflow-multibranch",
+      "version": "842.v3a_b_59b_57b_e6e",
+      "url": "https://archives.jenkins.io/plugins/workflow-multibranch/842.v3a_b_59b_57b_e6e/workflow-multibranch.hpi",
+      "sha256": "af26afd93b5d730d203d8f58d1e104712ad1a7ddcf6837886d3272b1c0057e46",
+      "required_core": "2.555.3",
+      "dependencies": [
+        "ionicons-api",
+        "workflow-api",
+        "workflow-cps",
+        "workflow-job",
+        "workflow-scm-step",
+        "workflow-step-api",
+        "workflow-support",
+        "branch-api",
+        "cloudbees-folder",
+        "scm-api",
+        "script-security"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "ionicons-api",
+          "version": "94.vcc3065403257"
+        },
+        {
+          "name": "workflow-api",
+          "version": "1413.v2ff1a_5e720fa_"
+        },
+        {
+          "name": "workflow-cps",
+          "version": "4362.v9b_991749898e"
+        },
+        {
+          "name": "workflow-job",
+          "version": "1571.1580.v18e46842c125"
+        },
+        {
+          "name": "workflow-scm-step",
+          "version": "466.va_d69e602552b_"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "724.v538c2362b_dfb_"
+        },
+        {
+          "name": "workflow-support",
+          "version": "1015.v785e5a_b_b_8b_22"
+        },
+        {
+          "name": "branch-api",
+          "version": "2.1280.v0d4e5b_b_460ef"
+        },
+        {
+          "name": "cloudbees-folder",
+          "version": "6.1106.v3a_d9a_6d2465e"
+        },
+        {
+          "name": "scm-api",
+          "version": "728.vc30dcf7a_0df5"
+        },
+        {
+          "name": "script-security",
+          "version": "1412.v7737b_3405f86"
+        }
+      ]
+    },
+    {
+      "name": "workflow-scm-step",
+      "version": "487.v41313a_96b_65d",
+      "url": "https://archives.jenkins.io/plugins/workflow-scm-step/487.v41313a_96b_65d/workflow-scm-step.hpi",
+      "sha256": "532fc247cba83845df3c7fccaabfc3cb1f637729b145211728bcb974a3a67552",
+      "required_core": "2.504.3",
+      "dependencies": [
+        "workflow-step-api",
+        "scm-api"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "workflow-step-api",
+          "version": "710.v3e456cc85233"
+        },
+        {
+          "name": "scm-api",
+          "version": "712.v8846fdd68c88"
+        }
+      ]
+    },
+    {
+      "name": "workflow-step-api",
+      "version": "724.v538c2362b_dfb_",
+      "url": "https://archives.jenkins.io/plugins/workflow-step-api/724.v538c2362b_dfb_/workflow-step-api.hpi",
+      "sha256": "887491de444174228471993b0b2db958db2e7fb577857c8516c58e9618049896",
+      "required_core": "2.479.3",
+      "dependencies": [
+        "structs"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "structs",
+          "version": "338.v848422169819"
+        }
+      ]
+    },
+    {
+      "name": "workflow-support",
+      "version": "1028.vc22910142650",
+      "url": "https://archives.jenkins.io/plugins/workflow-support/1028.vc22910142650/workflow-support.hpi",
+      "sha256": "167b31b5f1e79c1e7becf13bd1e53add5f29b6944a634572abe538407999dd02",
+      "required_core": "2.568.3",
+      "dependencies": [
+        "caffeine-api",
+        "workflow-api",
+        "workflow-step-api",
+        "scm-api",
+        "script-security"
+      ],
+      "minimum_dependencies": [
+        {
+          "name": "caffeine-api",
+          "version": "3.2.3-194.v31a_b_f7a_b_5a_81"
+        },
+        {
+          "name": "workflow-api",
+          "version": "1413.v2ff1a_5e720fa_"
+        },
+        {
+          "name": "workflow-step-api",
+          "version": "724.v538c2362b_dfb_"
+        },
+        {
+          "name": "scm-api",
+          "version": "728.vc30dcf7a_0df5"
+        },
+        {
+          "name": "script-security",
+          "version": "1402.1405.vc96e74964250"
+        }
+      ]
+    }
+  ]
+}

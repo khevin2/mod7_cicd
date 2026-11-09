@@ -39,4 +39,6 @@ Use a disposable copy of the manifests and lockfile with a scanner-confirmed Hig
 
 ## Status
 
-The commands and policy are draft implementations pending real tool validation. In particular, Snyk access and a local SonarQube installation are unresolved. The tracked policy does not claim a clean SAST, SCA, secret, image scan or SBOM until real reports are checked.
+As of 2026-11-09, the operator reports a Snyk account/API token ready and has completed the Ansible/JCasC Jenkins bootstrap. The new [CI security playbook](../docs/CI_SECURITY_SETUP.md) prepares pinned scanner installation, an overall security rating A gate, project/account/token setup and Jenkins bindings. Its execution and real SAST/SCA results remain unverified. The rating A condition is stricter than High/Critical-only rejection and supplements the existing whole-project issue check; actual API compatibility must be demonstrated before release.
+
+The scan commands and policy still require real tool validation. Snyk authentication and live SonarQube API/analysis behavior remain unverified. The tracked policy does not claim a clean SAST, SCA, secret, image scan or SBOM until real reports are checked.

@@ -1,0 +1,2 @@
+# Use a dedicated virtualenv for the controller; target host packages are managed separately.
+ansible-core==2.21.2

@@ -10,9 +10,10 @@ resource "aws_ecr_repository" "app" {
   force_delete = false
 }
 
-# Tagged images are retained: the running and rollback digests must remain
-# pullable. A later validated cleanup process can remove tagged releases safely.
+# Untagged images can still be in use by digest or be manifest-list children.
+# Keep expiry disabled until operators have verified their full retention strategy.
 resource "aws_ecr_lifecycle_policy" "app" {
+  count      = var.enable_untagged_image_expiry ? 1 : 0
   repository = aws_ecr_repository.app.name
   policy = jsonencode({
     rules = [{

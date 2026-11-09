@@ -1,0 +1,48 @@
+---
+# Only fixed field names and policy messages may leave the no_log task.
+- name: Compute sanitized private-input validation errors
+  ansible.builtin.set_fact:
+    ci_private_input_errors: >-
+      {%- set ns = namespace(errors=[]) -%}
+      {%- for field in ['ci_jenkins_admin_password', 'ci_snyk_token',
+                        'ci_sonar_admin_password', 'ci_sonar_analysis_password'] -%}
+        {%- set value = lookup('ansible.builtin.vars', field, default='') -%}
+        {%- if value is not string or value | length == 0 -%}
+          {%- set ns.errors = ns.errors + [field ~ ': required nonempty string'] -%}
+        {%- else -%}
+          {%- if value.startswith('REPLACE_') -%}
+            {%- set ns.errors = ns.errors + [field ~ ': replace the example placeholder'] -%}
+          {%- endif -%}
+          {%- if field == 'ci_snyk_token' -%}
+            {%- if value | length < 16 -%}
+              {%- set ns.errors = ns.errors + [field ~ ': requires at least 16 characters'] -%}
+            {%- endif -%}
+            {%- if value != value | trim -%}
+              {%- set ns.errors = ns.errors + [field ~ ': remove leading or trailing whitespace'] -%}
+            {%- endif -%}
+          {%- elif field in ['ci_sonar_admin_password', 'ci_sonar_analysis_password'] -%}
+            {%- if value | length < 16 -%}
+              {%- set ns.errors = ns.errors + [field ~ ': requires at least 16 characters'] -%}
+            {%- endif -%}
+            {%- for pattern, rule in [('[A-Z]', 'uppercase letter'), ('[a-z]', 'lowercase letter'),
+                                     ('[0-9]', 'number'), ('[^A-Za-z0-9]', 'special character')] -%}
+              {%- if value is not search(pattern) -%}
+                {%- set ns.errors = ns.errors + [field ~ ': requires ' ~ rule] -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {%- set admin = lookup('ansible.builtin.vars', 'ci_sonar_admin_password', default='') -%}
+      {%- set analysis = lookup('ansible.builtin.vars', 'ci_sonar_analysis_password', default='') -%}
+      {%- if admin and admin == analysis -%}
+        {%- set ns.errors = ns.errors + ['ci_sonar_analysis_password: must differ from ci_sonar_admin_password'] -%}
+      {%- endif -%}
+      {{ ns.errors }}
+  no_log: true
+
+- name: Require valid private inputs before making host changes
+  ansible.builtin.assert:
+    that: ci_private_input_errors | length == 0
+    fail_msg: "{{ ci_private_input_errors | join('; ') }}"
+    success_msg: All required private inputs meet the local validation rules.

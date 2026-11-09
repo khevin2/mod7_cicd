@@ -1,0 +1,125 @@
+---
+- name: Install archive helpers and the fixed AWS CLI package
+  ansible.builtin.dnf:
+    name: [unzip, '{{ ci_awscli_rpm }}']
+    state: present
+    releasever: '{{ ci_amazon_linux_release }}'
+
+- name: Create scanner installation directories
+  ansible.builtin.file:
+    path: '/opt/mod9-tools/{{ item.name }}-{{ item.version }}'
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop: '{{ ci_tool_archives }}'
+
+- name: Download immutable scanner archives with checksums
+  ansible.builtin.get_url:
+    url: '{{ item.url }}'
+    dest: '/etc/mod9-ci/{{ item.filename }}'
+    checksum: 'sha256:{{ item.sha256 }}'
+    mode: '0644'
+    timeout: 120
+  loop: '{{ ci_tool_archives }}'
+  loop_control:
+    label: '{{ item.name }}:{{ item.version }}'
+  register: ci_tool_download
+  until: ci_tool_download is succeeded
+  retries: 3
+  delay: 5
+
+- name: Extract pinned scanners into version-specific directories
+  ansible.builtin.unarchive:
+    src: '/etc/mod9-ci/{{ item.filename }}'
+    dest: '/opt/mod9-tools/{{ item.name }}-{{ item.version }}'
+    remote_src: true
+    owner: root
+    group: root
+    creates: '/opt/mod9-tools/{{ item.name }}-{{ item.version }}/{{ item.name }}'
+  loop: '{{ ci_tool_archives }}'
+
+- name: Link the selected scanner versions
+  ansible.builtin.file:
+    src: '/opt/mod9-tools/{{ item.name }}-{{ item.version }}/{{ item.name }}'
+    dest: '/usr/local/bin/{{ item.name }}'
+    state: link
+    force: false
+  loop: '{{ ci_tool_archives }}'
+
+- name: Create Snyk installation directory
+  ansible.builtin.file:
+    path: '/opt/mod9-tools/snyk-{{ ci_snyk_version }}'
+    state: directory
+    mode: '0755'
+
+- name: Download the exact standalone Snyk binary
+  ansible.builtin.get_url:
+    url: '{{ ci_snyk_url }}'
+    dest: '/opt/mod9-tools/snyk-{{ ci_snyk_version }}/snyk'
+    checksum: 'sha256:{{ ci_snyk_sha256 }}'
+    mode: '0755'
+    timeout: 120
+  register: ci_snyk_download
+  until: ci_snyk_download is succeeded
+  retries: 3
+  delay: 5
+
+- name: Link the selected Snyk version
+  ansible.builtin.file:
+    src: '/opt/mod9-tools/snyk-{{ ci_snyk_version }}/snyk'
+    dest: /usr/local/bin/snyk
+    state: link
+    force: false
+
+- name: Download the exact JVM-only SonarScanner distribution
+  ansible.builtin.get_url:
+    url: '{{ ci_sonar_scanner_url }}'
+    dest: '/etc/mod9-ci/sonar-scanner-{{ ci_sonar_scanner_version }}.zip'
+    checksum: 'sha256:{{ ci_sonar_scanner_sha256 }}'
+    mode: '0644'
+    timeout: 120
+
+- name: Extract SonarScanner
+  ansible.builtin.unarchive:
+    src: '/etc/mod9-ci/sonar-scanner-{{ ci_sonar_scanner_version }}.zip'
+    dest: /opt
+    remote_src: true
+    owner: root
+    group: root
+    creates: '/opt/sonar-scanner-{{ ci_sonar_scanner_version }}/bin/sonar-scanner'
+
+- name: Use the pinned host Java and Node runtimes for analysis
+  ansible.builtin.copy:
+    dest: '/opt/sonar-scanner-{{ ci_sonar_scanner_version }}/conf/sonar-scanner.properties'
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      sonar.scanner.skipJreProvisioning=true
+      sonar.nodejs.executable=/opt/node-v{{ ci_nodejs_version }}-linux-x64/bin/node
+      sonar.javascript.node.maxspace=384
+
+- name: Link SonarScanner
+  ansible.builtin.file:
+    src: '/opt/sonar-scanner-{{ ci_sonar_scanner_version }}/bin/sonar-scanner'
+    dest: /usr/local/bin/sonar-scanner
+    state: link
+    force: false
+
+- name: Check scanner versions as the Jenkins user
+  ansible.builtin.command:
+    argv: ['{{ item.executable }}', --version]
+  become_user: jenkins
+  register: ci_scanner_version_check
+  changed_when: false
+  failed_when: >-
+    ci_scanner_version_check.rc != 0 or
+    item.version not in (ci_scanner_version_check.stdout + ci_scanner_version_check.stderr)
+  loop:
+    - {executable: /usr/local/bin/gitleaks, version: '8.28.0'}
+    - {executable: /usr/local/bin/trivy, version: '0.73.0'}
+    - {executable: /usr/local/bin/syft, version: '1.38.0'}
+    - {executable: /usr/local/bin/snyk, version: '{{ ci_snyk_version }}'}
+    - {executable: /usr/local/bin/sonar-scanner, version: '{{ ci_sonar_scanner_version }}'}
+    - {executable: /usr/bin/aws, version: '2.38.0'}

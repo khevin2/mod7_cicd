@@ -1,0 +1,408 @@
+---
+- name: Configure the shared Jenkins and SonarQube demo host
+  hosts: ci_demo
+  become: true
+  gather_facts: true
+  vars_files:
+    - ../vars/ci-versions.yml
+    - ../vars/ci-jenkins-plugins.json
+    - ../vars/ci-security-tools.yml
+  vars:
+    ci_swap_bytes: 6442450944
+    ci_sonar_running: false
+    ci_jenkins_heap: 384m
+
+  pre_tasks:
+    - name: Require the operator's encrypted administrator password before making changes
+      ansible.builtin.assert:
+        that:
+          - ci_jenkins_admin_password is defined
+          - ci_jenkins_admin_password | default('') | length >= 16
+          - not (ci_jenkins_admin_password | default('')).startswith('REPLACE_')
+      no_log: true
+
+    - name: Validate platform and immutable container references
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['distribution'] == 'Amazon'
+          - ansible_facts['distribution_major_version'] == '2023'
+          - ansible_facts['architecture'] == 'x86_64'
+          - ansible_memtotal_mb | int >= 1800
+          - (ci_sonar_image | default('')) is match('^docker.io/library/sonarqube@sha256:[0-9a-f]{64}$')
+          - (ci_postgres_image | default('')) is match('^docker.io/library/postgres@sha256:[0-9a-f]{64}$')
+        fail_msg: Use AL2023 x86_64 with at least 2 GiB RAM and supply the reviewed ci-images.yml digest pins.
+
+  tasks:
+    - name: Create root-owned CI configuration directory
+      ansible.builtin.file:
+        path: /etc/mod9-ci
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+
+    - name: Inspect dedicated demo swap file
+      ansible.builtin.stat:
+        path: /mod9-ci.swap
+      register: ci_swap
+
+    - name: Refuse to overwrite a differently sized existing swap file
+      ansible.builtin.assert:
+        that:
+          - not ci_swap.stat.exists or ci_swap.stat.size == ci_swap_bytes
+
+    - name: Allocate dedicated swap file
+      ansible.builtin.command:
+        argv: [fallocate, -l, '{{ ci_swap_bytes | string }}', /mod9-ci.swap]
+        creates: /mod9-ci.swap
+
+    - name: Restrict swap file permissions
+      ansible.builtin.file:
+        path: /mod9-ci.swap
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Format only newly allocated swap
+      ansible.builtin.command:
+        argv: [mkswap, /mod9-ci.swap]
+      when: not ci_swap.stat.exists
+      changed_when: true
+
+    - name: Persist dedicated swap
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        line: /mod9-ci.swap none swap defaults 0 0
+
+    - name: Enable swap without reinitializing active swap
+      ansible.builtin.shell: |
+        if swapon --show=NAME --noheadings | grep -qxF /mod9-ci.swap; then
+          exit 10
+        fi
+        swapon /mod9-ci.swap
+      register: ci_swap_enable
+      changed_when: ci_swap_enable.rc == 0
+      failed_when: ci_swap_enable.rc not in [0, 10]
+
+    - name: Configure Elasticsearch mapping limit
+      ansible.builtin.copy:
+        dest: /etc/sysctl.d/90-mod9-ci.conf
+        mode: '0644'
+        content: |
+          vm.max_map_count=524288
+      register: ci_sysctl
+
+    - name: Apply changed mapping limit
+      ansible.builtin.command: sysctl -p /etc/sysctl.d/90-mod9-ci.conf
+      when: ci_sysctl.changed
+      changed_when: true
+
+    - name: Install Java before Jenkins and install host dependencies
+      ansible.builtin.dnf:
+        name:
+          - '{{ ci_java_rpm }}'
+          - '{{ ci_docker_rpm }}'
+          - fontconfig
+          - git
+          - jq
+          - openssl
+          - python3
+          - tar
+          - xz
+        state: present
+        update_cache: true
+        releasever: '{{ ci_amazon_linux_release }}'
+
+    - name: Download the pinned Jenkins signing key
+      ansible.builtin.get_url:
+        url: https://pkg.jenkins.io/rpm-stable/jenkins.io-2026.key
+        dest: /etc/mod9-ci/jenkins-signing.key
+        checksum: 'sha256:{{ ci_jenkins_signing_sha256 }}'
+        mode: '0644'
+
+    - name: Import Jenkins LTS signing key
+      ansible.builtin.rpm_key:
+        key: /etc/mod9-ci/jenkins-signing.key
+        state: present
+
+    - name: Declare the Jenkins LTS repository
+      ansible.builtin.yum_repository:
+        name: jenkins
+        description: Jenkins LTS
+        baseurl: https://pkg.jenkins.io/rpm-stable
+        enabled: true
+        gpgcheck: true
+        gpgkey: file:///etc/mod9-ci/jenkins-signing.key
+
+    - name: Install the pinned Jenkins LTS core
+      ansible.builtin.dnf:
+        name: 'jenkins-{{ ci_jenkins_version }}-1.noarch'
+        state: present
+
+    - name: Create Jenkins configuration directories
+      ansible.builtin.file:
+        path: '{{ item.path }}'
+        state: directory
+        owner: '{{ item.owner }}'
+        group: '{{ item.owner }}'
+        mode: '0755'
+      loop:
+        - {path: /etc/systemd/system/jenkins.service.d, owner: root}
+        - {path: /var/lib/jenkins/init.groovy.d, owner: jenkins}
+        - {path: /var/lib/jenkins/tmp, owner: jenkins}
+        - {path: /var/lib/jenkins/plugins, owner: jenkins}
+        - {path: /etc/jenkins, owner: root}
+
+    - name: Create protected file secret source
+      ansible.builtin.file:
+        path: /etc/jenkins/ci-secrets
+        state: directory
+        owner: root
+        group: jenkins
+        mode: '0750'
+
+    - name: Download the pinned Node.js archive
+      ansible.builtin.get_url:
+        url: 'https://nodejs.org/dist/v{{ ci_nodejs_version }}/node-v{{ ci_nodejs_version }}-linux-x64.tar.xz'
+        dest: '/etc/mod9-ci/node-v{{ ci_nodejs_version }}-linux-x64.tar.xz'
+        checksum: 'sha256:{{ ci_nodejs_sha256 }}'
+        mode: '0644'
+
+    - name: Install Node.js at the managed Jenkins tool path
+      ansible.builtin.unarchive:
+        src: '/etc/mod9-ci/node-v{{ ci_nodejs_version }}-linux-x64.tar.xz'
+        dest: /opt
+        remote_src: true
+        owner: root
+        group: root
+        creates: '/opt/node-v{{ ci_nodejs_version }}-linux-x64/bin/node'
+
+    - name: Install locked plugins and Jenkins Configuration as Code
+      ansible.builtin.import_tasks: ../tasks/ci-jenkins.yml
+
+    - name: Configure Jenkins memory and localhost listener
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/jenkins.service.d/mod9-demo.conf
+        mode: '0644'
+        content: |
+          [Service]
+          Environment="JAVA_OPTS=-Djava.awt.headless=true -Xms128m -Xmx{{ ci_jenkins_heap }} -Djava.io.tmpdir=/var/lib/jenkins/tmp -Djenkins.install.runSetupWizard=false"
+          Environment="JENKINS_OPTS=--httpListenAddress=127.0.0.1 --httpPort=8080"
+          Environment="CASC_JENKINS_CONFIG=/etc/jenkins/mod9-casc.yml"
+          Environment="SECRETS=/etc/jenkins/ci-secrets"
+      notify: Restart demo Jenkins
+
+    - name: Grant trusted Jenkins jobs Docker access
+      ansible.builtin.user:
+        name: jenkins
+        groups: docker
+        append: true
+      notify: Restart demo Jenkins
+
+    - name: Enable Docker
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Inspect CI Docker network
+      ansible.builtin.command: docker network inspect mod9-ci
+      register: ci_network
+      changed_when: false
+      failed_when: ci_network.rc not in [0, 1]
+
+    - name: Create dedicated CI Docker network
+      ansible.builtin.command: docker network create mod9-ci
+      when: ci_network.rc != 0
+      changed_when: true
+
+    - name: Inspect persistent service volumes
+      ansible.builtin.command:
+        argv: [docker, volume, inspect, '{{ item }}']
+      loop: [mod9-ci-postgres, mod9-ci-sonar-data, mod9-ci-sonar-extensions, mod9-ci-sonar-logs]
+      register: ci_volumes
+      changed_when: false
+      failed_when: ci_volumes.rc not in [0, 1]
+
+    - name: Create missing service volumes
+      ansible.builtin.command:
+        argv: [docker, volume, create, '{{ item.item }}']
+      loop: '{{ ci_volumes.results }}'
+      when: item.rc != 0
+      changed_when: true
+
+    - name: Inspect pinned images
+      ansible.builtin.command:
+        argv: [docker, image, inspect, '{{ item }}']
+      loop: ['{{ ci_postgres_image }}', '{{ ci_sonar_image }}']
+      register: ci_images
+      changed_when: false
+      failed_when: ci_images.rc not in [0, 1]
+
+    - name: Pull missing images by immutable digest
+      ansible.builtin.command:
+        argv: [docker, pull, '{{ item.item }}']
+      loop: '{{ ci_images.results }}'
+      when: item.rc != 0
+      changed_when: true
+
+    - name: Generate a persistent database password only on the host
+      ansible.builtin.shell: |
+        set -eu
+        umask 077
+        password="$(openssl rand -hex 32)"
+        printf 'POSTGRES_USER=sonar\nPOSTGRES_DB=sonar\nPOSTGRES_PASSWORD=%s\nSONAR_JDBC_USERNAME=sonar\nSONAR_JDBC_PASSWORD=%s\n' \
+          "$password" "$password" > /etc/mod9-ci/database.env
+      args:
+        creates: /etc/mod9-ci/database.env
+      no_log: true
+
+    - name: Keep database environment readable only by root
+      ansible.builtin.file:
+        path: /etc/mod9-ci/database.env
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Install bounded PostgreSQL readiness helper
+      tags: [sonar_services]
+      ansible.builtin.copy:
+        src: ../files/mod9-wait-for-sonar-db
+        dest: /usr/local/lib/mod9-wait-for-sonar-db
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Install container service definitions
+      tags: [sonar_services]
+      ansible.builtin.template:
+        src: '../templates/{{ item }}.j2'
+        dest: '/etc/systemd/system/{{ item }}'
+        mode: '0644'
+      loop: [mod9-sonar-db.service, mod9-sonarqube.service]
+      register: ci_service_units
+
+    - name: Stop old services when their configuration changes
+      tags: [sonar_services]
+      ansible.builtin.systemd:
+        name: '{{ item }}'
+        daemon_reload: true
+        state: stopped
+      loop: [mod9-sonarqube.service, mod9-sonar-db.service]
+      when: ci_service_units.changed
+
+    - name: Install SonarQube lifecycle helper
+      ansible.builtin.copy:
+        src: ../files/mod9-sonar
+        dest: /usr/local/sbin/mod9-sonar
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Permit only the named service helper through passwordless sudo
+      ansible.builtin.copy:
+        dest: /etc/sudoers.d/mod9-sonar
+        mode: '0440'
+        validate: /usr/sbin/visudo -cf %s
+        content: |
+          jenkins ALL=(root) NOPASSWD: /usr/local/sbin/mod9-sonar start, /usr/local/sbin/mod9-sonar stop, /usr/local/sbin/mod9-sonar status
+
+    - name: Keep SonarQube and database disabled at boot
+      tags: [sonar_services]
+      ansible.builtin.systemd:
+        name: '{{ item }}'
+        daemon_reload: true
+        enabled: false
+        state: "{{ 'started' if ci_sonar_running | bool else 'stopped' }}"
+      loop: [mod9-sonar-db.service, mod9-sonarqube.service]
+
+    - name: Apply Jenkins changes
+      ansible.builtin.meta: flush_handlers
+
+    - name: Enable Jenkins
+      ansible.builtin.systemd:
+        name: jenkins
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: Wait for Jenkins listener
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 8080
+        timeout: 300
+
+    - name: Verify authenticated Jenkins readiness and loaded plugins
+      ansible.builtin.uri:
+        url: 'http://127.0.0.1:8080/pluginManager/api/json?tree=plugins[shortName,version,active,enabled]'
+        user: '{{ ci_jenkins_admin_id }}'
+        password: '{{ ci_jenkins_admin_password }}'
+        force_basic_auth: true
+        return_content: true
+        timeout: 10
+      register: ci_jenkins_plugins_api
+      until: ci_jenkins_plugins_api.status == 200
+      retries: 120
+      delay: 5
+      no_log: true
+
+    - name: Require every locked plugin to load at its exact version
+      ansible.builtin.assert:
+        that:
+          - matches | length == 1
+          - (matches | first).version == item.version
+          - (matches | first).active
+          - (matches | first).enabled
+        fail_msg: 'Jenkins plugin {{ item.name }} did not load correctly. Inspect the host logs privately.'
+      vars:
+        matches: "{{ ci_jenkins_plugins_api.json.plugins | selectattr('shortName', 'equalto', item.name) | list }}"
+      loop: '{{ ci_jenkins_plugins }}'
+      loop_control:
+        label: '{{ item.name }}:{{ item.version }}'
+
+    - name: Require the complete loaded plugin set to match the lock
+      ansible.builtin.assert:
+        that:
+          - (ci_jenkins_plugins_api.json.plugins | map(attribute='shortName') | sort) == (ci_jenkins_plugins | map(attribute='name') | sort)
+
+    - name: Read managed executor and security settings
+      ansible.builtin.uri:
+        url: 'http://127.0.0.1:8080/api/json?tree=numExecutors,useSecurity'
+        user: '{{ ci_jenkins_admin_id }}'
+        password: '{{ ci_jenkins_admin_password }}'
+        force_basic_auth: true
+      register: ci_jenkins_settings_api
+      no_log: true
+
+    - name: Require one executor and enabled authentication
+      ansible.builtin.assert:
+        that:
+          - ci_jenkins_settings_api.json.numExecutors == 1
+          - ci_jenkins_settings_api.json.useSecurity
+
+    - name: Read the managed pipeline job
+      ansible.builtin.uri:
+        url: 'http://127.0.0.1:8080/job/mod9-secure-ecs/api/json?tree=disabled'
+        user: '{{ ci_jenkins_admin_id }}'
+        password: '{{ ci_jenkins_admin_password }}'
+        force_basic_auth: true
+      register: ci_jenkins_job_api
+      no_log: true
+
+    - name: Require the declared pipeline enabled state
+      ansible.builtin.assert:
+        that:
+          - ci_jenkins_job_api.json.disabled == (not (ci_pipeline_enabled | default(false) | bool))
+
+    - name: Verify anonymous API access is denied
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8080/api/json
+        follow_redirects: none
+        status_code: [401, 403]
+
+  handlers:
+    - name: Restart demo Jenkins
+      ansible.builtin.systemd:
+        name: jenkins
+        daemon_reload: true
+        state: restarted

@@ -3,6 +3,7 @@ locals {
 }
 
 data "aws_ami" "amazon_linux_2023" {
+  count       = var.ami_id == null ? 1 : 0
   most_recent = true
   owners      = ["amazon"]
 
@@ -34,12 +35,19 @@ resource "aws_key_pair" "deployment" {
 }
 
 resource "aws_instance" "deployment" {
-  ami                         = data.aws_ami.amazon_linux_2023.id
+  ami                         = var.ami_id != null ? var.ami_id : data.aws_ami.amazon_linux_2023[0].id
   instance_type               = var.instance_type
   subnet_id                   = var.public_subnet_id
   vpc_security_group_ids      = [var.security_group_id]
   key_name                    = aws_key_pair.deployment.key_name
   associate_public_ip_address = true
+
+  dynamic "credit_specification" {
+    for_each = var.cpu_credit_mode == null ? [] : [var.cpu_credit_mode]
+    content {
+      cpu_credits = credit_specification.value
+    }
+  }
 
   root_block_device {
     encrypted   = true
