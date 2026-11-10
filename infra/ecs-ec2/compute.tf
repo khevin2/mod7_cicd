@@ -15,7 +15,12 @@ resource "aws_launch_template" "ecs" {
     name = aws_iam_instance_profile.ecs.name
   }
 
-  vpc_security_group_ids = [aws_security_group.host.id]
+  network_interfaces {
+    device_index                = 0
+    associate_public_ip_address = true
+    delete_on_termination       = true
+    security_groups             = [aws_security_group.host.id]
+  }
 
   metadata_options {
     http_endpoint               = "enabled"

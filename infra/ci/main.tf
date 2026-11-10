@@ -62,9 +62,10 @@ resource "aws_internet_gateway" "ci" {
 }
 
 resource "aws_subnet" "ci" {
-  vpc_id                  = aws_vpc.ci.id
-  cidr_block              = "10.80.1.0/24"
-  map_public_ip_on_launch = true
+  vpc_id     = aws_vpc.ci.id
+  cidr_block = "10.80.1.0/24"
+  # Only the explicitly configured CI host receives a public address.
+  map_public_ip_on_launch = false
 }
 
 resource "aws_route_table" "ci" {
@@ -95,6 +96,10 @@ resource "aws_vpc_security_group_ingress_rule" "ssh" {
   to_port           = 22
 }
 
+# Demo exception: public package/scanner registries have dynamic destination IPs.
+# Restrict protocols/ports here; SSH ingress remains administrator-/32 only.
+# Matches the existing lab egress policy; review before extending the demo.
+#trivy:ignore:AVD-AWS-0104:exp:2026-12-10
 resource "aws_vpc_security_group_egress_rule" "web" {
   for_each          = toset(["80", "443"])
   security_group_id = aws_security_group.ci.id

@@ -15,11 +15,12 @@ resource "aws_internet_gateway" "app" {
 }
 
 resource "aws_subnet" "public" {
-  count                   = 2
-  vpc_id                  = aws_vpc.app.id
-  cidr_block              = var.subnet_cidrs[count.index]
-  availability_zone       = data.aws_availability_zones.available.names[count.index]
-  map_public_ip_on_launch = true
+  count             = 2
+  vpc_id            = aws_vpc.app.id
+  cidr_block        = var.subnet_cidrs[count.index]
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+  # Public addressing is explicitly selected only by the host launch template.
+  map_public_ip_on_launch = false
   tags                    = { Name = "${var.project_name}-public-${count.index + 1}" }
 }
 
@@ -86,6 +87,10 @@ resource "aws_vpc_security_group_ingress_rule" "alb_from_client" {
   description       = "HTTP from an approved client"
 }
 
+# Demo exception: ECS/ECR/CloudWatch and image registries use dynamic endpoints.
+# Hosts have no inbound management rules; tasks have no outbound rules.
+# HTTPS-only egress avoids the additional cost of NAT/proxy infrastructure.
+#trivy:ignore:AVD-AWS-0104:exp:2026-12-10
 resource "aws_vpc_security_group_egress_rule" "host_https" {
   security_group_id = aws_security_group.host.id
   cidr_ipv4         = "0.0.0.0/0"

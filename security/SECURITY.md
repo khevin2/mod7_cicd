@@ -18,6 +18,21 @@ Every scanner must return success and its expected report must exist and parse; 
 
 ## Local execution
 
+### Bounded infrastructure configuration exceptions
+
+The CI and ECS demo retain public addressing to avoid NAT infrastructure. Subnets no longer automatically assign public IPs: the CI instance and ECS host launch template explicitly opt in. The application task security group has no egress and accepts application traffic only from the ALB.
+
+The following resource-local Trivy exceptions expire on **2026-12-10**. They apply to configuration design rules only; vulnerability and secret gates are unchanged. Expiry requires removing the exception or explicitly reviewing the design again.
+
+| Resource | Rule | Reason and limits |
+| --- | --- | --- |
+| `infra/ci/main.tf`, `aws_vpc_security_group_egress_rule.web` | AVD-AWS-0104 | Dynamic public package/scanner registry destinations; TCP 80/443 only, SSH ingress limited to administrator `/32`, Jenkins/SonarQube bound to loopback. |
+| `infra/ecs-ec2/network.tf`, `aws_vpc_security_group_egress_rule.host_https` | AVD-AWS-0104 | Dynamic ECS/ECR/CloudWatch/registry endpoints over TCP 443 only; no host management ingress and no task egress. |
+| `infra/ecs-ec2/service.tf`, `aws_lb.app` | AVD-AWS-0053 | A public demo application endpoint is intentional. Ingress is restricted to declared client IPv4 CIDRs; `0.0.0.0/0` is rejected by variable validation. |
+| `infra/ecs-ec2/service.tf`, `aws_lb_listener.http` | AVD-AWS-0054 | Operator approved demo HTTP on 2026-11-10. Limited to the sample application and approved client CIDRs; no credentials or private data may use this listener. Jenkins/SonarQube access remains through SSH tunnels. Replace with HTTPS for use beyond this demo. |
+
+The ALB now drops invalid header fields. The HTTP exception is confined to the named demo listener and expires on 2026-12-10; it does not waive transport encryption for other listeners or services.
+
 Install compatible `sonar-scanner`, `snyk`, `gitleaks`, `trivy`, `syft`, `curl` and `jq` executables locally. Start SonarQube on a local-only address and configure `SONAR_HOST_URL` and `SONAR_TOKEN` privately. Set `SNYK_TOKEN` privately when a Snyk account is available. Do not put token values into commands, documents or Git. Snyk sends dependency metadata to its service; SonarQube analysis goes to the configured server. Use only the approved local SonarQube instance. No Snyk scan has been authorized or run until account/access is settled.
 
 ```bash

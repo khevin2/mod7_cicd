@@ -1,9 +1,13 @@
+# The public application endpoint is intentional; only declared client CIDRs
+# may reach the listener, and task ingress is restricted to this ALB's group.
+#trivy:ignore:AVD-AWS-0053:exp:2026-12-10
 resource "aws_lb" "app" {
-  name               = "${var.project_name}-alb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb.id]
-  subnets            = [for subnet in aws_subnet.public : subnet.id]
+  name                       = "${var.project_name}-alb"
+  internal                   = false
+  load_balancer_type         = "application"
+  security_groups            = [aws_security_group.alb.id]
+  subnets                    = [for subnet in aws_subnet.public : subnet.id]
+  drop_invalid_header_fields = true
 }
 
 resource "aws_lb_target_group" "app" {
@@ -23,6 +27,11 @@ resource "aws_lb_target_group" "app" {
   }
 }
 
+# Operator-approved temporary demo HTTP endpoint (2026-11-10).
+# Client CIDRs are restricted by the ALB security group. Only the sample app
+# is served here; Jenkins/SonarQube credentials remain on SSH-tunneled endpoints.
+# Replace with HTTPS before using this endpoint for credentials or private data.
+#trivy:ignore:AVD-AWS-0054:exp:2026-12-10
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.app.arn
   port              = 80
