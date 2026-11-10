@@ -40,6 +40,7 @@
     ci_pipeline_enabled: true
 
 - name: Execute and wait for the scan-only Jenkins build
+  tags: [ci_build]
   hosts: ci_demo
   become: true
   gather_facts: false
@@ -53,12 +54,14 @@
       timeout: 15
   tasks:
     - name: Obtain a CSRF crumb and session cookie
+      when: not (ci_resume_validation | default(false) | bool)
       ansible.builtin.uri:
         url: http://127.0.0.1:8080/crumbIssuer/api/json
       register: ci_crumb
       no_log: true
 
     - name: Queue a build with release explicitly disabled
+      when: not (ci_resume_validation | default(false) | bool)
       ansible.builtin.uri:
         url: http://127.0.0.1:8080/job/mod9-secure-ecs/buildWithParameters
         method: POST
@@ -72,11 +75,13 @@
       no_log: true
 
     - name: Extract the queued build identifier
+      when: not (ci_resume_validation | default(false) | bool)
       ansible.builtin.set_fact:
-        ci_queue_id: '{{ ci_build_queue.location | regex_search("/queue/item/([0-9]+)/", "\\1") | first }}'
+        ci_queue_id: '{{ ci_build_queue.location | regex_findall("/queue/item/([0-9]+)(?:/|$)") | first }}'
       no_log: true
 
     - name: Wait for the queued build to start
+      when: not (ci_resume_validation | default(false) | bool)
       ansible.builtin.uri:
         url: 'http://127.0.0.1:8080/queue/item/{{ ci_queue_id }}/api/json'
       register: ci_queue_status
@@ -86,13 +91,39 @@
       no_log: true
 
     - name: Require a started build
+      when: not (ci_resume_validation | default(false) | bool)
       ansible.builtin.assert:
         that: ci_queue_status.json.executable is defined
         fail_msg: The queued Jenkins build was cancelled.
 
     - name: Record the build number
+      when: not (ci_resume_validation | default(false) | bool)
       ansible.builtin.set_fact:
         ci_validation_build: '{{ ci_queue_status.json.executable.number }}'
+
+    - name: Read the existing latest build without queuing another
+      when: ci_resume_validation | default(false) | bool
+      ansible.builtin.uri:
+        url: 'http://127.0.0.1:8080/job/mod9-secure-ecs/lastBuild/api/json?tree=number,actions[parameters[name,value]]'
+      register: ci_existing_build
+      no_log: true
+
+    - name: Require the existing build to have release disabled
+      when: ci_resume_validation | default(false) | bool
+      ansible.builtin.assert:
+        that:
+          - >-
+            ci_existing_build.json.actions | selectattr('parameters', 'defined') |
+            map(attribute='parameters') | flatten |
+            selectattr('name', 'equalto', 'RELEASE_APPROVED') |
+            map(attribute='value') | list == [false]
+        fail_msg: Cannot confirm that the latest build is scan-only.
+      no_log: true
+
+    - name: Resume monitoring the existing build number
+      when: ci_resume_validation | default(false) | bool
+      ansible.builtin.set_fact:
+        ci_validation_build: '{{ ci_existing_build.json.number }}'
 
     - name: Show the build console address
       ansible.builtin.debug:
