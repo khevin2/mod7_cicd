@@ -14,9 +14,15 @@ ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3000
 
-# Remediate CVE-2026-14456 in the pinned base image. Alpine repositories
-# replace superseded revisions, so permit newer security updates as well.
-RUN apk add --no-cache 'libcrypto3>=3.5.9-r0' 'libssl3>=3.5.9-r0'
+# Remediate CVE-2026-14456, CVE-2026-107891 and CVE-2026-85091 in
+# the pinned base image. Alpine repositories replace superseded revisions,
+# so permit newer security updates while enforcing these minimum fixes.
+RUN apk add --no-cache \
+    'libcrypto3>=3.5.9-r0' \
+    'libssl3>=3.5.9-r0' \
+    'musl>=1.2.6-r3' \
+    'musl-utils>=1.2.6-r3' \
+    'zlib>=1.3.2-r1'
 
 RUN addgroup -g 10001 -S appgroup \
     && adduser -u 10001 -S -D -H -G appgroup appuser
