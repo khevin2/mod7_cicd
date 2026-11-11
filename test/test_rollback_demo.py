@@ -18,7 +18,10 @@ with open('calls.txt','a') as f:f.write(' '.join(a[:2])+'\n')
 baseline=os.environ['FAKE_BASELINE'];digest=os.environ['FAKE_DIGEST']
 mode=os.environ.get('FAKE_MODE','restored')
 if a[:2]==['ecs','describe-services']:
- events=[] if mode=='no-failure-proof' else [{'message':'deployment ecs-svc/demo failed: tasks failed to start'}]
+ counter_file=__import__('pathlib').Path('service-check-count')
+ count=int(counter_file.read_text())+1 if counter_file.exists() else 1
+ counter_file.write_text(str(count))
+ events=[] if mode=='no-failure-proof' or (mode=='late-recovery' and count <= 120) else [{'message':'deployment ecs-svc/demo failed: tasks failed to start'}]
  print(json.dumps({'failures':[],'services':[{'status':'ACTIVE','taskDefinition':baseline,'desiredCount':1,'runningCount':1,'events':events,'deployments':[{'status':'PRIMARY','taskDefinition':baseline,'rolloutState':'COMPLETED'}],'loadBalancers':[{'containerName':'app','containerPort':3000,'targetGroupArn':'group'}]}]}))
 elif a[:2]==['ecs','list-tasks']:
  print(json.dumps({'taskArns':['task']}))
@@ -54,6 +57,13 @@ class RollbackDemoTests(unittest.TestCase):
         calls=(self.root/'calls.txt').read_text()
         self.assertNotIn('update-service',calls)
         self.assertNotIn('register-task-definition',calls)
+
+    def test_default_window_accepts_recovery_after_old_limit(self):
+        self.env.pop('ECS_DEMO_MAX_CHECKS')
+        result=self.run_observer('late-recovery')
+        self.assertEqual(result.returncode,1,result.stderr)
+        self.assertEqual((self.root/'service-check-count').read_text(),'121')
+        self.assertTrue((self.root/'build-metadata/rollback-demo-result.json').exists())
 
     def test_old_healthy_service_without_failure_evidence_is_not_proof(self):
         result=self.run_observer('no-failure-proof')

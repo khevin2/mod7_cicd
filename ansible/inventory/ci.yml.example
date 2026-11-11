@@ -6,6 +6,8 @@ all:
           ansible_host: REPLACE_WITH_TERRAFORM_PUBLIC_IP
           ansible_user: ec2-user
           ansible_python_interpreter: /usr/bin/python3
+          # SSH also uses this timeout when waiting for sudo escalation.
+          ansible_timeout: 60
           # A single-host demo does not need SSH master connection caching.
           ansible_ssh_args: -C -o ControlMaster=no -o ControlPath=none
           ansible_ssh_pipelining: true

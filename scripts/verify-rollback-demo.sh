@@ -6,8 +6,9 @@ set -Eeuo pipefail
 revision=${1:?Expected attempted task revision}
 baseline=$(jq -er '.revision' build-metadata/rollback-baseline.json)
 deployment=$(jq -er --arg revision "$revision" '[.service.deployments[] | select(.taskDefinition == $revision)] | if length == 1 then .[0].id else error("Expected one attempted deployment") end' build-metadata/service-update.json)
-checks=${ECS_DEMO_MAX_CHECKS:-120}
-[[ "$checks" =~ ^[0-9]+$ ]] && ((checks >= 1 && checks <= 120))
+# ECS retries and task draining can exceed ten minutes even for one task.
+checks=${ECS_DEMO_MAX_CHECKS:-360}
+[[ "$checks" =~ ^[0-9]+$ ]] && ((checks >= 1 && checks <= 360))
 failure_seen=false
 restored=false
 : > build-metadata/rollback-observations.jsonl

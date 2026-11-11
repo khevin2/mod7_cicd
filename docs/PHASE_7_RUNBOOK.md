@@ -17,7 +17,7 @@ ECS's circuit breaker must reject that deployment and automatically restore the 
 
 **Expected Jenkins result: FAILURE.** This preserves the required failed outcome for the attempted release even after automatic recovery. Ansible accepts the demonstration only when the failed build also archived `rollback-demo-result.json` proving automatic rollback, image identity and target/application health. A scanner failure, ordinary deployment failure or old healthy service without corresponding failure evidence is not sufficient.
 
-The observer allows up to 120 checks, five seconds apart, plus API time. If it cannot prove recovery, Ansible fails; inspect the archived `rollback-observations.jsonl`, `rollback-failure-observed.json`, baseline snapshots and service events before making further changes. A subsequent read-only recovery check cannot retroactively change the Jenkins result.
+The observer allows up to 360 checks, five seconds apart (30 minutes plus API time). Build 9 showed that ECS task retries and draining can take longer than the original ten-minute window. If it cannot prove recovery, Ansible fails; inspect the archived `rollback-observations.jsonl`, `rollback-failure-observed.json`, baseline snapshots and service events before making further changes. A subsequent read-only recovery check cannot retroactively change the Jenkins result.
 
 After a controller interruption, resume observation without queuing another test:
 
