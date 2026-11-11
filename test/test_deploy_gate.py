@@ -22,9 +22,21 @@ elif args[:2] == ['ecs', 'describe-services']:
     before = not os.path.exists('build-metadata/task-definition-arn.txt')
     rollback = not before and os.environ.get('FAKE_ROLLBACK') == '1'
     arn = 'previous' if before or rollback else revision
+    state = 'COMPLETED'
+    if not before:
+        from pathlib import Path
+        counter = Path('build-metadata/describe-after-count.txt')
+        count = int(counter.read_text()) + 1 if counter.exists() else 1
+        counter.write_text(str(count))
+        if os.environ.get('FAKE_PROGRESS_THEN_COMPLETE') == '1' and count < 3:
+            state = 'IN_PROGRESS'
+        if os.environ.get('FAKE_STUCK_PROGRESS') == '1':
+            state = 'IN_PROGRESS'
+        if os.environ.get('FAKE_FAILED_ROLLOUT') == '1':
+            state = 'FAILED'
     print(json.dumps({'failures': [], 'services': [{'status':'ACTIVE', 'taskDefinition':arn,
         'desiredCount':1, 'runningCount':1, 'loadBalancers':[{'containerName':'app','containerPort':3000,'targetGroupArn':'target-group'}], 'deployments':[{'status':'PRIMARY',
-        'taskDefinition':arn, 'rolloutState':'COMPLETED'}]}]}))
+        'taskDefinition':arn, 'rolloutState':state}]}]}))
 elif args[:2] == ['ecs', 'register-task-definition']:
     print(json.dumps({'taskDefinition': {'taskDefinitionArn':revision,
         'containerDefinitions':[{'name':'app','image':image}]}}))
@@ -59,6 +71,8 @@ class DeployGateTests(unittest.TestCase):
         (self.root / 'bin/aws').chmod(0o755)
         (self.root / 'bin/curl').write_text('#!/bin/sh\nprintf \'{"service":"jenkins-webapp","status":"ok"}\\n\'\n')
         (self.root / 'bin/curl').chmod(0o755)
+        (self.root / 'bin/sleep').write_text('#!/bin/sh\nexit 0\n')
+        (self.root / 'bin/sleep').chmod(0o755)
         (self.root / 'build-metadata/image-digest.txt').write_text(IMAGE + '\n')
         self.env = dict(os.environ, PATH=f"{self.root / 'bin'}:{os.environ['PATH']}", AWS_REGION='eu-north-1',
             AWS_ACCOUNT_ID=ACCOUNT, ECS_CLUSTER='cluster', ECS_SERVICE='service', ECS_FAMILY='mod9-ecs-app',
@@ -85,6 +99,29 @@ class DeployGateTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertNotIn('ecs list-tasks', (self.root / 'aws.log').read_text())
         self.assertTrue((self.root / 'build-metadata/service-after.json').exists())
+
+    def test_waiter_returns_before_rollout_completion_then_passes(self):
+        self.env['FAKE_PROGRESS_THEN_COMPLETE'] = '1'
+        result = self.run_deploy()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.root / 'build-metadata/describe-after-count.txt').read_text(), '3')
+        self.assertTrue((self.root / 'build-metadata/health-response.json').exists())
+
+    def test_failed_requested_rollout_blocks_without_waiting(self):
+        self.env['FAKE_FAILED_ROLLOUT'] = '1'
+        result = self.run_deploy()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Requested ECS deployment failed', result.stderr)
+        self.assertEqual((self.root / 'build-metadata/describe-after-count.txt').read_text(), '1')
+        self.assertNotIn('ecs list-tasks', (self.root / 'aws.log').read_text())
+
+    def test_stuck_rollout_times_out_and_blocks(self):
+        self.env['FAKE_STUCK_PROGRESS'] = '1'
+        result = self.run_deploy()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Timed out', result.stderr)
+        self.assertEqual((self.root / 'build-metadata/describe-after-count.txt').read_text(), '60')
+        self.assertNotIn('ecs list-tasks', (self.root / 'aws.log').read_text())
 
     def test_unexpected_running_digest_fails(self):
         self.env['FAKE_WRONG_DIGEST'] = '1'

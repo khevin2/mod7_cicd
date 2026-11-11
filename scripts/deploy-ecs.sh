@@ -16,8 +16,30 @@ printf '%s\n' "$revision" > build-metadata/task-definition-arn.txt
 aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" --task-definition "$revision" --region "$AWS_REGION" --output json > build-metadata/service-update.json
 # The waiter may succeed after ECS rolls back; verify the requested revision too.
 aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --region "$AWS_REGION"
-aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --region "$AWS_REGION" --output json > build-metadata/service-after.json
-jq -e --arg revision "$revision" '.failures == [] and (.services | length == 1) and .services[0].status == "ACTIVE" and .services[0].taskDefinition == $revision and .services[0].desiredCount > 0 and .services[0].runningCount == .services[0].desiredCount and ([.services[0].deployments[] | select(.status == "PRIMARY" and .taskDefinition == $revision and .rolloutState == "COMPLETED")] | length == 1)' build-metadata/service-after.json >/dev/null
+# The AWS waiter checks task/deployment counts, not rolloutState. ECS can still
+# report IN_PROGRESS briefly after those counts stabilize. Wait for the exact
+# revision's completion without accepting a rolled-back or superseding revision.
+rollout_ready=false
+for ((attempt=0; attempt<60; attempt++)); do
+  aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --region "$AWS_REGION" --output json > build-metadata/service-after.json
+  if ! jq -e --arg revision "$revision" '.failures == [] and (.services | length == 1) and .services[0].status == "ACTIVE" and .services[0].taskDefinition == $revision' build-metadata/service-after.json >/dev/null; then
+    echo 'Requested service revision is no longer active; deployment rolled back, was superseded, or its state is invalid.' >&2
+    exit 1
+  fi
+  if jq -e --arg revision "$revision" 'any(.services[0].deployments[]; .taskDefinition == $revision and .rolloutState == "FAILED")' build-metadata/service-after.json >/dev/null; then
+    echo 'Requested ECS deployment failed.' >&2
+    exit 1
+  fi
+  if jq -e --arg revision "$revision" '.services[0].desiredCount > 0 and .services[0].runningCount == .services[0].desiredCount and ([.services[0].deployments[] | select(.status == "PRIMARY" and .taskDefinition == $revision and .rolloutState == "COMPLETED")] | length == 1)' build-metadata/service-after.json >/dev/null; then
+    rollout_ready=true
+    break
+  fi
+  sleep 5
+done
+if [[ "$rollout_ready" != true ]]; then
+  echo 'Timed out waiting for the requested ECS deployment to report COMPLETED.' >&2
+  exit 1
+fi
 target_group=$(jq -er '[.services[0].loadBalancers[] | select(.containerName == "app" and .containerPort == 3000) | .targetGroupArn] | if length == 1 then .[0] else error("Expected one app target group") end' build-metadata/service-after.json)
 aws ecs list-tasks --cluster "$ECS_CLUSTER" --service-name "$ECS_SERVICE" --desired-status RUNNING --region "$AWS_REGION" --output json > build-metadata/task-arns.json
 mapfile -t tasks < <(jq -r '.taskArns[]' build-metadata/task-arns.json)
