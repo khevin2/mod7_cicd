@@ -9,11 +9,27 @@ account=$(aws sts get-caller-identity --query Account --output text --region "$A
 python3 scripts/render-ecs-task.py --family "$ECS_FAMILY" --image "$image" --execution-role-arn "$TASK_EXECUTION_ROLE_ARN" --log-group "$ECS_LOG_GROUP" --region "$AWS_REGION" > build-metadata/task-definition.rendered.json
 aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --region "$AWS_REGION" --output json > build-metadata/service-before.json
 jq -e '.failures == [] and (.services | length == 1) and .services[0].status == "ACTIVE"' build-metadata/service-before.json >/dev/null
+if [[ "${ECS_ROLLBACK_DEMO:-false}" == true ]]; then
+  # Preserve a healthy completed deployment before introducing any failure.
+  jq -e '.services[0] | .desiredCount > 0 and .runningCount == .desiredCount and .deploymentConfiguration.minimumHealthyPercent == 100 and .deploymentConfiguration.deploymentCircuitBreaker.enable and .deploymentConfiguration.deploymentCircuitBreaker.rollback and any(.deployments[]; .status == "PRIMARY" and .rolloutState == "COMPLETED")' build-metadata/service-before.json >/dev/null
+  baseline_revision=$(jq -er '.services[0].taskDefinition' build-metadata/service-before.json)
+  aws ecs list-tasks --cluster "$ECS_CLUSTER" --service-name "$ECS_SERVICE" --desired-status RUNNING --region "$AWS_REGION" --output json > build-metadata/rollback-baseline-task-arns.json
+  mapfile -t baseline_tasks < <(jq -r '.taskArns[]' build-metadata/rollback-baseline-task-arns.json)
+  [[ ${#baseline_tasks[@]} -gt 0 ]]
+  aws ecs describe-tasks --cluster "$ECS_CLUSTER" --tasks "${baseline_tasks[@]}" --region "$AWS_REGION" --output json > build-metadata/rollback-baseline-tasks.json
+  jq -e --arg revision "$baseline_revision" --slurpfile service build-metadata/service-before.json '.failures == [] and (.tasks | length) == $service[0].services[0].desiredCount and all(.tasks[]; .taskDefinitionArn == $revision and .lastStatus == "RUNNING" and .healthStatus == "HEALTHY" and any(.containers[]; .name == "app" and (.imageDigest | test("^sha256:[0-9a-f]{64}$"))))' build-metadata/rollback-baseline-tasks.json >/dev/null
+  jq --arg revision "$baseline_revision" '{revision:$revision, imageDigests:([.tasks[].containers[] | select(.name == "app") | .imageDigest] | unique)}' build-metadata/rollback-baseline-tasks.json > build-metadata/rollback-baseline.json
+  jq '.containerDefinitions |= map(if .name == "app" then .healthCheck = {command:["CMD-SHELL","exit 1"],interval:5,timeout:2,retries:2,startPeriod:0} else . end)' build-metadata/task-definition.rendered.json > build-metadata/task-definition.demo.json
+  mv build-metadata/task-definition.demo.json build-metadata/task-definition.rendered.json
+fi
 aws ecs register-task-definition --cli-input-json file://build-metadata/task-definition.rendered.json --region "$AWS_REGION" --output json > build-metadata/task-definition.registered.json
 revision=$(jq -er '.taskDefinition.taskDefinitionArn' build-metadata/task-definition.registered.json)
 jq -e --arg image "$image" '.taskDefinition.containerDefinitions | any(.name == "app" and .image == $image)' build-metadata/task-definition.registered.json >/dev/null
 printf '%s\n' "$revision" > build-metadata/task-definition-arn.txt
 aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" --task-definition "$revision" --region "$AWS_REGION" --output json > build-metadata/service-update.json
+if [[ "${ECS_ROLLBACK_DEMO:-false}" == true ]]; then
+  exec bash scripts/verify-rollback-demo.sh "$revision"
+fi
 # The waiter may succeed after ECS rolls back; verify the requested revision too.
 aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --region "$AWS_REGION"
 # The AWS waiter checks task/deployment counts, not rolloutState. ECS can still

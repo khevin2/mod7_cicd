@@ -21,7 +21,8 @@ if args[:2] == ['sts', 'get-caller-identity']:
 elif args[:2] == ['ecs', 'describe-services']:
     before = not os.path.exists('build-metadata/task-definition-arn.txt')
     rollback = not before and os.environ.get('FAKE_ROLLBACK') == '1'
-    arn = 'previous' if before or rollback else revision
+    demo_rollback = not before and os.environ.get('FAKE_DEMO_ROLLBACK') == '1'
+    arn = 'previous' if before or rollback or demo_rollback else revision
     state = 'COMPLETED'
     if not before:
         from pathlib import Path
@@ -34,22 +35,28 @@ elif args[:2] == ['ecs', 'describe-services']:
             state = 'IN_PROGRESS'
         if os.environ.get('FAKE_FAILED_ROLLOUT') == '1':
             state = 'FAILED'
+    events = [{'message':'deployment ecs-svc/demo failed: tasks failed to start'}] if demo_rollback else []
     print(json.dumps({'failures': [], 'services': [{'status':'ACTIVE', 'taskDefinition':arn,
+        'events':events, 'deploymentConfiguration':{'minimumHealthyPercent':100,'deploymentCircuitBreaker':{'enable':True,'rollback':True}},
         'desiredCount':1, 'runningCount':1, 'loadBalancers':[{'containerName':'app','containerPort':3000,'targetGroupArn':'target-group'}], 'deployments':[{'status':'PRIMARY',
         'taskDefinition':arn, 'rolloutState':state}]}]}))
 elif args[:2] == ['ecs', 'register-task-definition']:
     print(json.dumps({'taskDefinition': {'taskDefinitionArn':revision,
         'containerDefinitions':[{'name':'app','image':image}]}}))
 elif args[:2] == ['ecs', 'update-service']:
-    print('{}')
+    print(json.dumps({'service':{'deployments':[{'id':'ecs-svc/demo','taskDefinition':revision}]}}))
 elif args[:2] == ['ecs', 'wait']:
     pass
 elif args[:2] == ['ecs', 'list-tasks']:
     print(json.dumps({'taskArns':['task-1']}))
 elif args[:2] == ['ecs', 'describe-tasks']:
     digest = 'sha256:' + 'b' * 64 if os.environ.get('FAKE_WRONG_DIGEST') == '1' else image.split('@')[1]
-    print(json.dumps({'failures':[], 'tasks':[{'taskDefinitionArn':revision, 'lastStatus':'RUNNING',
-        'healthStatus':'HEALTHY', 'attachments':[{'type':'ElasticNetworkInterface','details':[{'name':'privateIPv4Address','value':'10.90.1.42'}]}], 'containers':[{'name':'app','imageDigest':digest}]}]}))
+    baseline = not os.path.exists('build-metadata/task-definition-arn.txt') or os.environ.get('FAKE_DEMO_ROLLBACK') == '1'
+    if baseline:
+        digest = 'sha256:' + 'c' * 64
+    health = 'UNHEALTHY' if baseline and os.environ.get('FAKE_BASELINE_UNHEALTHY') == '1' else 'HEALTHY'
+    print(json.dumps({'failures':[], 'tasks':[{'taskDefinitionArn':'previous' if baseline else revision, 'lastStatus':'RUNNING',
+        'healthStatus':health, 'attachments':[{'type':'ElasticNetworkInterface','details':[{'name':'privateIPv4Address','value':'10.90.1.42'}]}], 'containers':[{'name':'app','imageDigest':digest}]}]}))
 elif args[:2] == ['elbv2', 'describe-target-health']:
     state = 'unhealthy' if os.environ.get('FAKE_UNHEALTHY_TARGET') == '1' else 'healthy'
     print(json.dumps({'TargetHealthDescriptions':[{'Target':{'Id':'10.90.1.42','Port':3000},'TargetHealth':{'State':state}}]}))
@@ -64,7 +71,7 @@ class DeployGateTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         for name in ('scripts', 'ecs', 'bin', 'build-metadata'):
             (self.root / name).mkdir()
-        for name in ('deploy-ecs.sh', 'render-ecs-task.py'):
+        for name in ('deploy-ecs.sh', 'render-ecs-task.py', 'verify-rollback-demo.sh'):
             shutil.copy(ROOT / 'scripts' / name, self.root / 'scripts' / name)
         shutil.copy(ROOT / 'ecs/task-definition.json.tftpl', self.root / 'ecs')
         (self.root / 'bin/aws').write_text(AWS_FAKE)
@@ -134,6 +141,25 @@ class DeployGateTests(unittest.TestCase):
         result = self.run_deploy()
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse((self.root / 'build-metadata/health-response.json').exists())
+
+    def test_demo_preserves_scanned_image_and_verifies_original_baseline(self):
+        import json
+        self.env.update(ECS_ROLLBACK_DEMO='true',FAKE_DEMO_ROLLBACK='1')
+        result=self.run_deploy()
+        self.assertEqual(result.returncode,1,result.stderr)
+        rendered=json.loads((self.root/'build-metadata/task-definition.rendered.json').read_text())
+        self.assertEqual(rendered['containerDefinitions'][0]['image'],IMAGE)
+        self.assertEqual(rendered['containerDefinitions'][0]['healthCheck']['command'],['CMD-SHELL','exit 1'])
+        proof=json.loads((self.root/'build-metadata/rollback-demo-result.json').read_text())
+        self.assertTrue(proof['automaticRollbackVerified'])
+        self.assertEqual(proof['restoredImageDigests'],['sha256:'+'c'*64])
+
+    def test_demo_refuses_an_unhealthy_baseline_before_registration(self):
+        self.env.update(ECS_ROLLBACK_DEMO='true',FAKE_BASELINE_UNHEALTHY='1')
+        result=self.run_deploy()
+        self.assertNotEqual(result.returncode,0)
+        self.assertNotIn('ecs register-task-definition',(self.root/'aws.log').read_text())
+        self.assertNotIn('ecs update-service',(self.root/'aws.log').read_text())
 
 
 class PublishGateTests(unittest.TestCase):

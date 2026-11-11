@@ -10,6 +10,8 @@ pipeline {
   }
   triggers { githubPush() }
   parameters {
+    booleanParam(name: 'ROLLBACK_DEMO_APPROVED', defaultValue: false,
+      description: 'With RELEASE_APPROVED: test circuit-breaker rollback using an intentionally failing health check. The Jenkins build must fail.')
     booleanParam(name: 'PUBLISH_APPROVED', defaultValue: false,
       description: 'For a manually started build only: authorize publishing the scanned image to ECR without deploying it.')
     booleanParam(name: 'RELEASE_APPROVED', defaultValue: false,
@@ -31,6 +33,9 @@ pipeline {
           env.IMAGE_REF = "mod9-jenkins-webapp:${env.GIT_SHA}-${env.BUILD_NUMBER}"
           if (!(env.CHECKED_OUT_BRANCH in ['feature/secure-ecs-ec2', 'origin/feature/secure-ecs-ec2'])) {
             error("Configure this job to check out feature/secure-ecs-ec2; got ${env.CHECKED_OUT_BRANCH}")
+          }
+          if (params.ROLLBACK_DEMO_APPROVED && !params.RELEASE_APPROVED) {
+            error('The rollback demonstration requires explicit release approval.')
           }
           if ((params.PUBLISH_APPROVED || params.RELEASE_APPROVED) && currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause').isEmpty()) {
             error('Publication or release authorization is accepted only for a manually started build.')
@@ -134,7 +139,13 @@ pipeline {
     }
     stage('Deploy approved revision to ECS') {
       when { expression { params.RELEASE_APPROVED } }
-      steps { sh 'scripts/deploy-ecs.sh' }
+      steps {
+        script {
+          withEnv(["ECS_ROLLBACK_DEMO=${params.ROLLBACK_DEMO_APPROVED ? 'true' : 'false'}"]) {
+            sh 'scripts/deploy-ecs.sh'
+          }
+        }
+      }
     }
   }
   post {

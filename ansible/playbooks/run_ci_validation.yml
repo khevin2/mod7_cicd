@@ -12,6 +12,8 @@
         that:
           - ci_publish_approved | default(false) is boolean
           - ci_release_approved | default(false) is boolean
+          - ci_rollback_demo_approved | default(false) is boolean
+          - not (ci_rollback_demo_approved | default(false)) or (ci_release_approved | default(false))
 
     - name: Require committed pipeline and application inputs
       ansible.builtin.command:
@@ -76,6 +78,7 @@
         body:
           RELEASE_APPROVED: "{{ 'true' if ci_release_approved | default(false) else 'false' }}"
           PUBLISH_APPROVED: "{{ 'true' if ci_publish_approved | default(false) else 'false' }}"
+          ROLLBACK_DEMO_APPROVED: "{{ 'true' if ci_rollback_demo_approved | default(false) else 'false' }}"
         status_code: 201
         follow_redirects: none
       register: ci_build_queue
@@ -150,6 +153,26 @@
         msg: 'Build {{ ci_validation_build }}: {{ ci_validation_result.json.result }}. Console: http://localhost:8080/job/mod9-secure-ecs/{{ ci_validation_build }}/console'
 
     - name: Require a successful build
+      when: not (ci_rollback_demo_approved | default(false) | bool)
       ansible.builtin.assert:
         that: ci_validation_result.json.result == 'SUCCESS'
         fail_msg: 'Build failed or was aborted. Inspect its console and artifacts. Deployment approved={{ ci_release_approved | default(false) }}; publication approved={{ (ci_publish_approved | default(false)) or (ci_release_approved | default(false)) }}.'
+
+    - name: Read rollback proof from the intentionally failed build
+      when: ci_rollback_demo_approved | default(false) | bool
+      ansible.builtin.uri:
+        url: 'http://127.0.0.1:8080/job/mod9-secure-ecs/{{ ci_validation_build }}/artifact/build-metadata/rollback-demo-result.json'
+        return_content: true
+      register: ci_rollback_proof
+      no_log: true
+
+    - name: Require failed Jenkins result and verified automatic recovery
+      when: ci_rollback_demo_approved | default(false) | bool
+      ansible.builtin.assert:
+        that:
+          - ci_validation_result.json.result == 'FAILURE'
+          - (ci_rollback_proof.content | from_json).automaticRollbackVerified
+          - (ci_rollback_proof.content | from_json).imageIdentityVerified
+          - (ci_rollback_proof.content | from_json).targetHealthVerified
+          - (ci_rollback_proof.content | from_json).applicationHealthVerified
+        success_msg: 'Expected Jenkins FAILURE verified; ECS automatically restored the baseline revision, image and health.'

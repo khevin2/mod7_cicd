@@ -1,0 +1,7 @@
+---
+# Operator execution authorizes the one controlled unhealthy deployment.
+# The Jenkins result must remain FAILURE; Ansible requires recovery artifacts.
+- name: Exercise automatic rollback and verify the rejected release
+  ansible.builtin.import_playbook: run_ci_release.yml
+  vars:
+    ci_rollback_demo_approved: true
