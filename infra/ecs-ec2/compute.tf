@@ -74,6 +74,14 @@ resource "aws_autoscaling_group" "ecs" {
     propagate_at_launch = true
   }
 
+  # ECS adds this tag when associating the capacity provider. Keep it declared
+  # so later Terraform applies do not remove ECS managed-scaling ownership.
+  tag {
+    key                 = "AmazonECSManaged"
+    value               = ""
+    propagate_at_launch = true
+  }
+
   # The ECS capacity provider controls desired capacity after creation.
   lifecycle {
     ignore_changes = [desired_capacity]
