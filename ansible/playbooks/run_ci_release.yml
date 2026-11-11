@@ -1,0 +1,8 @@
+---
+# Running this operator command authorizes publication and ECS update for the
+# newly queued build. Normal run_ci_validation.yml invocations remain scan-only.
+- name: Run the explicitly approved publication and deployment
+  ansible.builtin.import_playbook: run_ci_validation.yml
+  vars:
+    ci_release_approved: true
+    ci_publish_approved: true

@@ -55,10 +55,12 @@ security-reports/
 
 # Local ECS lab inputs and Terraform state
 infra/ci/*.tfvars
+infra/ci/*.tfvars.json
 !infra/ci/*.tfvars.example
 ansible/inventory/ci.yml
 ansible/inventory/ci-images.yml
 ansible/inventory/ci-secrets.yml
+ansible/inventory/ci-release.yml
 .venv-ci/
 infra/ecs-ec2/*.tfvars
 !infra/ecs-ec2/*.tfvars.example

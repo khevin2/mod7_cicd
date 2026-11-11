@@ -7,6 +7,7 @@
     - ../vars/ci-versions.yml
     - ../vars/ci-jenkins-plugins.json
     - ../vars/ci-security-tools.yml
+    - [../inventory/ci-release.yml, ../vars/ci-release-defaults.yml]
   vars:
     ci_swap_bytes: 6442450944
     ci_sonar_running: false

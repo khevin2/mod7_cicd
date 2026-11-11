@@ -5,6 +5,8 @@
   gather_facts: false
   vars_files:
     - ../vars/ci-versions.yml
+    - ../vars/ci-security-tools.yml
+    - [../inventory/ci-release.yml, ../vars/ci-release-defaults.yml]
   tasks:
     - name: Require explicit boolean job state and the existing Jenkins password
       ansible.builtin.assert:
@@ -15,7 +17,7 @@
       no_log: true
 
     - name: Verify the Jenkins EC2 publisher role before an approved publication
-      when: ci_publish_approved | default(false) | bool
+      when: (ci_publish_approved | default(false) | bool) or (ci_release_approved | default(false) | bool)
       become_user: jenkins
       ansible.builtin.command:
         argv: [/usr/bin/aws, sts, get-caller-identity, --region, eu-north-1, --query, Arn, --output, text]
@@ -26,6 +28,66 @@
         ci_publisher_identity.stdout.startswith('arn:aws:sts::447558491229:assumed-role/mod9-ci-publisher-')
       retries: 12
       delay: 5
+
+    - name: Require generated release environment before deployment
+      when: ci_release_approved | default(false) | bool
+      ansible.builtin.assert:
+        that:
+          - ci_release_environment.ECS_CLUSTER is defined
+          - ci_release_environment.ECS_SERVICE is defined
+          - ci_release_environment.ECS_FAMILY is defined
+          - ci_release_environment.TASK_EXECUTION_ROLE_ARN is defined
+          - ci_release_environment.ECS_LOG_GROUP is defined
+          - ci_release_environment.APP_HEALTH_URL is defined
+        fail_msg: Run scripts/export-ci-release-config.py after bootstrapping ECS.
+
+    - name: Verify Jenkins can inspect the existing release service
+      when: ci_release_approved | default(false) | bool
+      become_user: jenkins
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/aws
+          - ecs
+          - describe-services
+          - --region
+          - eu-north-1
+          - --cluster
+          - '{{ ci_release_environment.ECS_CLUSTER }}'
+          - --services
+          - '{{ ci_release_environment.ECS_SERVICE }}'
+          - --query
+          - 'services[0].status'
+          - --output
+          - text
+      register: ci_release_service
+      changed_when: false
+      until: ci_release_service.rc == 0 and ci_release_service.stdout == 'ACTIVE'
+      retries: 12
+      delay: 5
+
+    - name: Check managed scanner credential files
+      ansible.builtin.stat:
+        path: '/etc/jenkins/ci-secrets/{{ item }}'
+      loop: [CI_SONAR_TOKEN, CI_SNYK_TOKEN]
+      register: ci_job_scanner_secrets
+
+    - name: Preserve scanner credential declarations
+      ansible.builtin.set_fact:
+        ci_casc_credentials_ready: '{{ ci_job_scanner_secrets.results | selectattr("stat.exists") | list | length == 2 }}'
+
+    - name: Require scanner credentials for an approved deployment
+      when: ci_release_approved | default(false) | bool
+      ansible.builtin.assert:
+        that: ci_casc_credentials_ready
+
+    - name: Render Jenkins environment and preserve scanner bindings
+      ansible.builtin.template:
+        src: ../templates/ci-jenkins-casc.yml.j2
+        dest: /etc/jenkins/mod9-casc.yml
+        owner: root
+        group: jenkins
+        mode: '0640'
+      register: ci_job_casc
 
     - name: Render the managed branch-specific job
       ansible.builtin.template:
@@ -40,7 +102,7 @@
       ansible.builtin.systemd:
         name: jenkins
         state: restarted
-      when: ci_job_template.changed
+      when: ci_job_template.changed or ci_job_casc.changed
 
     - name: Verify authenticated job availability and declared enabled state
       ansible.builtin.uri:

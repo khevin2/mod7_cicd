@@ -4,6 +4,42 @@ This is a local implementation, not proof of an executed Jenkins or AWS deployme
 
 ## Jenkins job
 
+### Jenkins-driven ECS release
+
+After the baseline service exists, generate environment-specific release settings from its Terraform outputs and read-only AWS identity/service queries:
+
+```bash
+python3 scripts/export-ci-release-config.py --profile training
+AWS_PROFILE=training terraform -chdir=infra/ci plan -out=ecs-release.tfplan
+AWS_PROFILE=training terraform -chdir=infra/ci show -no-color ecs-release.tfplan
+```
+
+The generator writes ignored `infra/ci/ecs-release.auto.tfvars.json` and `ansible/inventory/ci-release.yml`. Regenerate them after recreating the ECS stack; do not hand-copy a stale execution-role ARN. The Terraform input defaults to null on a fresh checkout, so the initial CI host can be created before the ECS stack. After reviewing the exact plan, the operator applies it. The initial release-access plan creates one inline IAM policy on the existing CI role and changes no runtime resources.
+
+Deployment permissions are limited to the existing service, registration of revisions in the application task family, inspection of tasks in the named cluster, and passing the one execution role to `ecs-tasks.amazonaws.com`. Task listing uses `Resource="*"` with an exact cluster condition. ELB target-health inspection requires `Resource="*"` and is limited to `eu-north-1`. There are no ECS create/delete-service, EC2/ASG, ECR deletion or IAM modification permissions. See the [ECS authorization reference](https://docs.aws.amazon.com/service-authorization/latest/reference/list_ecs.html) and [ELB authorization reference](https://docs.aws.amazon.com/service-authorization/latest/reference/list_elbv2.html).
+
+Commit and push the intended pipeline source yourself, then explicitly authorize one release by running:
+
+```bash
+ansible-playbook -i ansible/inventory/ci.yml \
+  ansible/playbooks/run_ci_release.yml \
+  -e @ansible/inventory/ci-secrets.yml \
+  --ask-vault-pass
+```
+
+This command configures the job through Ansible, preserves both scanner credential bindings, installs the generated non-secret release environment through JCasC, and queues `PUBLISH_APPROVED=true`, `RELEASE_APPROVED=true`. It authorizes publication and ECS update for the newly queued build. Before queuing, Ansible verifies the expected EC2 role and that Jenkins can inspect the active service. The pipeline still requires every security gate, a manual user cause, image identity verification, the requested completed ECS revision, matching running task digest, healthy targets and a successful application health response. A successful waiter following rollback fails the revision checks.
+
+Normal `run_ci_validation.yml` invocations keep both approvals false. Existing publish-only commands keep deployment false. Foundation/security reruns retain generated release environment settings when the ignored inventory file exists. A release can be monitored after a controller interruption without starting another build:
+
+```bash
+ansible-playbook -i ansible/inventory/ci.yml \
+  ansible/playbooks/run_ci_release.yml \
+  -e @ansible/inventory/ci-secrets.yml \
+  -e '{"ci_resume_validation":true}' --tags ci_build --ask-vault-pass
+```
+
+Keep the Terraform `release_image` bootstrap digest unchanged and non-null after the first deployment. Terraform ignores later service task-definition changes owned by Jenkins. Live release/rollback evidence must still be collected; policy simulation and local tests are not a deployment.
+
 ### First publication after foundations
 
 The CI Terraform root now declares an EC2 publisher role and instance profile. Its policy permits registry authentication and push/pull verification only for `mod9-ecs` in account `447558491229`, region `eu-north-1`. Registry authentication requires `Resource="*"`; repository operations use the exact repository ARN. This role grants no ECS deployment permissions.

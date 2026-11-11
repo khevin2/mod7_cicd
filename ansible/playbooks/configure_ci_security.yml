@@ -6,6 +6,7 @@
   vars_files:
     - ../vars/ci-versions.yml
     - ../vars/ci-security-tools.yml
+    - [../inventory/ci-release.yml, ../vars/ci-release-defaults.yml]
 
   pre_tasks:
     - name: Validate private inputs without displaying their values
