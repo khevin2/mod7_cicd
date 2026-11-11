@@ -3,6 +3,7 @@ pipelineJob('mod9-secure-ecs') {
     description('Secure ECS lab. Source branch and release controls require verification before enabling.')
     disabled({{ 'false' if ci_pipeline_enabled | default(false) else 'true' }})
     parameters {
+        booleanParam('PUBLISH_APPROVED', false, 'Authorize publishing this build to ECR without ECS deployment.')
         booleanParam('RELEASE_APPROVED', false, 'Authorize publication and deployment only for an explicitly approved manual release.')
     }
     definition {

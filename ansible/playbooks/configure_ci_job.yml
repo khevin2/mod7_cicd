@@ -14,6 +14,19 @@
           - ci_jenkins_admin_password | default('') | length > 0
       no_log: true
 
+    - name: Verify the Jenkins EC2 publisher role before an approved publication
+      when: ci_publish_approved | default(false) | bool
+      become_user: jenkins
+      ansible.builtin.command:
+        argv: [/usr/bin/aws, sts, get-caller-identity, --region, eu-north-1, --query, Arn, --output, text]
+      register: ci_publisher_identity
+      changed_when: false
+      until: >-
+        ci_publisher_identity.rc == 0 and
+        ci_publisher_identity.stdout.startswith('arn:aws:sts::447558491229:assumed-role/mod9-ci-publisher-')
+      retries: 12
+      delay: 5
+
     - name: Render the managed branch-specific job
       ansible.builtin.template:
         src: ../templates/ci-jenkins-job.groovy.j2

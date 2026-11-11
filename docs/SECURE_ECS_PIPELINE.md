@@ -4,6 +4,22 @@ This is a local implementation, not proof of an executed Jenkins or AWS deployme
 
 ## Jenkins job
 
+### First publication after foundations
+
+The CI Terraform root now declares an EC2 publisher role and instance profile. Its policy permits registry authentication and push/pull verification only for `mod9-ecs` in account `447558491229`, region `eu-north-1`. Registry authentication requires `Resource="*"`; repository operations use the exact repository ARN. This role grants no ECS deployment permissions.
+
+After the operator reviews and applies `infra/ci/publisher.tfplan`, commit and push the pipeline changes, then run:
+
+```bash
+ansible-playbook -i ansible/inventory/ci.yml \
+  ansible/playbooks/run_ci_validation.yml \
+  -e @ansible/inventory/ci-secrets.yml \
+  -e '{"ci_publish_approved":true}' \
+  --ask-vault-pass
+```
+
+This explicit operator choice queues `PUBLISH_APPROVED=true`, `RELEASE_APPROVED=false`. Ansible first checks that Jenkins can use the intended EC2 role. Jenkins rebuilds, scans and inventories the image, and publishes it only after all preceding gates pass. It verifies the ECR digest resolves to the scanned local image ID and archives `build-metadata/image-digest.txt`. ECS deployment is skipped. Default invocations remain scan-only. Use the published digest to prepare the separate Terraform plan that bootstraps the ECS task definition and service; later release integration still needs scoped ECS permissions and environment configuration.
+
 For the new CI host, use the [Ansible/JCasC setup](../infra/ci/README.md) rather than the plugin/setup wizard. The complete plugin dependency closure is checksum-locked, and the administrator, `NodeJS24` installation and lifecycle environment are declared in source. Ansible seeds `mod9-secure-ecs` disabled until the remote branch and all integration prerequisites are verified. Permanent configuration changes belong in the managed declarations. SonarQube project/token setup and scanner tool provisioning remain separate automation work.
 
 The [CI security playbook](CI_SECURITY_SETUP.md) now prepares scanner tools and SonarQube project, gate, account/token and JCasC bindings. It must be operator-run and verified; local tests alone do not establish passing security gates.

@@ -47,6 +47,12 @@ variable "allocate_elastic_ip" {
   default     = false
 }
 
+variable "iam_instance_profile" {
+  description = "Optional EC2 instance profile name for role-based AWS access."
+  type        = string
+  default     = null
+}
+
 variable "instance_type" {
   description = "EC2 instance type."
   type        = string

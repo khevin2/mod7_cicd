@@ -10,11 +10,15 @@ pipeline {
   }
   triggers { githubPush() }
   parameters {
+    booleanParam(name: 'PUBLISH_APPROVED', defaultValue: false,
+      description: 'For a manually started build only: authorize publishing the scanned image to ECR without deploying it.')
     booleanParam(name: 'RELEASE_APPROVED', defaultValue: false,
       description: 'For a manually started build only: explicitly authorize this build to publish to ECR and update the ECS service.')
   }
   environment {
     AWS_REGION = 'eu-north-1'
+    AWS_ACCOUNT_ID = '447558491229'
+    ECR_REPOSITORY = 'mod9-ecs'
   }
   stages {
     stage('Checkout') {
@@ -28,8 +32,8 @@ pipeline {
           if (!(env.CHECKED_OUT_BRANCH in ['feature/secure-ecs-ec2', 'origin/feature/secure-ecs-ec2'])) {
             error("Configure this job to check out feature/secure-ecs-ec2; got ${env.CHECKED_OUT_BRANCH}")
           }
-          if (params.RELEASE_APPROVED && currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause').isEmpty()) {
-            error('Release authorization is accepted only for a manually started build.')
+          if ((params.PUBLISH_APPROVED || params.RELEASE_APPROVED) && currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause').isEmpty()) {
+            error('Publication or release authorization is accepted only for a manually started build.')
           }
         }
         sh '''#!/usr/bin/env bash
@@ -125,7 +129,7 @@ pipeline {
       }
     }
     stage('Publish approved image to ECR') {
-      when { expression { params.RELEASE_APPROVED } }
+      when { expression { params.PUBLISH_APPROVED || params.RELEASE_APPROVED } }
       steps { sh 'scripts/publish-ecr.sh' }
     }
     stage('Deploy approved revision to ECS') {
@@ -153,7 +157,9 @@ pipeline {
     }
     success {
       script {
-        if (!params.RELEASE_APPROVED) {
+        if (params.PUBLISH_APPROVED && !params.RELEASE_APPROVED) {
+          echo 'Validation completed and the scanned image was published to ECR; no deployment was authorized.'
+        } else if (!params.RELEASE_APPROVED) {
           echo 'Validation completed; no release was authorized for this build.'
         }
       }

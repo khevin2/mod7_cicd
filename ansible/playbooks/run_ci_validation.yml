@@ -7,6 +7,10 @@
   vars:
     ci_repo_root: '{{ playbook_dir }}/../..'
   tasks:
+    - name: Require a boolean publication choice
+      ansible.builtin.assert:
+        that: ci_publish_approved | default(false) is boolean
+
     - name: Require committed pipeline and application inputs
       ansible.builtin.command:
         argv: [git, diff, --exit-code, --quiet, HEAD, --, Jenkinsfile, scripts, src, test, package.json, package-lock.json, Dockerfile, sonar-project.properties]
@@ -60,7 +64,7 @@
       register: ci_crumb
       no_log: true
 
-    - name: Queue a build with release explicitly disabled
+    - name: Queue a build with explicit publication choice and deployment disabled
       when: not (ci_resume_validation | default(false) | bool)
       ansible.builtin.uri:
         url: http://127.0.0.1:8080/job/mod9-secure-ecs/buildWithParameters
@@ -69,6 +73,7 @@
         body_format: form-urlencoded
         body:
           RELEASE_APPROVED: 'false'
+          PUBLISH_APPROVED: "{{ 'true' if ci_publish_approved | default(false) else 'false' }}"
         status_code: 201
         follow_redirects: none
       register: ci_build_queue
@@ -117,7 +122,7 @@
             map(attribute='parameters') | flatten |
             selectattr('name', 'equalto', 'RELEASE_APPROVED') |
             map(attribute='value') | list == [false]
-        fail_msg: Cannot confirm that the latest build is scan-only.
+        fail_msg: Cannot confirm that the latest build has deployment disabled.
       no_log: true
 
     - name: Resume monitoring the existing build number
@@ -127,7 +132,7 @@
 
     - name: Show the build console address
       ansible.builtin.debug:
-        msg: 'Scan-only build {{ ci_validation_build }} started. Console via SSH tunnel: http://localhost:8080/job/mod9-secure-ecs/{{ ci_validation_build }}/console'
+        msg: 'Build {{ ci_validation_build }} started with deployment disabled. Console via SSH tunnel: http://localhost:8080/job/mod9-secure-ecs/{{ ci_validation_build }}/console'
 
     - name: Wait for scan-only build completion
       ansible.builtin.uri:
@@ -145,4 +150,4 @@
     - name: Require a successful scan-only build
       ansible.builtin.assert:
         that: ci_validation_result.json.result == 'SUCCESS'
-        fail_msg: The build failed or was aborted. Inspect its console and archived reports; publication and deployment were not authorized.
+        fail_msg: The build failed or was aborted. Inspect its console and archived reports. Deployment was disabled; publication was permitted only if explicitly requested.

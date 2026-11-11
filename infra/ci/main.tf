@@ -123,6 +123,7 @@ module "ci_host" {
   cpu_credit_mode      = "standard"
   root_volume_size_gib = 40
   allocate_elastic_ip  = false
+  iam_instance_profile = aws_iam_instance_profile.publisher.name
   tags                 = local.tags
   depends_on = [
     aws_route_table_association.ci,
