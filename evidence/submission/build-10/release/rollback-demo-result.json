@@ -1,0 +1,12 @@
+{
+  "expectedJenkinsResult": "FAILURE",
+  "automaticRollbackVerified": true,
+  "imageIdentityVerified": true,
+  "targetHealthVerified": true,
+  "applicationHealthVerified": true,
+  "failedRevision": "arn:aws:ecs:eu-north-1:111122223333:task-definition/mod9-ecs-app:5",
+  "restoredRevision": "arn:aws:ecs:eu-north-1:111122223333:task-definition/mod9-ecs-app:3",
+  "restoredImageDigests": [
+    "sha256:3039df6513879f725a50238c5bf68ed974b454a0c75037722d8e506b17e51aec"
+  ]
+}

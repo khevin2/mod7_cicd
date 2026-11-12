@@ -1,3 +1,5 @@
+> Historical runbook for the previous GHCR/SSH-to-EC2 project. For the current assignment, start with [the README](../README.md) and [ECS release runbook](SECURE_ECS_PIPELINE.md).
+
 # Jenkins CI/CD deployment runbook
 
 Use this runbook to provision and operate the GitHub-triggered Jenkins pipeline.

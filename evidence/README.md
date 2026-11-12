@@ -1,52 +1,37 @@
-# Submission evidence index
+# Secure ECS pipeline submission evidence
 
-This directory contains sanitized evidence from commands and checks actually
-executed for this lab. Configuration explains intended behavior; it is not a
-substitute for runtime evidence.
+The current assignment is [Secure CI-CD Pipeline.md](../Secure%20CI-CD%20Pipeline.md). The November evidence below concerns ECR/ECS on EC2. August screenshots and logs belong to the earlier GHCR/SSH project and are retained as historical material only.
 
-## Redaction and retention
+## Required deliverables
 
-Included copies omit credential values, tokens, passwords, private keys, AWS
-account IDs, unnecessary EC2 identifiers/public addresses, email addresses, and
-unrelated terminal/browser content. Original captures stay outside the repository
-under ignored raw/private storage. The sanitized screenshot set under screenshots/
-documents Jenkins build #4, GHCR, EC2 state, and public browser accessibility.
+| Requirement | Submitted evidence |
+| --- | --- |
+| CI configuration | [Jenkinsfile](../Jenkinsfile), [Ansible playbooks](../ansible/playbooks/), locked plugins/tools in [Ansible vars](../ansible/vars/) |
+| SAST | [Build 12 SonarQube gate](submission/build-12/reports/sonarqube-quality-gate.json), [whole-project vulnerability query](submission/build-12/reports/sonarqube-issues.json) |
+| SCA | [Build 12 Snyk report](submission/build-12/reports/snyk.json) |
+| Image/repository/configuration scans | [Image](submission/build-12/reports/trivy-image.json), [repository](submission/build-12/reports/trivy-repository.json), [configuration](submission/build-12/reports/trivy-misconfig.json) |
+| Secret scans | [Git history](submission/build-12/reports/gitleaks-history.json), [worktree](submission/build-12/reports/gitleaks-worktree.json), [image summary](submission/build-12/reports/trivy-image-secrets.json) |
+| SBOM | [CycloneDX JSON](submission/build-12/reports/sbom.cdx.json) |
+| Versioned ECR release and digest | [Build 12 evidence](20261112-jenkins-build-12-remediated.md), [image digest](submission/build-12/release/image-digest.txt), [source commit](submission/build-12/release/git-commit.txt) |
+| Task definition | [Template](../ecs/task-definition.json.tftpl), [rendered input](submission/build-12/release/task-definition.rendered.json), [registered revision](submission/build-12/release/task-definition.registered.json) |
+| ECS service update | [Before](submission/build-12/release/service-before.json), [update response](submission/build-12/release/service-update.json), [after](submission/build-12/release/service-after.json) |
+| Exact running image and health | [Tasks](submission/build-12/release/running-tasks.json), [ALB target health](submission/build-12/release/target-health.json), [application response](submission/build-12/release/health-response.json) |
+| Injected vulnerable dependency blocks pipeline | [Build 11 verification](20261111-jenkins-build-11-dependency-rejected.md), [failed Snyk report](submission/build-11/reports/snyk.json), [unsafe source commit](submission/build-11/release/git-commit.txt) |
+| Successful fix | [Build 12 remediation](20261112-jenkins-build-12-remediated.md), passing reports and release records above |
+| Automatic failed-release recovery | [Build 10 verification](20261111-build-10-rollback-verified.md), [rollback proof JSON](submission/build-10/release/rollback-demo-result.json) |
+| CloudWatch task logging | [Current task startup and 14-day retention](submission/cloudwatch-logs.json) |
+| CloudWatch alarm evaluation | [Alarm result JSON](submission/monitoring-demo-result.json), [monitoring context](20261111-build-9-rollback-timing.md); notification delivery is not configured |
+| ECR lifecycle and old image/revision cleanup | [Verified cleanup](20261112-cleanup-verified.md), [verification JSON](20261112-cleanup-verified.json), [Terraform policy](../infra/ecs-ec2/registry.tf) |
+| Architecture and reproducibility | [README](../README.md), [ECS diagram](../docs/architecture-ecs.drawio), [release runbook](../docs/SECURE_ECS_PIPELINE.md), [CI infrastructure](../infra/ci/README.md), [ECS infrastructure](../infra/ecs-ec2/README.md) |
 
-## Rubric-to-evidence map
+Console stage/result excerpts: [build 10](submission/build-10/console-stages.txt), [build 11](submission/build-11/console-stages.txt), [build 12](submission/build-12/console-stages.txt).
 
-| Requirement | Direct evidence | Current status |
-| --- | --- | --- |
-| Git/GitHub, Terraform, AWS CLI, Jenkins LTS, SSH readiness | 20260820-prerequisite-checklist.md | Verified 2026-08-20; identity details redacted. |
-| Jenkins LTS, plugins, NodeJS24, Docker/Git/SSH | 20260821-phase5-jenkins-readiness.txt | Jenkins 2.568.2 and required tools/plugins recorded. |
-| Amazon Linux 2023 target and credential IDs | 20260821-phase7-readiness.txt | Target and protected IDs registry_creds/ec2_ssh checked without values. |
-| Express install, syntax, tests, endpoints | 20260820-phase1-tests.txt; 20260820-phase1-health-check.txt | Four tests passed. |
-| Container build and runtime checks | 20260820-phase2-docker-build.txt; 20260820-phase2-image-inspect.txt; 20260820-phase2-container-smoke.txt | Non-root, healthy local container verified. |
-| Initial EC2 host inventory | 20260821-phase4-ec2-host.txt | Historical Amazon Linux 2 evidence only; not proof of AL2023 provisioning. |
-| Jenkins six required stages and final success | 20260821-phase7-build4-console.txt; 20260821-phase7-readiness.txt | Build #4 SUCCESS from Checkout through Deploy; it predates the current Trivy and Runtime Cleanup stages. |
-| Trivy repository and image security gates | Current Jenkinsfile; fresh Jenkins evidence pending | Implemented with a pinned scanner image; execution is not yet claimed. |
-| Immutable image/digest traceability | 20260821-phase7-build4-console.txt; 20260821-phase8-deployed-verification.txt | Same digest recorded for push, deployment, and container. |
-| Public root/health accessibility | 20260821-phase8-deployed-verification.txt; screenshots/public-browser-root.png | Terminal and browser checks captured HTTP 200 for build #4. |
-| Runtime cleanup and disk capacity | 20260821-phase9-runtime-cleanup.txt | Host cleanup verified; new Jenkins cleanup stage needs a successful run. |
-| Runbook and reproducibility | ../README.md; ../docs/RUNBOOK.md | Documentation implemented; recheck commands in Phase 11. |
-| Local Phase 11 quality and security review | 20260821-phase11-local-quality-review.md | Clean-checkout tests, no-cache build, static review, and limitations recorded. |
-| Local Trivy repository and image gates | 20260822-trivy-local-security-review.md | Source and hardened image gates passed locally; fresh Jenkins execution remains pending. |
+## Export integrity and interpretation
 
-## Remaining captures
+[Submission manifest](submission/manifest.json) lists SHA-256 checksums for the exported copies. They were read from Jenkins build 10/11/12 archives before artifact rotation. JSON content is preserved except redacted account identifiers, email addresses, network/resource addresses and local paths. Image digests, source commits and vulnerability identifiers remain unchanged. These are evidence copies, not registration/deployment inputs. Raw originals remain in ignored local storage.
 
-- A fresh successful Jenkins build containing both Trivy stages and Runtime Cleanup.
-- Archived trivy-repository.json and trivy-image.json from that successful build.
-- A current public health check after that build.
+Build 11 intentionally failed on HIGH `SNYK-JS-BRACES-19963945`; image/release stages were skipped and revision 3 stayed unchanged. Build 12 fixed the dependency and passed the complete release path to revision 6. Build 10's FAILURE is also intentional: automatic recovery does not make the rejected revision a successful release.
 
-## Captured files
+## Limits
 
-- 20260820-prerequisite-checklist.md — prerequisite and tool checks.
-- 20260820-phase1-tests.txt, 20260820-phase1-health-check.txt — app tests and local checks.
-- 20260820-phase2-docker-build.txt, 20260820-phase2-image-inspect.txt, 20260820-phase2-container-smoke.txt — container checks.
-- 20260821-phase4-ec2-host.txt — historical Amazon Linux 2 host evidence.
-- 20260821-phase5-jenkins-readiness.txt — Jenkins readiness.
-- 20260821-phase7-readiness.txt, 20260821-phase7-build4-console.txt — credential IDs and six-stage success.
-- 20260821-phase8-deployed-verification.txt — digest and public terminal HTTP verification.
-- 20260821-phase9-runtime-cleanup.txt — constrained host cleanup and disk capacity.
-- 20260821-phase11-local-quality-review.md — clean-checkout, container, source, security, and documentation checks with limitations.
-- 20260822-trivy-local-security-review.md — local Trivy findings, remediation, final gates, and limitations.
-- screenshots/ — sanitized build #4, credential-ID, GHCR, EC2, and public browser captures.
+The verified runs were manually initiated. Current public webhook delivery, notification delivery, host replacement/draining, live scanner-error injection and a synthetic secret-rejection test are not demonstrated. The service uses one desired task and a client-restricted demo HTTP listener. The shared CI host is a constrained demonstration setup. Older failed findings and diagnostic limitations remain visible in dated evidence rather than being presented as passing runs.

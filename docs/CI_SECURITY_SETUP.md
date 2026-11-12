@@ -2,7 +2,7 @@
 
 This stage changes the existing CI EC2 host only when the operator runs Ansible. The assistant prepares/validates local source and reads live state; it does not run host provisioning, mutate AWS or commit. Run one provisioning process at a time, with no active Jenkins builds.
 
-Prerequisite: `configure_ci_demo.yml` completed successfully and the declared Jenkins administrator can authenticate. The pipeline remains disabled. Snyk account/token readiness was confirmed on 2026-11-09; token validity against a real SCA test is still unverified.
+Prerequisite: `configure_ci_demo.yml` completed successfully and the declared Jenkins administrator can authenticate. The pipeline remains disabled. Real Snyk and SonarQube runs are verified in builds 11/12; recreate private credentials and repeat validation for a new deployment.
 
 ## Private inputs
 
@@ -73,8 +73,8 @@ df -h /
 
 The bootstrap metadata is safe to share after reviewing it. Do not read or share the contents of the file-secret directory or Vault. Inactive SonarQube/database units are expected at completion. The security playbook intentionally changes service state on each run to preserve the memory budget; API configuration/token creation should converge without repeated mutations when inputs and state already match.
 
-## Acceptance still required
+## Acceptance and repeat validation
 
-Local mock tests and Jenkins cold-start checks are not a live SonarQube analysis or proof of shared-host memory reliability. First validate this operator-run playbook and its repeat behavior. Then execute the actual scan-only baseline, review failed findings rather than weakening gates, test scanner errors and controlled unsafe input, and archive sanitized reports. Keep the SCM job disabled until the correct remote source, scanner APIs, secrets and required tools are ready. No image publication or ECS deployment is authorized by running this setup.
+Local mock tests and Jenkins cold-start checks are not a live SonarQube analysis or proof of shared-host memory reliability. For a fresh installation, first validate this operator-run playbook and its repeat behavior. Then execute a scan-only baseline, review failed findings rather than weakening gates, test scanner errors and controlled unsafe input, and archive sanitized reports. Keep the SCM job disabled until the correct remote source, scanner APIs, secrets and required tools are ready. No image publication or ECS deployment is authorized by running this setup.
 
 References: [SonarQube Web API](https://docs.sonarsource.com/sonarqube-community-build/extension-guide/web-api), [token behavior](https://docs.sonarsource.com/sonarqube-community-build/user-guide/managing-tokens), [scanner distribution](https://docs.sonarsource.com/sonarqube-community-build/analyzing-source-code/scanners/sonarscanner), [Snyk releases](https://docs.snyk.io/developer-tools/snyk-cli/releases-and-channels-for-the-snyk-cli). The helper uses API parameters checked against SonarSource's server implementations, including `gateName` for gate creation/selection. Live API incompatibility stops the stage rather than bypassing configuration.

@@ -1,0 +1,160 @@
+{
+  "sanitization": "Account replaced with 111122223333; email, IP, infrastructure IDs and local paths redacted. Digests and source commits unchanged. Files are evidence, not deployable configuration.",
+  "files": [
+    {
+      "path": "build-10/release/rollback-demo-result.json",
+      "sha256": "0508619f39973aaa700634b8fa7f8726b33da8e9777cba853cbf287f10ab889a",
+      "sourceBuild": 10
+    },
+    {
+      "path": "build-10/release/git-commit.txt",
+      "sha256": "f4dd1ef95656d5fde1864408b99dc1f9edc952fd43fe6bcb5001effa76267676",
+      "sourceBuild": 10
+    },
+    {
+      "path": "build-11/reports/snyk.json",
+      "sha256": "f6b9cc69b37e7d9adfec3a6ca16bdfc8d210ac103959a9816d01c051338f2276",
+      "sourceBuild": 11
+    },
+    {
+      "path": "build-11/release/git-commit.txt",
+      "sha256": "4fe271c07467f022219789765ecef703299939ab2a79714c9845f68dd5361923",
+      "sourceBuild": 11
+    },
+    {
+      "path": "build-12/release/git-commit.txt",
+      "sha256": "cd2b4cf75ccdbe5cee576b26ced0f420d4d674d5a2dfa16d15036bf82898befa",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/release/image-digest.txt",
+      "sha256": "ef86ec63c5bf106afd3bef70f297cf0f7888da8984cb79830c211094ab99c0d3",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/release/scanned-image-id.txt",
+      "sha256": "e270a53192037db6debcc0a6c1eb794e805352616b9c1c55909ad0d40a0271ad",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/release/tool-versions.txt",
+      "sha256": "3bf4a563014169851fd8ba1e0963f63eec82af8fc4bd517ebf03b0b58c3107ad",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/release/task-definition.rendered.json",
+      "sha256": "57c94ed18975e0d58b2baf2fe8fabcba9f67cc74e27ef07c0fc4ddb4e9769775",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/release/task-definition.registered.json",
+      "sha256": "ab9d944b74f24b6d00ee369f70b80f8b3705f81c6444a7af60c196eb96f50fd0",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/release/service-before.json",
+      "sha256": "bc72e0daa421f1fc3ca2ea3c82e2524b4b6ae784a98a07bc3ba17da322ceefbd",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/release/service-update.json",
+      "sha256": "cf60095b02157588cfb23ca56c127c7b44e807dce8ceeff0076b14a98bff1dfc",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/release/service-after.json",
+      "sha256": "372a011cf2818ee3d93a10a61a205528efae27c1792c416109e0476c99231b6a",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/release/running-tasks.json",
+      "sha256": "c963603f8720108745fa1e7fddda4fcbf2007d9aa892df0149f9d4e50c079eec",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/release/target-health.json",
+      "sha256": "7f8e54cac83b1a1130f60466d96d50ac70ba0cce319d34d7355cb6275dc2e201",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/release/health-response.json",
+      "sha256": "905a8a32bcecab40f8f845a35d11b8608415386ea9fad4a3a0d8ad0118045e73",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/reports/sonarqube-quality-gate.json",
+      "sha256": "00c7dd6b1320f64798362c2fcd028d1a393bd1051ac311d2074e7493a88b4c82",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/reports/sonarqube-issues.json",
+      "sha256": "f2e049e05e2423bf2509e7ca87ba5a1384322b286e21f8583d66ecd0d80cef50",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/reports/snyk.json",
+      "sha256": "84aaf7363a1540f4ad7c2ec63d448a712673c3bf500ec97f0cdafb3cbd0f0b89",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/reports/trivy-repository.json",
+      "sha256": "82dee835324d66a18443c9b1b94f8c3bff4218c0bd990f063b931e46875a337b",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/reports/trivy-misconfig.json",
+      "sha256": "f598eb56abc8ada7a5a2ae13eee94d4ba132d4cc2439a1d6015488468b36e303",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/reports/trivy-image.json",
+      "sha256": "4f6005f5d511d4af2a2c562e32ed92207b0dfdb42fdbe524a0ea0c0246370382",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/reports/trivy-image-secrets.json",
+      "sha256": "55ca5f9be00f7abcd19ef733a103df5d5bf61707429f8b36bf539431d423ba62",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/reports/gitleaks-history.json",
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/reports/gitleaks-worktree.json",
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "sourceBuild": 12
+    },
+    {
+      "path": "build-12/reports/sbom.cdx.json",
+      "sha256": "739b568b102832d65eac42160c29ffb4f3dd3b67df2634c981cb358e62038ebc",
+      "sourceBuild": 12
+    },
+    {
+      "path": "cloudwatch-logs.json",
+      "sha256": "ad828ace7000dde61d43a0195d0d26dc5b852d7bd9d4f1027f07f2b17c12e559",
+      "source": "read-only CloudWatch verification"
+    },
+    {
+      "path": "monitoring-demo-result.json",
+      "sha256": "29fdb4ff1d5c5b751e506d603c44945f98020d0930e7caa8a299f2e8320d32cf",
+      "source": "operator monitoring exercise"
+    },
+    {
+      "path": "build-10/console-stages.txt",
+      "sha256": "d5131c4a9d952895b26b3bd40d372d555e95fd072f6936cd25408137dbda29c5",
+      "sourceBuild": 10
+    },
+    {
+      "path": "build-11/console-stages.txt",
+      "sha256": "564f11fde2efa45da0c381d9c98987059dd50fa474c0bf7b22691208c2f8cdc1",
+      "sourceBuild": 11
+    },
+    {
+      "path": "build-12/console-stages.txt",
+      "sha256": "64e3cdd6f8a1210b800b9842bb2bf98c89b7bfc7adb16a5ec6757c28b1ed0d4a",
+      "sourceBuild": 12
+    }
+  ]
+}

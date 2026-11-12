@@ -1,0 +1,38 @@
+{
+  "TargetHealthDescriptions": [
+    {
+      "Target": {
+        "Id": "REDACTED_IP",
+        "Port": 3000,
+        "AvailabilityZone": "eu-north-1b"
+      },
+      "HealthCheckPort": "3000",
+      "TargetHealth": {
+        "State": "healthy"
+      },
+      "AdministrativeOverride": {
+        "State": "no_override",
+        "Reason": "AdministrativeOverride.NoOverride",
+        "Description": "No override is currently active on target"
+      }
+    },
+    {
+      "Target": {
+        "Id": "REDACTED_IP",
+        "Port": 3000,
+        "AvailabilityZone": "eu-north-1b"
+      },
+      "HealthCheckPort": "3000",
+      "TargetHealth": {
+        "State": "draining",
+        "Reason": "Target.DeregistrationInProgress",
+        "Description": "Target deregistration is in progress"
+      },
+      "AdministrativeOverride": {
+        "State": "no_override",
+        "Reason": "AdministrativeOverride.NoOverride",
+        "Description": "No override is currently active on target"
+      }
+    }
+  ]
+}

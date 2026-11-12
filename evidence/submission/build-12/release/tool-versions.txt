@@ -1,0 +1,17 @@
+gitleaks: gitleaks version 8.28.0
+trivy: Version: 0.73.0
+Vulnerability DB:
+  Version: 2
+  UpdatedAt: 2026-11-10 19:01:23.081219346 +0000 UTC
+  NextUpdate: 2026-11-11 19:01:23.081218965 +0000 UTC
+  DownloadedAt: 2026-11-11 07:51:50.288547779 +0000 UTC
+Check Bundle:
+  Digest: sha256:b591e9190cff4aa4e385b1a25bccfd9ecf178d3c77fd194e1410b7ce7e1df058
+  DownloadedAt: 2026-11-11 12:35:42.048876626 +0000 UTC
+syft: syft 1.38.0
+snyk: 1.1308.4
+sonar-scanner: 05:52:20.663 INFO  Scanner configuration file: /opt/sonar-scanner-8.1.0.6389/conf/sonar-scanner.properties
+05:52:20.669 INFO  Project root configuration file: /REDACTED_JENKINS_PATH
+05:52:20.695 INFO  SonarScanner CLI 8.1.0.6389
+05:52:20.702 INFO  Linux 6.1.189-236.400.amzn2023.x86_64 amd64
+aws: aws-cli/2.38.0 Python/3.9.25 Linux/6.1.189-236.400.amzn2023.x86_64 source/x86_64.amzn.2023

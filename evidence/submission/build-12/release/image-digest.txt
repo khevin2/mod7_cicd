@@ -1,0 +1,1 @@
+111122223333.dkr.ecr.eu-north-1.amazonaws.com/mod9-ecs@sha256:606ea7f71ad7b64019eed5814953af2d6bf5359cbc79f79fe26fbece19e1be1b

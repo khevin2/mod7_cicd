@@ -1,157 +1,70 @@
-# Jenkins CI/CD web service
+# Secure CI/CD pipeline — Jenkins, ECR and ECS on EC2
 
-> **ECS migration in progress:** The current Jenkinsfile targets ECR and ECS on
-> EC2. The GHCR and SSH deployment instructions and screenshots below document
-> the earlier baseline, not the current pipeline. See the
-> [secure ECS pipeline runbook](docs/SECURE_ECS_PIPELINE.md) and
-> [ECS infrastructure guide](infra/ecs-ec2/README.md) for the new workflow.
-> A live ECS deployment and monitoring validation have not yet been completed.
+This lab hardens the existing Express application with SAST, dependency, image and secret scans, generates a CycloneDX SBOM, and deploys approved images by digest to Amazon ECS on EC2. Terraform manages infrastructure; Ansible manages Jenkins, its locked plugins, scanner tools, SonarQube and job configuration.
 
-This Express service is built, scanned, published, and deployed by Jenkins on a
-small dedicated controller-runner. GitHub push events trigger the pipeline through
-a HTTPS webhook; deployment uses an immutable GHCR image digest and strict SSH to
-a separate Amazon Linux 2023 application host.
+The assignment is in [Secure CI-CD Pipeline.md](Secure%20CI-CD%20Pipeline.md). Start with the [submission evidence index](evidence/README.md) for executed results and the exported reports.
 
-## Verified status
+## Verified results
 
-A GitHub-push-triggered Jenkins run on 2026-08-24 completed successfully for
-commit `65096a2cf28bf49a300b0a177cd5a2eb1cd74eaa`.
+| Check | Result |
+| --- | --- |
+| Vulnerable dependency injection | Build 11 rejected a High-severity Snyk finding; downstream image/release stages were skipped and ECS remained unchanged. |
+| Fix and successful release | Build 12 passed the gates and deployed `mod9-ecs-app:6`. |
+| Release image | `sha256:606ea7f71ad7b64019eed5814953af2d6bf5359cbc79f79fe26fbece19e1be1b` |
+| Automatic rollback | Build 10 intentionally failed revision 5; ECS restored revision 3 and its original digest, with target/application health verified. |
+| Monitoring | Real-metric alarm evaluation transitioned OK → ALARM → OK; original configuration restored. |
+| Cleanup | Revisions 4/5 and their two demo images removed; active/rollback/bootstrap images retained and revision 6 remained healthy. |
 
-- The run was started by GitHub, not by a manual Jenkins action.
-- All four Jest tests passed and JUnit results were published.
-- Repository and image Trivy gates passed before publication and deployment.
-- Jenkins deployed
-  `ghcr.io/khevin2/jenkins-webapp@sha256:24e2027b90385c23dd9d86a9f2319e930cd93972a10ec0e170a5585e08c97835`.
-- The application container was running and healthy; `/health` returned the
-  expected service status.
-- `jenkins-webapp:rollback` retained the previous immutable image digest
-  `sha256:0a7f183d067c264e45fd67f32e82d1ee206c03ebfb820bd78041e9b910fbec0d`.
+Results were verified on 2026-11-11/12. [Archived JSON, reports and SBOM](evidence/submission/) preserve the release evidence after Jenkins artifact rotation. Account identifiers, addresses and paths in those exports are redacted; use actual Terraform outputs for reproduction.
 
-## Architecture
+## Architecture and pipeline
 
-[Open the editable diagram](architecture.drawio) in diagrams.net.
-
-- **Jenkins CI/CD Architecture** shows the GitHub, Jenkins controller-runner,
-  Nginx/TLS, GHCR, and application-host boundaries.
-- **Pipeline execution** shows the event-to-deployment stages, security gates,
-  immutable digest hand-off, health validation, rollback retention, and cleanup.
-
-GitHub can reach only the HTTPS webhook route. AWS permits HTTPS to Nginx, while
-Nginx refreshes GitHub's published webhook source ranges and proxies only
-`/github-webhook/` to Jenkins on loopback. The Jenkins UI remains restricted to
-approved administrator CIDRs.
-
-## Pipeline behavior
+[Editable ECS architecture diagram](docs/architecture-ecs.drawio) · [diagram guide](docs/architecture-ecs.md)
 
 ```text
-GitHub push -> webhook -> Jenkins
-  -> checkout -> install/check -> Jest + JUnit
-  -> Trivy repository gate -> Docker build -> Trivy image gate
-  -> immutable GHCR digest -> SSH deployment -> health check
-  -> retain rollback tag -> bounded runtime cleanup
+GitHub → Jenkins on EC2 → ECR → ECS service → application task on EC2
+             │                                   ↑
+             ├─ Gitleaks, tests, SonarQube, Snyk   ALB ← approved client CIDRs
+             └─ Trivy, Syft                      │
+                                             CloudWatch logs/alarms
 ```
 
-The pipeline validates a temporary candidate before cutover. It then deploys the
-exact pushed image digest, not a mutable tag. If post-cutover health does not
-recover, it restores the previous image. Runtime Cleanup removes only the named
-candidate and dangling layers, leaving the active image and
-`jenkins-webapp:rollback` available.
+Jenkins and SonarQube/PostgreSQL share one `t3.small`, one executor and 6 GiB swap. Stages run sequentially; SonarQube stops after SAST. Jenkins and SonarQube bind to loopback and are accessed through SSH tunnels. The separate application VPC contains the ALB and an ECS capacity provider backed by an Auto Scaling group. Tasks use `awsvpc` networking and accept port 3000 only from the ALB security group.
 
-## Jenkins job configuration
+Pipeline order: checkout → secret scans → install/tests → SAST → SCA/repository/configuration scans → image build → image scans/SBOM → approved ECR publication → approved ECS deployment and exact revision/digest/health verification. High/Critical vulnerabilities and detected secrets block release; scanner errors also fail the pipeline. Narrow lab infrastructure exceptions are documented in [security policy](security/SECURITY.md).
 
-Install Pipeline, Git, Credentials Binding, Docker Pipeline, SSH Agent, NodeJS,
-GitHub, JUnit, and Timestamper plugins. Configure the NodeJS installation named
-`NodeJS24`. Trivy runs from a digest-pinned container image and needs no Jenkins
-plugin or host installation.
+The EC2 publisher role supplies scoped ECR/ECS permissions without stored AWS access keys. Snyk and SonarQube tokens are supplied through managed Jenkins credentials. All publication/deployment flags default false; releases require a manual operator cause and explicit approval. The verified runs were manually started: the current deployment has no verified public GitHub webhook route.
 
-Create a Pipeline-from-SCM job using this repository and create only these
-credential IDs:
+## Reproduce the lab
 
-| ID | Type | Purpose |
-| --- | --- | --- |
-| `registry_creds` | Username with password | GHCR push and deployment pull |
-| `ec2_ssh` | SSH Username with private key | Deployment SSH login |
+Prerequisites: Git, Node.js 24, npm, Terraform, AWS CLI profile `training` in `eu-north-1`, Python 3 and the [pinned Ansible controller](ansible/requirements-ci.txt). Docker is needed for local container checks. Provisioning also requires an operator-owned Snyk account/token and private Vault inputs.
 
-After independently verifying the application host's ED25519 fingerprint, add its
-key to the Jenkins runtime user's `known_hosts`. The pipeline uses
-`StrictHostKeyChecking=yes`; never weaken it.
+1. Provision the CI EC2 host using [infra/ci/README.md](infra/ci/README.md). Verify its SSH host key and configure ignored inventory/Vault inputs.
+2. Run `configure_ci_demo.yml`, then follow [CI security setup](docs/CI_SECURITY_SETUP.md) for `configure_ci_security.yml`. Jenkins plugins and tools are installed by Ansible, not manually through the UI.
+3. Run [scan-only validation](docs/SECURE_ECS_PIPELINE.md). Resolve findings without bypassing gates.
+4. Provision [ECS/ECR foundations](infra/ecs-ec2/README.md), publish a scanned image, then create the initial service using that ECR digest as `release_image`.
+5. Generate release settings and review/apply scoped CI IAM through [the release runbook](docs/SECURE_ECS_PIPELINE.md). Run `run_ci_release.yml` for an approved release.
+6. Follow [rollback/monitoring](docs/PHASE_7_RUNBOOK.md) and [security/cleanup](docs/PHASE_8_9_RUNBOOK.md) runbooks for the demonstrations and scoped cleanup.
 
-Set this Jenkins global environment variable under **Manage Jenkins -> System ->
-Global properties -> Environment variables**:
+Use reviewed Terraform plans. Keep the original non-null Terraform `release_image` after bootstrap: Jenkins owns later task revisions, and Terraform ignores changes to the service task definition. Recreate ignored configuration and secrets on a fresh checkout; do not commit keys, tfvars, state, Vault files or saved plans.
 
-```text
-APPLICATION_DEPLOY_HOST=<approved application private DNS name or IP>
-```
-
-A manual `DEPLOY_HOST` parameter overrides this value. A GitHub webhook cannot
-supply Jenkins build parameters, so webhook-triggered builds use
-`APPLICATION_DEPLOY_HOST`.
-
-## Configure the webhook
-
-1. Provision the controller with HTTPS and Nginx, then set
-   `enable_jenkins_webhook_ingress = true` in the ignored live Terraform input.
-   Review and apply a saved Terraform plan.
-2. Keep the Pipeline `githubPush()` trigger in the Jenkinsfile. Run the job once
-   after adding it so Jenkins saves the trigger.
-3. In the GitHub repository, create an active webhook for
-   `https://ci.kheven.me/github-webhook/`, use `application/json`, enable SSL
-   verification, and subscribe to push events.
-4. Push a small change or redeliver a failed **push** event. A valid run begins
-   with a GitHub-push cause in Jenkins.
-
-## Screenshot evidence
-
-These older sanitized captures are supplemental baseline evidence. They contain no
-credential values, tokens, private keys, or private host details. Current webhook,
-digest, health, and rollback verification is recorded above.
-
-![Credential IDs and types](evidence/screenshots/credentials-ids-types.png)
-
-![Published Jenkins test report](evidence/screenshots/jenkins-test-report.png)
-
-![GHCR immutable image tag and digest](evidence/screenshots/ghcr-image-tag-digest.png)
-
-![Public browser verification of the deployed root endpoint](evidence/screenshots/public-browser-root.png)
-
-## Repository layout
-
-```text
-src/                 Express application and server
-test/                Jest/Supertest tests and JUnit reporter
-Dockerfile           Non-root production image with health check
-Jenkinsfile          Webhook-triggered build, scan, publish, and deploy workflow
-infra/               Terraform roots and child modules for app and Jenkins hosts
-ansible/             Docker and Jenkins-controller configuration playbooks
-docs/RUNBOOK.md      Provisioning, webhook, verification, rollback, and recovery
-architecture.drawio  Editable two-page architecture and pipeline diagram
-evidence/            Sanitized executed evidence
-```
-
-## Local quick start
-
-Prerequisites: Node.js 24, npm, and Docker Engine for container commands.
+## Local application checks
 
 ```bash
 npm ci
 npm run check
-npm test -- --runInBand
+npm test -- --ci --runInBand
 npm start
+# From another terminal:
 curl --fail http://127.0.0.1:3000/health
-
-docker build --tag jenkins-webapp:local .
-docker run --detach --rm --name jenkins-webapp-local -p 8081:3000 jenkins-webapp:local
-curl --fail http://127.0.0.1:8081/health
-docker stop jenkins-webapp-local
 ```
 
-The container runs as UID/GID 10001, listens on port 3000, and has a Docker health
-check. The deployed service maps host port 80 to 3000; do not expose port 3000
-directly.
+The production container runs as UID/GID 10001 and listens on port 3000. Its health endpoint returns `{"service":"jenkins-webapp","status":"ok"}`.
 
-## Operations and evidence
+## Limits and historical material
 
-Terraform, Ansible, Jenkins, webhook, verification, rollback, cleanup, and
-recovery steps are in the [runbook](docs/RUNBOOK.md). Every reviewer-facing claim
-should be backed by sanitized evidence in [the evidence index](evidence/README.md).
-Never commit credentials, tokens, private keys, or unredacted endpoint captures.
+This is a cost-constrained lab with one desired application task. It is not a highly available service. The shared CI instance is below SonarQube's published production sizing; successful demos do not establish production reliability. The client-restricted ALB listener uses demo HTTP under the documented exception, with no sensitive application traffic.
+
+CloudWatch notifications are not configured or tested. Host replacement/draining, live scanner-error injection and a synthetic secret-rejection exercise are not claimed. Older August screenshots, `architecture.drawio`, `requirements.md` and `docs/RUNBOOK.md` describe the previous GHCR/SSH-to-EC2 project, not this ECS release. Current assignment evidence is separated in the index.
+
+Use [the teardown guidance](docs/PHASE_8_9_RUNBOOK.md#eventual-teardown) after preserving evidence and reviewing resource ownership. Cleanup of old revisions is separate from destroying the running lab.

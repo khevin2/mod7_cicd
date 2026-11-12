@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "alarm": "mod9-ecs-no-healthy-targets",
+  "originalThreshold": 1,
+  "demoThreshold": 2,
+  "realMetricVerified": true,
+  "notificationActionsConfigured": false,
+  "alarmObserved": true,
+  "originalConfigurationRestored": true,
+  "recoveryObserved": true
+}

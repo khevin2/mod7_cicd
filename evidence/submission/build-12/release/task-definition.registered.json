@@ -1,0 +1,96 @@
+{
+  "taskDefinition": {
+    "taskDefinitionArn": "arn:aws:ecs:eu-north-1:111122223333:task-definition/mod9-ecs-app:6",
+    "containerDefinitions": [
+      {
+        "name": "app",
+        "image": "111122223333.dkr.ecr.eu-north-1.amazonaws.com/mod9-ecs@sha256:606ea7f71ad7b64019eed5814953af2d6bf5359cbc79f79fe26fbece19e1be1b",
+        "cpu": 128,
+        "memory": 384,
+        "memoryReservation": 256,
+        "portMappings": [
+          {
+            "containerPort": 3000,
+            "hostPort": 3000,
+            "protocol": "tcp"
+          }
+        ],
+        "essential": true,
+        "environment": [],
+        "mountPoints": [],
+        "volumesFrom": [],
+        "user": "10001:10001",
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "/ecs/mod9-ecs",
+            "awslogs-region": "eu-north-1",
+            "awslogs-stream-prefix": "app"
+          }
+        },
+        "healthCheck": {
+          "command": [
+            "CMD-SHELL",
+            "node -e \"fetch('http://REDACTED_IP:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
+          ],
+          "interval": 10,
+          "timeout": 5,
+          "retries": 3,
+          "startPeriod": 15
+        },
+        "systemControls": []
+      }
+    ],
+    "family": "mod9-ecs-app",
+    "executionRoleArn": "arn:aws:iam::111122223333:role/mod9-ecs-exec-7caa3c5fe89daab20adbd37ca2",
+    "networkMode": "awsvpc",
+    "revision": 6,
+    "volumes": [],
+    "status": "ACTIVE",
+    "requiresAttributes": [
+      {
+        "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+      },
+      {
+        "name": "ecs.capability.execution-role-awslogs"
+      },
+      {
+        "name": "com.amazonaws.ecs.capability.ecr-auth"
+      },
+      {
+        "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+      },
+      {
+        "name": "com.amazonaws.ecs.capability.docker-remote-api.1.17"
+      },
+      {
+        "name": "com.amazonaws.ecs.capability.docker-remote-api.1.21"
+      },
+      {
+        "name": "ecs.capability.container-health-check"
+      },
+      {
+        "name": "ecs.capability.execution-role-ecr-pull"
+      },
+      {
+        "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+      },
+      {
+        "name": "ecs.capability.task-eni"
+      },
+      {
+        "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
+      }
+    ],
+    "placementConstraints": [],
+    "compatibilities": [
+      "EC2",
+      "MANAGED_INSTANCES"
+    ],
+    "requiresCompatibilities": [
+      "EC2"
+    ],
+    "registeredAt": "2026-11-12T05:56:32.400000+00:00",
+    "registeredBy": "arn:aws:sts::111122223333:assumed-role/mod9-ci-publisher-f9a420dfecbdad893b1348b0d9/REDACTED_RESOURCE_ID"
+  }
+}

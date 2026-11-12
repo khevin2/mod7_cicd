@@ -1,0 +1,207 @@
+{
+  "dependencyCount": 344,
+  "displayTargetFile": "package-lock.json",
+  "filesystemPolicy": false,
+  "filtered": {
+    "ignore": [],
+    "patch": []
+  },
+  "hasUnknownVersions": false,
+  "ignoreSettings": {
+    "adminOnly": false,
+    "autoApproveIgnores": false,
+    "disregardFilesystemIgnores": false,
+    "reasonRequired": false
+  },
+  "isPrivate": true,
+  "licensesPolicy": {
+    "orgLicenseRules": null,
+    "severities": null
+  },
+  "ok": false,
+  "org": "REDACTED_ORGANIZATION",
+  "packageManager": "npm",
+  "path": "/REDACTED_JENKINS_PATH",
+  "policy": "",
+  "projectName": "jenkins-webapp",
+  "remediation": {
+    "ignore": null,
+    "pin": {},
+    "unresolved": [],
+    "upgrade": {
+      "jest@29.7.0": {
+        "upgradeTo": "jest@30.3.0",
+        "upgrades": [
+          "braces@3.0.3"
+        ],
+        "vulns": [
+          "SNYK-JS-BRACES-19963945"
+        ]
+      }
+    }
+  },
+  "summary": "1 vulnerable dependency path",
+  "targetFile": "",
+  "uniqueCount": 1,
+  "vulnerabilities": [
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "alternativeIds": [],
+      "creationTime": "2026-09-20T07:45:12.687490Z",
+      "credit": [
+        "Wayde Shi"
+      ],
+      "cvssDetails": [
+        {
+          "assigner": "NVD",
+          "cvssV3BaseScore": 7.5,
+          "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+          "modificationTime": "2026-09-18T18:30:36.009747Z",
+          "severity": "high"
+        },
+        {
+          "assigner": "Red Hat",
+          "cvssV3BaseScore": 7.5,
+          "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+          "modificationTime": "2026-09-23T05:40:21.335214Z",
+          "severity": "high"
+        }
+      ],
+      "cvssScore": 8.7,
+      "cvssSources": [
+        {
+          "assigner": "Snyk",
+          "baseScore": 8.7,
+          "cvssVersion": "4.0",
+          "modificationTime": "2026-11-06T14:05:25.641954Z",
+          "severity": "high",
+          "type": "primary",
+          "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N"
+        },
+        {
+          "assigner": "Snyk",
+          "baseScore": 7.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2026-11-06T14:05:25.641954Z",
+          "severity": "high",
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        {
+          "assigner": "NVD",
+          "baseScore": 7.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2026-09-18T18:30:36.009747Z",
+          "severity": "high",
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        {
+          "assigner": "Red Hat",
+          "baseScore": 7.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2026-09-23T05:40:21.335214Z",
+          "severity": "high",
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        }
+      ],
+      "description": "## Overview\n[braces](https://www.npmjs.com/package/braces) is a Bash-like brace expansion, implemented in JavaScript.\n\nAffected versions of this package are vulnerable to Uncontrolled Recursion in the recursive AST walkers, which lack depth guards. An attacker can supply deeply nested brace patterns that stay within the character limit to exhaust the call stack and crash the Node.js process with an uncaught `RangeError`.\n## Remediation\nThere is no fixed version for `braces`.\n## References\n- [GitHub Issue](https://github.com/micromatch/braces/issues/70)\n- [Vulnerable Code](https://github.com/micromatch/braces/blob/3.0.3/lib/compile.js#L49-L53)\n- [Vulnerable Code](https://github.com/micromatch/braces/blob/3.0.3/lib/expand.js#L102-L105)\n- [Vulnerable Code](https://github.com/micromatch/braces/blob/3.0.3/lib/parse.js#L38-L40)\n",
+      "disclosureTime": "2026-09-18T17:35:24.000000Z",
+      "epssDetails": {
+        "modelVersion": "v2026.06.15",
+        "percentile": "0.55939",
+        "probability": "0.00775"
+      },
+      "exploit": "Not Defined",
+      "exploitDetails": {
+        "maturityLevels": [
+          {
+            "format": "CVSSv3",
+            "level": "Not Defined",
+            "type": "secondary"
+          },
+          {
+            "format": "CVSSv4",
+            "level": "Not Defined",
+            "type": "primary"
+          }
+        ],
+        "sources": []
+      },
+      "fixedIn": [],
+      "from": [
+        "jenkins-webapp@1.0.0",
+        "jest@29.7.0",
+        "@jest/core@29.7.0",
+        "@jest/console@29.7.0",
+        "jest-message-util@29.7.0",
+        "micromatch@4.0.8",
+        "braces@3.0.3"
+      ],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-JS-BRACES-19963945",
+      "identifiers": {
+        "CVE": [
+          "CVE-2026-93687"
+        ],
+        "CWE": [
+          "CWE-674"
+        ]
+      },
+      "insights": {
+        "triageAdvice": null
+      },
+      "isDisputed": false,
+      "isPatchable": false,
+      "isUpgradable": true,
+      "language": "js",
+      "malicious": false,
+      "modificationTime": "2026-11-06T14:05:25.641954Z",
+      "moduleName": "braces",
+      "name": "braces",
+      "packageManager": "npm",
+      "packageName": "braces",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2026-09-20T07:45:12.861805Z",
+      "references": [
+        {
+          "title": "GitHub Issue",
+          "url": "https://github.com/micromatch/braces/issues/70"
+        },
+        {
+          "title": "Vulnerable Code",
+          "url": "https://github.com/micromatch/braces/blob/3.0.3/lib/compile.js%23L49-L53"
+        },
+        {
+          "title": "Vulnerable Code",
+          "url": "https://github.com/micromatch/braces/blob/3.0.3/lib/expand.js%23L102-L105"
+        },
+        {
+          "title": "Vulnerable Code",
+          "url": "https://github.com/micromatch/braces/blob/3.0.3/lib/parse.js%23L38-L40"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "*"
+        ]
+      },
+      "severity": "high",
+      "severityBasedOn": "CVSS",
+      "severityWithCritical": "high",
+      "socialTrendAlert": false,
+      "title": "Uncontrolled Recursion",
+      "upgradePath": [
+        false,
+        "jest@30.3.0",
+        "@jest/core@30.3.0",
+        "@jest/console@30.3.0",
+        "jest-message-util@30.3.0"
+      ],
+      "version": "3.0.3"
+    }
+  ]
+}

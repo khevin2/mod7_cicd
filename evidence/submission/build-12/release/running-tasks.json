@@ -1,0 +1,95 @@
+{
+  "tasks": [
+    {
+      "attachments": [
+        {
+          "id": "79594885-ca3e-4366-bc6d-35016055d398",
+          "type": "ElasticNetworkInterface",
+          "status": "ATTACHED",
+          "details": [
+            {
+              "name": "subnetId",
+              "value": "REDACTED_RESOURCE_ID"
+            },
+            {
+              "name": "networkInterfaceId",
+              "value": "REDACTED_RESOURCE_ID"
+            },
+            {
+              "name": "macAddress",
+              "value": "0a:ff:f7:a8:be:e7"
+            },
+            {
+              "name": "privateDnsName",
+              "value": "ip-10-90-2-85.eu-north-1.compute.internal"
+            },
+            {
+              "name": "privateIPv4Address",
+              "value": "REDACTED_IP"
+            }
+          ]
+        }
+      ],
+      "attributes": [
+        {
+          "name": "ecs.cpu-architecture",
+          "value": "x86_64"
+        }
+      ],
+      "availabilityZone": "eu-north-1b",
+      "capacityProviderName": "mod9-ecs-ec2",
+      "clusterArn": "arn:aws:ecs:eu-north-1:111122223333:cluster/mod9-ecs-cluster",
+      "connectivity": "CONNECTED",
+      "connectivityAt": "2026-11-12T05:56:46.045000+00:00",
+      "containerInstanceArn": "arn:aws:ecs:eu-north-1:111122223333:container-instance/mod9-ecs-cluster/e52a129fb9ee48e2a8fefde54e29ca11",
+      "containers": [
+        {
+          "containerArn": "arn:aws:ecs:eu-north-1:111122223333:container/mod9-ecs-cluster/c55d4f8c095044f48c96be9e7f7b7e69/26b692aa-6ee2-45a5-83ca-348060d39441",
+          "taskArn": "arn:aws:ecs:eu-north-1:111122223333:task/mod9-ecs-cluster/c55d4f8c095044f48c96be9e7f7b7e69",
+          "name": "app",
+          "image": "111122223333.dkr.ecr.eu-north-1.amazonaws.com/mod9-ecs@sha256:606ea7f71ad7b64019eed5814953af2d6bf5359cbc79f79fe26fbece19e1be1b",
+          "imageDigest": "sha256:606ea7f71ad7b64019eed5814953af2d6bf5359cbc79f79fe26fbece19e1be1b",
+          "runtimeId": "39a7121d1516e6932ec9fb55413f03b135375415feae1866002df9df9778adae",
+          "lastStatus": "RUNNING",
+          "networkBindings": [],
+          "networkInterfaces": [
+            {
+              "attachmentId": "79594885-ca3e-4366-bc6d-35016055d398",
+              "privateIpv4Address": "REDACTED_IP"
+            }
+          ],
+          "healthStatus": "HEALTHY",
+          "cpu": "128",
+          "memory": "384",
+          "memoryReservation": "256"
+        }
+      ],
+      "cpu": "128",
+      "createdAt": "2026-11-12T05:56:46.045000+00:00",
+      "desiredStatus": "RUNNING",
+      "enableExecuteCommand": false,
+      "group": "service:mod9-ecs-service",
+      "healthStatus": "HEALTHY",
+      "lastStatus": "RUNNING",
+      "launchType": "EC2",
+      "memory": "256",
+      "overrides": {
+        "containerOverrides": [
+          {
+            "name": "app"
+          }
+        ],
+        "inferenceAcceleratorOverrides": []
+      },
+      "pullStartedAt": "2026-11-12T05:57:01.935000+00:00",
+      "pullStoppedAt": "2026-11-12T05:57:02.175000+00:00",
+      "startedAt": "2026-11-12T05:57:09.830000+00:00",
+      "startedBy": "ecs-svc/9977732326430771472",
+      "tags": [],
+      "taskArn": "arn:aws:ecs:eu-north-1:111122223333:task/mod9-ecs-cluster/c55d4f8c095044f48c96be9e7f7b7e69",
+      "taskDefinitionArn": "arn:aws:ecs:eu-north-1:111122223333:task-definition/mod9-ecs-app:6",
+      "version": 4
+    }
+  ],
+  "failures": []
+}

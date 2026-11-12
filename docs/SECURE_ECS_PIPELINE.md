@@ -1,6 +1,6 @@
 # Jenkins release and ECS monitoring
 
-This is a local implementation, not proof of an executed Jenkins or AWS deployment. Phase 3 scanner validation and Phases 4–5 provisioning remain prerequisites. Jenkins, credentials, AWS CLI access, the service and alert destination must be configured and verified before live use. The user must explicitly authorize any cloud-changing action; no commit, push, or cloud change is authorized by this document.
+The operator has provisioned this lab and verified the full release path. Build 12 passed after the build 11 injected-vulnerability rejection; build 10 verified automatic rollback, and the real-metric alarm and cleanup exercises passed. See the [current evidence index](../evidence/README.md). This runbook describes reproduction; commands that publish, deploy or change infrastructure are executed by the operator.
 
 ## Jenkins job
 
@@ -38,7 +38,7 @@ ansible-playbook -i ansible/inventory/ci.yml \
   -e '{"ci_resume_validation":true}' --tags ci_build --ask-vault-pass
 ```
 
-Keep the Terraform `release_image` bootstrap digest unchanged and non-null after the first deployment. Terraform ignores later service task-definition changes owned by Jenkins. Live release/rollback evidence must still be collected; policy simulation and local tests are not a deployment.
+Keep the Terraform `release_image` bootstrap digest unchanged and non-null after the first deployment. Terraform ignores later service task-definition changes owned by Jenkins. Live release and rollback evidence is linked in the evidence index; policy simulation and local tests remain supplemental.
 
 ### First publication after foundations
 
@@ -85,17 +85,17 @@ Set these **non-secret job environment variables** from reviewed Terraform outpu
 | `ECS_LOG_GROUP` | Application log group, e.g. `/ecs/mod9-ecs` |
 | `APP_HEALTH_URL` | Approved reachable ALB endpoint ending in `/health` |
 
-The pipeline fixes `AWS_REGION=eu-north-1` and checks the AWS caller's account before any release mutation. Arrange role-based Jenkins agent access with the minimum ECR push, ECS registration/service update/describe, `iam:PassRole` for the named execution role, ELB target-health describe, and STS identity permissions. Grant no permissions to change infrastructure or unrelated roles. Verify the policy with a reviewed IAM plan; this repository does not create or attach the Jenkins role. Ensure the ALB security group accepts health requests from the Jenkins agent.
+The pipeline fixes `AWS_REGION=eu-north-1` and checks the AWS caller's account before any release mutation. Arrange role-based Jenkins agent access with the minimum ECR push, ECS registration/service update/describe, `iam:PassRole` for the named execution role, ELB target-health describe, and STS identity permissions. Grant no permissions to change infrastructure or unrelated roles. Verify the policy with a reviewed IAM plan; the CI Terraform root creates the publisher role and attaches the reviewed repository/service-scoped policies. Ensure the ALB security group accepts health requests from the Jenkins agent.
 
 Each run records its source commit, build number, local image ID, tool versions, scan reports and SBOM. A release pushes a commit-and-build tag and pulls the resulting ECR digest to confirm it matches the scanned image ID. It registers a task definition containing that digest, updates the existing service, waits for stability, then confirms the requested revision is the completed primary deployment, each running task has that revision and digest, its ALB target is healthy, and `/health` succeeds. A waiter returning successfully after rollback does **not** count as a successful release. The verifier expects the single-architecture image produced by the current Docker build; multi-platform manifest-list digests need additional child-digest validation before use.
 
 AWS's `services-stable` waiter can return while the sole PRIMARY deployment still reports `IN_PROGRESS`. After the waiter, the verifier makes up to 60 fresh service checks, five seconds apart, requiring the requested revision to report `COMPLETED` with matching desired/running counts. A failed rollout or changed service revision fails immediately; exhausted checks fail closed. This handles completion-state propagation without accepting rollback as success.
 
-Artifacts are archived in Jenkins `post { always { ... } }` so failure reports and intermediate deployment evidence survive a failed stage. A failed SonarQube analysis produces an archived, fixed-category JSON diagnostic; its raw log stays out of the archive. Image secret findings are scanned in a private temporary file and only the count and exit status are archived. After archiving, Jenkins attempts to remove only the local image tag whose identity matches this build's recorded image ID; it does not prune other images. Do not claim that a green scan-only build deployed an image. Tool or scanner failures block release; SAST/SCA credentials and the exact SonarQube API behavior must still be validated. The optional `build-metadata` directory contains environment-specific identifiers; sanitize before publishing evidence.
+Artifacts are archived in Jenkins `post { always { ... } }` so failure reports and intermediate deployment evidence survive a failed stage. A failed SonarQube analysis produces an archived, fixed-category JSON diagnostic; its raw log stays out of the archive. Image secret findings are scanned in a private temporary file and only the count and exit status are archived. After archiving, Jenkins attempts to remove only the local image tag whose identity matches this build's recorded image ID; it does not prune other images. Do not claim that a green scan-only build deployed an image. Tool or scanner failures block release; SAST/SCA credentials and the SonarQube API were validated by the successful baseline and release runs; repeat validation after recreating credentials or upgrading tools. The optional `build-metadata` directory contains environment-specific identifiers; sanitize before publishing evidence.
 
 ## Monitoring configuration
 
-Terraform in `infra/ecs-ec2/monitoring.tf` creates a CloudWatch dashboard and four alarms. These are proposed lab resources and incur charges after approval and apply.
+Terraform in `infra/ecs-ec2/monitoring.tf` creates a CloudWatch dashboard and four alarms. These resources are deployed for this lab and incur charges while retained.
 
 - Target-generated 5xx rate greater than 5% and target p95 response time greater than 300 ms, each for two five-minute periods and only when each period has at least 20 requests.
 - Unhealthy target count above zero, and no healthy targets (including missing target metrics) for three minutes.
@@ -105,12 +105,12 @@ This adapts the prior project's alert thresholds to ALB metrics. It does not imp
 
 `alarm_actions` accepts existing SNS topic ARNs; it defaults to an empty list, so alarms have **no notifications** until a permitted destination and subscriptions are configured. This stack does not create subscriptions or send test messages. Validate permissions and delivery with the destination owner before enabling it. The app's `awslogs` stream prefix is `app`; the stream name includes the task ID. Match it to the running task and the recorded revision/image digest when capturing logs. Log retention is configured in the ECS Terraform root.
 
-## Future live validation and recovery
+## Validation and recovery
 
-The baseline and a complete manually approved release are now verified (Jenkins build 8). Use the operator commands in [Phase 7 runbook](PHASE_7_RUNBOOK.md) for the controlled rollback and reversible real-metric alarm exercise. Its default preparations and local fake-tool tests do not establish live recovery or alarm transitions until the operator runs and verifies them.
+The baseline and complete manually approved releases are verified (builds 8 and 12). Use the operator commands in [Phase 7 runbook](PHASE_7_RUNBOOK.md) for the controlled rollback and reversible real-metric alarm exercise. Its default preparations and local fake-tool tests do not establish live recovery or alarm transitions until the operator runs and verifies them.
 
 After the foundations and a security-approved baseline service exist, review and obtain explicit permission for the exact Terraform plan that adds the alarms. Verify dimensions and dashboard data against the new ALB and service. In a controlled lab with an approved test workload and traffic generator, send at least 20 requests per five-minute window with >5% target 5xx for two windows, verify the alarm transition and any explicitly authorized notification, then stop fault injection and verify recovery. Use an isolated approved test workload; the current application has no fault-injection route. Never infer a successful notification from an alarm state alone.
 
 For rollback validation, retain a known-good task revision and image. After explicit permission for the exact test deployment, register a task definition using the same security-approved image but an intentionally failing test command or health check; update the lab service, observe circuit-breaker rollback, and verify the prior revision and healthy target recover. The Jenkins verifier must fail the attempted release even if `services-stable` returns after rollback. Do not perform this test in a production service. ECS instance draining/replacement also changes cloud state and requires separate explicit permission and adequate capacity. Record the starting and restored revision, target health, logs, time, and alert status.
 
-No live alarm, notification, deployment, rollback, or host-replacement evidence has been collected yet. Automated local tests use a fake AWS CLI and do not establish AWS or Jenkins behavior.
+Live release, automatic rollback and real-metric alarm recovery evidence is linked in the evidence index. Notification delivery and host replacement remain unverified. Local fake-tool tests supplement these runs and are not presented as AWS execution evidence.

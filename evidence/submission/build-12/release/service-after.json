@@ -1,0 +1,566 @@
+{
+  "services": [
+    {
+      "serviceArn": "arn:aws:ecs:eu-north-1:111122223333:service/mod9-ecs-cluster/mod9-ecs-service",
+      "serviceName": "mod9-ecs-service",
+      "clusterArn": "arn:aws:ecs:eu-north-1:111122223333:cluster/mod9-ecs-cluster",
+      "loadBalancers": [
+        {
+          "targetGroupArn": "arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943",
+          "containerName": "app",
+          "containerPort": 3000
+        }
+      ],
+      "serviceRegistries": [],
+      "status": "ACTIVE",
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "capacityProviderStrategy": [
+        {
+          "capacityProvider": "mod9-ecs-ec2",
+          "weight": 1,
+          "base": 0
+        }
+      ],
+      "taskDefinition": "arn:aws:ecs:eu-north-1:111122223333:task-definition/mod9-ecs-app:6",
+      "deploymentConfiguration": {
+        "deploymentCircuitBreaker": {
+          "enable": true,
+          "rollback": true,
+          "resetOnHealthyTask": true,
+          "thresholdConfiguration": {
+            "type": "BOUNDED_PERCENT",
+            "value": 50
+          }
+        },
+        "maximumPercent": 200,
+        "minimumHealthyPercent": 100,
+        "strategy": "ROLLING",
+        "bakeTimeInMinutes": 0
+      },
+      "deployments": [
+        {
+          "id": "ecs-svc/9977732326430771472",
+          "status": "PRIMARY",
+          "taskDefinition": "arn:aws:ecs:eu-north-1:111122223333:task-definition/mod9-ecs-app:6",
+          "desiredCount": 1,
+          "pendingCount": 0,
+          "runningCount": 1,
+          "failedTasks": 0,
+          "createdAt": "2026-11-12T05:56:33.353000+00:00",
+          "updatedAt": "2026-11-12T05:58:28.533000+00:00",
+          "capacityProviderStrategy": [
+            {
+              "capacityProvider": "mod9-ecs-ec2",
+              "weight": 1,
+              "base": 0
+            }
+          ],
+          "networkConfiguration": {
+            "awsvpcConfiguration": {
+              "subnets": [
+                "REDACTED_RESOURCE_ID",
+                "REDACTED_RESOURCE_ID"
+              ],
+              "securityGroups": [
+                "REDACTED_RESOURCE_ID"
+              ],
+              "assignPublicIp": "DISABLED"
+            }
+          },
+          "rolloutState": "COMPLETED",
+          "rolloutStateReason": "ECS deployment ecs-svc/9977732326430771472 completed."
+        }
+      ],
+      "roleArn": "arn:aws:iam::111122223333:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS",
+      "events": [
+        {
+          "id": "802bbb85-663b-4678-a6af-0664b24f3331",
+          "createdAt": "2026-11-12T05:58:28.563000+00:00",
+          "message": "(service mod9-ecs-service) has reached a steady state."
+        },
+        {
+          "id": "c0e44068-8b7c-4aaf-a4d1-fb8ce068a1d8",
+          "createdAt": "2026-11-12T05:58:28.562000+00:00",
+          "message": "(service mod9-ecs-service) (deployment ecs-svc/9977732326430771472) deployment completed."
+        },
+        {
+          "id": "3c0518ff-5025-40b0-9ece-02741e87acf4",
+          "createdAt": "2026-11-12T05:57:26.783000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/7539563186179171185) has begun draining connections on 1 tasks."
+        },
+        {
+          "id": "fff447db-9bd4-499b-9f76-bf77eebf1180",
+          "createdAt": "2026-11-12T05:57:26.779000+00:00",
+          "message": "(service mod9-ecs-service) deregistered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "a8cee770-2f1d-42f7-9f4f-640355720b34",
+          "createdAt": "2026-11-12T05:57:15.778000+00:00",
+          "message": "(service mod9-ecs-service) has stopped 1 running tasks: (task baf47c5245f94d08a6cb656057b8e6b1)."
+        },
+        {
+          "id": "4fdba04c-d817-4c26-8afb-5967c1762a2e",
+          "createdAt": "2026-11-12T05:57:06.310000+00:00",
+          "message": "(service mod9-ecs-service) registered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "491b6a68-1c23-446b-8d31-cc0c25b2ab2b",
+          "createdAt": "2026-11-12T05:56:51.092000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/9977732326430771472) has started 1 tasks: (task c55d4f8c095044f48c96be9e7f7b7e69)."
+        },
+        {
+          "id": "a4432375-38bb-4afd-a0f9-e6ba60d9aeba",
+          "createdAt": "2026-11-12T05:56:46.068000+00:00",
+          "message": "(service mod9-ecs-service) has started 1 tasks: (task c55d4f8c095044f48c96be9e7f7b7e69)."
+        },
+        {
+          "id": "c914de33-64f2-4016-84ab-4c2de584b316",
+          "createdAt": "2026-11-12T05:48:22.748000+00:00",
+          "message": "(service mod9-ecs-service) has reached a steady state."
+        },
+        {
+          "id": "02f80b0a-73e5-4a2a-bd2a-2bcfc582886f",
+          "createdAt": "2026-11-11T23:48:19.655000+00:00",
+          "message": "(service mod9-ecs-service) has reached a steady state."
+        },
+        {
+          "id": "e8c4772f-7a10-44de-8478-26f2f22e40b7",
+          "createdAt": "2026-11-11T17:48:13.901000+00:00",
+          "message": "(service mod9-ecs-service) has reached a steady state."
+        },
+        {
+          "id": "348a1e80-6a6f-4c75-a566-8f45a7e3d5aa",
+          "createdAt": "2026-11-11T14:08:29.357000+00:00",
+          "message": "(service mod9-ecs-service) has reached a steady state."
+        },
+        {
+          "id": "441027d5-4079-4058-b3c1-84ace75a2bbc",
+          "createdAt": "2026-11-11T12:54:39.713000+00:00",
+          "message": "(service mod9-ecs-service) has reached a steady state."
+        },
+        {
+          "id": "d7ab594f-1ed5-4e69-814d-6f2f53619608",
+          "createdAt": "2026-11-11T12:54:39.712000+00:00",
+          "message": "(service mod9-ecs-service) (deployment ecs-svc/7539563186179171185) deployment completed."
+        },
+        {
+          "id": "1c85727d-67aa-4223-a28c-85888c2a0f29",
+          "createdAt": "2026-11-11T12:54:11.617000+00:00",
+          "message": "(service mod9-ecs-service) rolling back to deployment ecs-svc/7539563186179171185."
+        },
+        {
+          "id": "a3f08e1d-65a2-4e7e-bc62-67f0084afa80",
+          "createdAt": "2026-11-11T12:54:11.616000+00:00",
+          "message": "(service mod9-ecs-service) (deployment ecs-svc/2776630583057419799) deployment failed: tasks failed to start."
+        },
+        {
+          "id": "d68f7072-3d38-4acc-9e0c-d833b97f4c19",
+          "createdAt": "2026-11-11T12:52:44.595000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/2776630583057419799) has begun draining connections on 1 tasks."
+        },
+        {
+          "id": "0fe572b2-cb4a-4d01-9f6c-42119f70f1b5",
+          "createdAt": "2026-11-11T12:52:44.589000+00:00",
+          "message": "(service mod9-ecs-service) deregistered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "3b516090-c043-43ec-9b3e-efbb35d253f8",
+          "createdAt": "2026-11-11T12:52:34.481000+00:00",
+          "message": "(service mod9-ecs-service) has stopped 1 running tasks: (task c6987dd8da3a4ba4b06ff537f2026e61)."
+        },
+        {
+          "id": "8d3491d5-ae6e-49b2-b871-b7d1cef58f6b",
+          "createdAt": "2026-11-11T12:52:34.480000+00:00",
+          "message": "(service mod9-ecs-service) (task c6987dd8da3a4ba4b06ff537f2026e61) failed container health checks."
+        },
+        {
+          "id": "ace81825-dc89-4b6a-9734-b96ccb1c1ce0",
+          "createdAt": "2026-11-11T12:51:21.843000+00:00",
+          "message": "(service mod9-ecs-service) registered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "1aed6528-e545-431f-86ed-8822b49d6c62",
+          "createdAt": "2026-11-11T12:51:06.063000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/2776630583057419799) has started 1 tasks: (task c6987dd8da3a4ba4b06ff537f2026e61)."
+        },
+        {
+          "id": "2e32e634-8e1c-4766-acb3-1065ce157ab1",
+          "createdAt": "2026-11-11T12:51:01.742000+00:00",
+          "message": "(service mod9-ecs-service) has started 1 tasks: (task c6987dd8da3a4ba4b06ff537f2026e61)."
+        },
+        {
+          "id": "9055881e-8948-45df-abda-3b4c560d4f66",
+          "createdAt": "2026-11-11T12:45:20.985000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/2776630583057419799) has begun draining connections on 1 tasks."
+        },
+        {
+          "id": "ba77872f-edd3-40e6-be56-6e29c36f945a",
+          "createdAt": "2026-11-11T12:45:20.979000+00:00",
+          "message": "(service mod9-ecs-service) deregistered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "0c269f47-4dd5-4983-b89a-644bbadb9f10",
+          "createdAt": "2026-11-11T12:45:09.279000+00:00",
+          "message": "(service mod9-ecs-service) has stopped 1 running tasks: (task 670df72825a54e3f9e5e5c60c988599e)."
+        },
+        {
+          "id": "455aabfa-ce34-4b36-baf9-6f0231082090",
+          "createdAt": "2026-11-11T12:45:09.278000+00:00",
+          "message": "(service mod9-ecs-service) (task 670df72825a54e3f9e5e5c60c988599e) failed container health checks."
+        },
+        {
+          "id": "2d16679a-62b9-4fa4-9c0b-f648cb3aaa89",
+          "createdAt": "2026-11-11T12:43:57.400000+00:00",
+          "message": "(service mod9-ecs-service) registered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "25507461-db1f-412e-945a-d215cfbbcaf8",
+          "createdAt": "2026-11-11T12:43:34.397000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/2776630583057419799) has started 1 tasks: (task 670df72825a54e3f9e5e5c60c988599e)."
+        },
+        {
+          "id": "bc827000-ff39-4a5f-bd1b-9775b91a0e4a",
+          "createdAt": "2026-11-11T12:43:26.751000+00:00",
+          "message": "(service mod9-ecs-service) has started 1 tasks: (task 670df72825a54e3f9e5e5c60c988599e)."
+        },
+        {
+          "id": "d00c31c5-4ca6-407c-a09e-abadb430c422",
+          "createdAt": "2026-11-11T12:38:05.998000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/2776630583057419799) has begun draining connections on 1 tasks."
+        },
+        {
+          "id": "eadb4642-00d4-4656-9d13-6112e9747408",
+          "createdAt": "2026-11-11T12:38:05.993000+00:00",
+          "message": "(service mod9-ecs-service) deregistered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "1d8eea05-0f4c-4809-b875-bc9911dd610d",
+          "createdAt": "2026-11-11T12:37:55.084000+00:00",
+          "message": "(service mod9-ecs-service) has stopped 1 running tasks: (task 9f4ffccd0116425191669f5dbf249727)."
+        },
+        {
+          "id": "5687a78a-e400-440a-b0da-27ec73235b33",
+          "createdAt": "2026-11-11T12:37:55.083000+00:00",
+          "message": "(service mod9-ecs-service) (task 9f4ffccd0116425191669f5dbf249727) failed container health checks."
+        },
+        {
+          "id": "d59edb52-6b32-4139-aadd-5fcef61f9da4",
+          "createdAt": "2026-11-11T12:36:44.479000+00:00",
+          "message": "(service mod9-ecs-service) registered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "c8ff104f-e5d5-4cba-a645-257eb795c926",
+          "createdAt": "2026-11-11T12:36:29.104000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/2776630583057419799) has started 1 tasks: (task 9f4ffccd0116425191669f5dbf249727)."
+        },
+        {
+          "id": "12e2d493-ad5a-4dff-aa00-9f94d8da189f",
+          "createdAt": "2026-11-11T12:36:23.808000+00:00",
+          "message": "(service mod9-ecs-service) has started 1 tasks: (task 9f4ffccd0116425191669f5dbf249727)."
+        },
+        {
+          "id": "21144af2-4ff8-44fd-a4dc-bb7da253e30f",
+          "createdAt": "2026-11-11T09:16:11.049000+00:00",
+          "message": "(service mod9-ecs-service) has reached a steady state."
+        },
+        {
+          "id": "4147b2fa-c55e-4c82-920a-6456406722a5",
+          "createdAt": "2026-11-11T09:16:11.048000+00:00",
+          "message": "(service mod9-ecs-service) (deployment ecs-svc/7539563186179171185) deployment completed."
+        },
+        {
+          "id": "a84edc60-7cc2-4a99-a244-3c22478cde27",
+          "createdAt": "2026-11-11T09:15:33.769000+00:00",
+          "message": "(service mod9-ecs-service) rolling back to deployment ecs-svc/7539563186179171185."
+        },
+        {
+          "id": "406799ea-8de3-4f9f-a818-ff0664ebaad3",
+          "createdAt": "2026-11-11T09:15:33.768000+00:00",
+          "message": "(service mod9-ecs-service) (deployment ecs-svc/0749019577928644644) deployment failed: tasks failed to start."
+        },
+        {
+          "id": "9c413f1f-e814-4e1b-b2bb-285765448502",
+          "createdAt": "2026-11-11T09:13:55.969000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/0749019577928644644) has begun draining connections on 1 tasks."
+        },
+        {
+          "id": "1c056b61-3e78-4565-96ba-1821fb1dddc5",
+          "createdAt": "2026-11-11T09:13:55.965000+00:00",
+          "message": "(service mod9-ecs-service) deregistered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "50302b99-ac1b-40ed-8947-4ac4c992254b",
+          "createdAt": "2026-11-11T09:13:46.271000+00:00",
+          "message": "(service mod9-ecs-service) has stopped 1 running tasks: (task 55650ba2208f4566a1621afc66e668b5)."
+        },
+        {
+          "id": "c4de8471-3ae2-48e0-a69a-d27c2f43d9f0",
+          "createdAt": "2026-11-11T09:13:46.270000+00:00",
+          "message": "(service mod9-ecs-service) (task 55650ba2208f4566a1621afc66e668b5) failed container health checks."
+        },
+        {
+          "id": "8de29269-7347-4b3a-a8a3-97085be422f1",
+          "createdAt": "2026-11-11T09:12:33.933000+00:00",
+          "message": "(service mod9-ecs-service) registered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "7c9ea388-fd9e-4591-8265-69247296c962",
+          "createdAt": "2026-11-11T09:12:18.561000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/0749019577928644644) has started 1 tasks: (task 55650ba2208f4566a1621afc66e668b5)."
+        },
+        {
+          "id": "07ac6413-e73d-4ae6-be4d-be8fcf82bf9e",
+          "createdAt": "2026-11-11T09:12:13.107000+00:00",
+          "message": "(service mod9-ecs-service) has started 1 tasks: (task 55650ba2208f4566a1621afc66e668b5)."
+        },
+        {
+          "id": "72410128-3e2b-457a-8d89-b1ad01a4e3e1",
+          "createdAt": "2026-11-11T09:06:52.119000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/0749019577928644644) has begun draining connections on 1 tasks."
+        },
+        {
+          "id": "08081116-78d1-4419-be6d-2e11d918cf56",
+          "createdAt": "2026-11-11T09:06:52.114000+00:00",
+          "message": "(service mod9-ecs-service) deregistered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "fdbd7d12-587b-4828-93ca-6ed30f2a2570",
+          "createdAt": "2026-11-11T09:06:42.628000+00:00",
+          "message": "(service mod9-ecs-service) has stopped 1 running tasks: (task 56a4b5a96de2416f9ca97d65a9baf007)."
+        },
+        {
+          "id": "9b6aa74d-51e4-430e-b264-77542f5d2d57",
+          "createdAt": "2026-11-11T09:06:42.627000+00:00",
+          "message": "(service mod9-ecs-service) (task 56a4b5a96de2416f9ca97d65a9baf007) failed container health checks."
+        },
+        {
+          "id": "bc2a3b9e-78d7-46c3-9db1-c98a3eb3d8d3",
+          "createdAt": "2026-11-11T09:05:29.931000+00:00",
+          "message": "(service mod9-ecs-service) registered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "80802206-9d81-4d91-a2a2-da323b39163f",
+          "createdAt": "2026-11-11T09:05:03.569000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/0749019577928644644) has started 1 tasks: (task 56a4b5a96de2416f9ca97d65a9baf007)."
+        },
+        {
+          "id": "757f1f77-29fe-42dd-bc99-cb2ce17d9dce",
+          "createdAt": "2026-11-11T09:04:59.215000+00:00",
+          "message": "(service mod9-ecs-service) has started 1 tasks: (task 56a4b5a96de2416f9ca97d65a9baf007)."
+        },
+        {
+          "id": "4da52ec5-5705-48c9-9dcd-357198a6b6a5",
+          "createdAt": "2026-11-11T08:59:28.187000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/0749019577928644644) has begun draining connections on 1 tasks."
+        },
+        {
+          "id": "317efc61-7106-491a-86f5-8907f741b697",
+          "createdAt": "2026-11-11T08:59:28.182000+00:00",
+          "message": "(service mod9-ecs-service) deregistered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "81c425ab-a6ba-448e-a4db-4761625ffc4c",
+          "createdAt": "2026-11-11T08:59:18.190000+00:00",
+          "message": "(service mod9-ecs-service) has stopped 1 running tasks: (task 47e55fd7e35145fe835a3af1ebafe8fc)."
+        },
+        {
+          "id": "3b52a6fc-0800-4b26-a70c-59bcf6b6be63",
+          "createdAt": "2026-11-11T08:59:18.189000+00:00",
+          "message": "(service mod9-ecs-service) (task 47e55fd7e35145fe835a3af1ebafe8fc) failed container health checks."
+        },
+        {
+          "id": "40c8a83d-355f-48ea-a956-a5ed1f439e93",
+          "createdAt": "2026-11-11T08:58:05.156000+00:00",
+          "message": "(service mod9-ecs-service) registered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "d39aa11c-8c47-4e69-8710-e5c2f196a93f",
+          "createdAt": "2026-11-11T08:57:46.074000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/0749019577928644644) has started 1 tasks: (task 47e55fd7e35145fe835a3af1ebafe8fc)."
+        },
+        {
+          "id": "9304fa67-ecb0-47ce-817f-1e9cbb22183c",
+          "createdAt": "2026-11-11T08:57:45.901000+00:00",
+          "message": "(service mod9-ecs-service) has started 1 tasks: (task 47e55fd7e35145fe835a3af1ebafe8fc)."
+        },
+        {
+          "id": "0de8c5a7-449d-47a0-b85b-d1512735943b",
+          "createdAt": "2026-11-11T08:09:28.124000+00:00",
+          "message": "(service mod9-ecs-service) has reached a steady state."
+        },
+        {
+          "id": "639840ba-e4b5-4fdd-90da-a4af57e6b971",
+          "createdAt": "2026-11-11T08:09:28.123000+00:00",
+          "message": "(service mod9-ecs-service) (deployment ecs-svc/7539563186179171185) deployment completed."
+        },
+        {
+          "id": "c44aaa67-13d5-48f6-b721-3f766d4bb20e",
+          "createdAt": "2026-11-11T08:08:26.755000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/5631575343648268390) has begun draining connections on 1 tasks."
+        },
+        {
+          "id": "1aac4f7b-0e01-436f-9cdb-e89a8624108a",
+          "createdAt": "2026-11-11T08:08:26.751000+00:00",
+          "message": "(service mod9-ecs-service) deregistered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "d4910da5-ff82-41b0-898d-32f71106312b",
+          "createdAt": "2026-11-11T08:08:16.192000+00:00",
+          "message": "(service mod9-ecs-service) has stopped 1 running tasks: (task c64bb976ffab40238e41ce9299c9ac72)."
+        },
+        {
+          "id": "1c71d259-a387-4518-b98d-063a40006e4a",
+          "createdAt": "2026-11-11T08:07:55.847000+00:00",
+          "message": "(service mod9-ecs-service) registered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "1c7ed8a7-7a76-4558-af2a-dc4aa32d4f4f",
+          "createdAt": "2026-11-11T08:07:36.073000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/7539563186179171185) has started 1 tasks: (task baf47c5245f94d08a6cb656057b8e6b1)."
+        },
+        {
+          "id": "e2130e6d-8bff-4707-b94d-05e1fb3e6218",
+          "createdAt": "2026-11-11T08:07:35.169000+00:00",
+          "message": "(service mod9-ecs-service) has started 1 tasks: (task baf47c5245f94d08a6cb656057b8e6b1)."
+        },
+        {
+          "id": "b0380bd1-1549-4bfe-ab61-ca08aae55a82",
+          "createdAt": "2026-11-11T07:54:29.093000+00:00",
+          "message": "(service mod9-ecs-service) has reached a steady state."
+        },
+        {
+          "id": "ec798a5d-c4d1-454e-a913-3391dd9c144c",
+          "createdAt": "2026-11-11T07:54:29.092000+00:00",
+          "message": "(service mod9-ecs-service) (deployment ecs-svc/5631575343648268390) deployment completed."
+        },
+        {
+          "id": "3e932d72-33fb-4fd2-92bb-4a63511b4c8e",
+          "createdAt": "2026-11-11T07:53:17.007000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/0371683686256863958) has begun draining connections on 1 tasks."
+        },
+        {
+          "id": "67e2bd81-70ac-41e6-bd41-c9da7bd44f93",
+          "createdAt": "2026-11-11T07:53:17.003000+00:00",
+          "message": "(service mod9-ecs-service) deregistered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "afacde76-c56d-42ea-a032-7ecdf350ec16",
+          "createdAt": "2026-11-11T07:53:15.121000+00:00",
+          "message": "(service mod9-ecs-service) has stopped 1 running tasks: (task f6079fa31dbd4443bf0a29ae1ee9d959)."
+        },
+        {
+          "id": "a3054963-8c14-46f4-bf0e-513d9f4ea1c4",
+          "createdAt": "2026-11-11T07:53:05.648000+00:00",
+          "message": "(service mod9-ecs-service) registered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "8b59e663-7ed9-4704-a404-1a5e5b9cab0a",
+          "createdAt": "2026-11-11T07:52:46.068000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/5631575343648268390) has started 1 tasks: (task c64bb976ffab40238e41ce9299c9ac72)."
+        },
+        {
+          "id": "05971afa-3753-43bf-b5a1-34d0fe318b5a",
+          "createdAt": "2026-11-11T07:52:45.800000+00:00",
+          "message": "(service mod9-ecs-service) has started 1 tasks: (task c64bb976ffab40238e41ce9299c9ac72)."
+        },
+        {
+          "id": "64237565-46cc-4654-bdce-dc791356c53d",
+          "createdAt": "2026-11-11T07:29:43.068000+00:00",
+          "message": "(service mod9-ecs-service) has reached a steady state."
+        },
+        {
+          "id": "431ac006-b8db-4c8a-9946-8c73adcddb14",
+          "createdAt": "2026-11-11T07:29:42.995000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/0371683686256863958) has begun draining connections on 1 tasks."
+        },
+        {
+          "id": "9f0db84c-f537-42b4-9e84-2361d0371e57",
+          "createdAt": "2026-11-11T07:29:42.989000+00:00",
+          "message": "(service mod9-ecs-service) deregistered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "0a88c1f0-68c9-49cf-9331-9a4547e076e0",
+          "createdAt": "2026-11-11T07:29:34.100000+00:00",
+          "message": "(service mod9-ecs-service) has stopped 1 running tasks: (task 35a89a1966ea478db78c89a1f2246534)."
+        },
+        {
+          "id": "b2c1d80d-794b-489e-8d76-61a0a390e60f",
+          "createdAt": "2026-11-11T07:29:24.669000+00:00",
+          "message": "(service mod9-ecs-service) registered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "d26b1a01-0029-4427-a227-433f7c5b998a",
+          "createdAt": "2026-11-11T07:28:56.085000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/0371683686256863958) has started 1 tasks: (task f6079fa31dbd4443bf0a29ae1ee9d959)."
+        },
+        {
+          "id": "d072e62d-4952-43f9-9f79-9fa518cc3c37",
+          "createdAt": "2026-11-11T07:28:55.886000+00:00",
+          "message": "(service mod9-ecs-service) has started 1 tasks: (task f6079fa31dbd4443bf0a29ae1ee9d959)."
+        },
+        {
+          "id": "04945bba-19b5-4cac-bd35-c78d539d8730",
+          "createdAt": "2026-11-11T07:13:38.556000+00:00",
+          "message": "(service mod9-ecs-service) has reached a steady state."
+        },
+        {
+          "id": "2ea22fe3-4492-4ee6-891d-bfbce03a2261",
+          "createdAt": "2026-11-11T07:13:38.555000+00:00",
+          "message": "(service mod9-ecs-service) (deployment ecs-svc/0371683686256863958) deployment completed."
+        },
+        {
+          "id": "e5e52261-32e5-4a38-9418-9174704628a9",
+          "createdAt": "2026-11-11T07:13:28.382000+00:00",
+          "message": "(service mod9-ecs-service) registered 1 targets in (target-group arn:aws:elasticloadbalancing:eu-north-1:111122223333:targetgroup/mod9-ecs-tg/5fa5a4cb7fccb943)"
+        },
+        {
+          "id": "b0e06b4d-03a7-4ddd-a25d-c8e18e09b657",
+          "createdAt": "2026-11-11T07:13:06.050000+00:00",
+          "message": "(service mod9-ecs-service, taskSet ecs-svc/0371683686256863958) has started 1 tasks: (task 35a89a1966ea478db78c89a1f2246534)."
+        },
+        {
+          "id": "4d621c6a-12b3-4ec6-a8d6-1d921861aab3",
+          "createdAt": "2026-11-11T07:11:24.018000+00:00",
+          "message": "(service mod9-ecs-service) has started 1 tasks: (task 35a89a1966ea478db78c89a1f2246534)."
+        }
+      ],
+      "createdAt": "2026-11-11T07:11:09.364000+00:00",
+      "currentServiceRevisions": [
+        {
+          "arn": "arn:aws:ecs:eu-north-1:111122223333:service-revision/mod9-ecs-cluster/mod9-ecs-service/9977732326430771472",
+          "requestedTaskCount": 1,
+          "runningTaskCount": 1,
+          "pendingTaskCount": 0
+        }
+      ],
+      "placementConstraints": [],
+      "placementStrategy": [],
+      "networkConfiguration": {
+        "awsvpcConfiguration": {
+          "subnets": [
+            "REDACTED_RESOURCE_ID",
+            "REDACTED_RESOURCE_ID"
+          ],
+          "securityGroups": [
+            "REDACTED_RESOURCE_ID"
+          ],
+          "assignPublicIp": "DISABLED"
+        }
+      },
+      "healthCheckGracePeriodSeconds": 60,
+      "schedulingStrategy": "REPLICA",
+      "deploymentController": {
+        "type": "ECS"
+      },
+      "createdBy": "arn:aws:iam::111122223333:user/[REDACTED_EMAIL]",
+      "enableECSManagedTags": false,
+      "propagateTags": "NONE",
+      "enableExecuteCommand": false,
+      "availabilityZoneRebalancing": "ENABLED",
+      "resourceManagementType": "CUSTOMER"
+    }
+  ],
+  "failures": []
+}

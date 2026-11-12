@@ -1,0 +1,13 @@
+[Pipeline] { (Declarative: Tool Install)
+[Pipeline] { (Checkout)
+[Pipeline] { (Secret scan)
+[Pipeline] { (Install and test)
+[Pipeline] { (SAST)
+[Pipeline] { (Dependency scan)
+[Pipeline] { (Build image)
+[Pipeline] { (Image scan and SBOM)
+[Pipeline] { (Publish approved image to ECR)
+[Pipeline] { (Deploy approved revision to ECS)
+[Pipeline] { (Declarative: Post Actions)
+ERROR: script returned exit code 1
+Finished: FAILURE

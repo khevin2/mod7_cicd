@@ -1,0 +1,13 @@
+{
+  "logGroup": "/ecs/mod9-ecs",
+  "logStream": "app/app/c55d4f8c095044f48c96be9e7f7b7e69",
+  "releaseBuild": 12,
+  "taskDefinition": "mod9-ecs-app:6",
+  "retentionInDays": 14,
+  "startupEvents": [
+    {
+      "timestamp": 1794463021414,
+      "message": "Server listening on http://REDACTED_BIND_ADDRESS:3000"
+    }
+  ]
+}
