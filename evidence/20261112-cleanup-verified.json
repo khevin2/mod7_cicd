@@ -1,0 +1,40 @@
+{
+  "date": "2026-11-12",
+  "status": "PASS",
+  "currentRevision": "arn:aws:ecs:eu-north-1:447558491229:task-definition/mod9-ecs-app:6",
+  "currentImageDigest": "sha256:606ea7f71ad7b64019eed5814953af2d6bf5359cbc79f79fe26fbece19e1be1b",
+  "taskHealth": "HEALTHY",
+  "matchingTargetHealthy": true,
+  "applicationHealth": "ok",
+  "retainedRevisions": [
+    1,
+    2,
+    3,
+    6
+  ],
+  "retiredRevisions": [
+    4,
+    5
+  ],
+  "retainedImageCount": 4,
+  "lifecyclePolicy": {
+    "rules": [
+      {
+        "rulePriority": 1,
+        "description": "Expire explicitly retired demo images after one day",
+        "selection": {
+          "tagStatus": "tagged",
+          "tagPrefixList": [
+            "retired-demo-"
+          ],
+          "countType": "sinceImagePushed",
+          "countUnit": "days",
+          "countNumber": 1
+        },
+        "action": {
+          "type": "expire"
+        }
+      }
+    ]
+  }
+}

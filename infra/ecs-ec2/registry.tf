@@ -10,14 +10,25 @@ resource "aws_ecr_repository" "app" {
   force_delete = false
 }
 
-# Untagged images can still be in use by digest or be manifest-list children.
-# Keep expiry disabled until operators have verified their full retention strategy.
+# Only explicitly retired demo images qualify automatically. Active, rollback
+# and bootstrap images keep their immutable release tags and are never marked.
 resource "aws_ecr_lifecycle_policy" "app" {
-  count      = var.enable_untagged_image_expiry ? 1 : 0
+  count      = 1
   repository = aws_ecr_repository.app.name
   policy = jsonencode({
-    rules = [{
+    rules = concat([{
       rulePriority = 1
+      description  = "Expire explicitly retired demo images after one day"
+      selection = {
+        tagStatus     = "tagged"
+        tagPrefixList = ["retired-demo-"]
+        countType     = "sinceImagePushed"
+        countUnit     = "days"
+        countNumber   = 1
+      }
+      action = { type = "expire" }
+      }], var.enable_untagged_image_expiry ? [{
+      rulePriority = 2
       description  = "Expire untagged images after 30 days"
       selection = {
         tagStatus   = "untagged"
@@ -26,7 +37,7 @@ resource "aws_ecr_lifecycle_policy" "app" {
         countNumber = 30
       }
       action = { type = "expire" }
-    }]
+    }] : [])
   })
 }
 

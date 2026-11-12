@@ -1,6 +1,6 @@
 # Security demonstration and retention review
 
-These are local preparations. No Jenkins build, release, cloud cleanup, commit, or push has been performed by this work. The existing `security-scan.sh misconfig` findings and the unvalidated SAST/Snyk integrations must be resolved before a passing baseline is possible. All cloud changes, commits and pushes require the user's explicit permission.
+Build 11 demonstrated the injected vulnerable dependency being rejected; build 12 passed after remediation and deployed revision 6. The operator executes commits, builds, Terraform applies and cleanup commands. The assistant prepares local files and inspects AWS read-only.
 
 ## Phase 8: local rehearsal and future live proof
 
@@ -18,7 +18,7 @@ Test synthetic secret rejection in an isolated, disposable workspace without a u
 
 ## Phase 9: retain first, review before cleanup
 
-The proposed ECR lifecycle policy now defaults to disabled. Untagged digests can still be used directly by ECS, or be child images of a multi-platform manifest; tag status cannot establish safety. Enabling `enable_untagged_image_expiry` is an explicit opt-in, **not** proof that expiry is safe. Review active and in-progress deployments, rollback targets, standalone tasks, other services/clusters/accounts that pull the repository, image indexes and child manifests, and any other consumers first. Immutable tags do not prevent deletion. Inspect the Terraform plan: where the old rule already exists, the new default proposes removing that lifecycle policy, and the `count` address changes. Apply only after explicit cloud-change permission. Keep the policy disabled if any required image could be untagged; this may increase storage costs.
+The ECR lifecycle policy expires only images explicitly marked with a `retired-demo-` tag, after one day from image push. No current image has this marker. Never mark an active, rollback or bootstrap digest: a matching tag can expire the whole digest even if other tags exist. Optional general untagged expiry remains disabled by default because untagged images can be referenced by digest or be manifest-list children. Retention review must account for in-progress deployments, rollback targets, tasks and any external consumers. Immutable tags do not prevent deletion.
 
 The offline helper reviews task definition revisions; it makes no AWS calls or changes and never suggests deleting images. Create a private JSON snapshot with this shape, replacing every example value with complete, current account data:
 
@@ -39,6 +39,28 @@ Run `python3 scripts/retention-review.py /path/to/private-snapshot.json --keep 3
 To collect a complete inventory, use read-only AWS ECS list/describe operations for every relevant cluster and service, including every service deployment and task set, running and pending standalone tasks, scheduled/event-driven task definitions, all active task definitions for each affected family, and explicitly selected rollback revisions. Observe pagination and API failures; include revisions referenced by non-service consumers. Inventory ECR images, tags, manifest lists and child digests separately and record any cross-account consumers. If any source is unavailable or a deployment is in progress, postpone cleanup. Recollect immediately before each individually approved change; a stale offline list cannot protect against new consumers. Obtain explicit permission specifying the exact revisions and resources before deregistration or any other cloud change. Retain before/after inventory, inspect service and target health, and verify rollback images still exist and can be pulled. No cleanup has been executed.
 
 Jenkins currently retains 10 builds and 5 sets of artifacts; its post-build cleanup removes only the verified build-local image tag. Before those limits rotate evidence, export reviewed and redacted reports and deployment records to an approved location. Do not indiscriminately prune shared agent caches, workspaces, Docker images, or required evidence.
+
+## Operator commands: scoped demo cleanup
+
+Pause new Jenkins releases during this operation. The only intended targets are revisions 4 and 5, which contain the deliberate `exit 1` health check, and their build 9/10 images. These definitions are not used by scheduled jobs or external consumers in this lab. Retain revision 1/bootstrap, revision 3/verified rollback, revision 6/current release and all other active-definition image references. No task-definition deletion or broad Docker pruning is used.
+
+The prepared Terraform plan adds the lifecycle rule; review it before applying:
+
+```bash
+terraform -chdir=infra/ecs-ec2 show -no-color retention.tfplan
+AWS_PROFILE=training terraform -chdir=infra/ecs-ec2 apply retention.tfplan
+```
+
+Regenerate/review the cleanup inventory, then execute the exact matching review:
+
+```bash
+python3 scripts/cleanup-demo-revisions.py --profile training
+python3 scripts/cleanup-demo-revisions.py --profile training --execute
+```
+
+The first command makes read-only AWS calls and saves `build-metadata/demo-cleanup/review.json`. The second rechecks account, stable deployment and all regional cluster/service/task references, resolves every ACTIVE task-definition image reference, rejects shared digests and manifest indexes, and requires an unchanged review. It deregisters only revisions 4/5 and deletes only the two reviewed digests after another definition-reference check. The exact target list and partial results are recorded in `result.json`. If interrupted after a mutation, stop and inspect that result and AWS state; do not blindly rerun. External/cross-account consumers are outside this lab inventory. Do not reuse this narrow demo cleanup helper as general repository retention automation.
+
+The lifecycle policy provides an opt-in future expiry mechanism. This run removes the reviewed obsolete demo images immediately and never tags retained images. The assistant verifies current revision, endpoint/target health and retained rollback/bootstrap image availability after operator execution. Keep Jenkins build 10/11/12 evidence before artifact rotation.
 
 ## Eventual teardown
 
