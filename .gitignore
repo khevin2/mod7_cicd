@@ -52,6 +52,7 @@ Thumbs.db
 security-reports/
 .sonar/
 .scannerwork/
+__pycache__/
 
 # Local ECS lab inputs and Terraform state
 infra/ci/*.tfvars
@@ -68,3 +69,5 @@ infra/ecs-ec2/*.tfvars
 # Local release metadata and generated ECS task input
 build-metadata/
 task-definition.rendered.json
+# Sanitized submission evidence is intentionally versioned.
+!evidence/submission/build-12/release/task-definition.rendered.json

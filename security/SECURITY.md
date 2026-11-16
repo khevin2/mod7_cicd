@@ -1,6 +1,6 @@
 # Security policy and local scans
 
-The assignment requires SAST, SCA, image scanning, secret detection and an image SBOM. All release gates must complete successfully before publication. `Jenkinsfile` runs scans on pushes and permits publication/deployment only for an explicitly approved manually started build; the complete gates and Jenkins integration still require live validation before any release. See `docs/SECURE_ECS_PIPELINE.md`.
+The assignment requires SAST, SCA, image scanning, secret detection and an image SBOM. All release gates must complete successfully before publication. `Jenkinsfile` configures scans on pushes and permits publication/deployment only for an explicitly approved manually started build. The complete release path was verified in Jenkins build 12; public webhook delivery remains unverified. See the [release runbook](../docs/SECURE_ECS_PIPELINE.md) and [submission evidence](../evidence/README.md).
 
 ## Gate policy
 
@@ -33,7 +33,7 @@ The following resource-local Trivy exceptions expire on **2026-12-10**. They app
 
 The ALB now drops invalid header fields. The HTTP exception is confined to the named demo listener and expires on 2026-12-10; it does not waive transport encryption for other listeners or services.
 
-Install compatible `sonar-scanner`, `snyk`, `gitleaks`, `trivy`, `syft`, `curl` and `jq` executables locally. Start SonarQube on a local-only address and configure `SONAR_HOST_URL` and `SONAR_TOKEN` privately. Set `SNYK_TOKEN` privately when a Snyk account is available. Do not put token values into commands, documents or Git. Snyk sends dependency metadata to its service; SonarQube analysis goes to the configured server. Use only the approved local SonarQube instance. No Snyk scan has been authorized or run until account/access is settled.
+Install compatible `sonar-scanner`, `snyk`, `gitleaks`, `trivy`, `syft`, `curl` and `jq` executables locally. Start SonarQube on a local-only address and configure `SONAR_HOST_URL` and `SONAR_TOKEN` privately. Set `SNYK_TOKEN` privately using an authorized Snyk account. Do not put token values into commands, documents or Git. Snyk sends dependency metadata to its service; SonarQube analysis goes to the configured server. Use only the approved local SonarQube instance. The verified Jenkins runs used managed credentials; a fresh environment requires its own private credential setup.
 
 ```bash
 scripts/security-scan.sh secrets
@@ -54,6 +54,8 @@ Use a disposable copy of the manifests and lockfile with a scanner-confirmed Hig
 
 ## Status
 
-As of 2026-11-09, the operator reports a Snyk account/API token ready and has completed the Ansible/JCasC Jenkins bootstrap. The new [CI security playbook](../docs/CI_SECURITY_SETUP.md) prepares pinned scanner installation, an overall security rating A gate, project/account/token setup and Jenkins bindings. Its execution and real SAST/SCA results remain unverified. The rating A condition is stricter than High/Critical-only rejection and supplements the existing whole-project issue check; actual API compatibility must be demonstrated before release.
+Verified on 2026-11-11/12: the [CI security playbook](../docs/CI_SECURITY_SETUP.md) configured pinned scanners, managed credentials and the overall security rating A gate. [Build 11](../evidence/20261111-jenkins-build-11-dependency-rejected.md) rejected the injected High-severity Snyk finding `SNYK-JS-BRACES-19963945`; downstream image and release stages were skipped. [Build 12](../evidence/20261112-jenkins-build-12-remediated.md) restored Jest 30.3.0, passed the complete pipeline and deployed ECS revision `mod9-ecs-app:6`.
 
-The scan commands and policy still require real tool validation. Snyk authentication and live SonarQube API/analysis behavior remain unverified. The tracked policy does not claim a clean SAST, SCA, secret, image scan or SBOM until real reports are checked.
+The [archived reports](../evidence/submission/build-12/reports/) include the passing SonarQube gate and whole-project issue query, Snyk and Trivy reports, empty Gitleaks reports, the image-secret summary and the CycloneDX SBOM. These runs verified Snyk authentication and SonarQube analysis/API compatibility. The rating A condition supplements the project-wide vulnerability check. Results apply to the recorded source commit and image digest; every later release must run the gates again.
+
+Public webhook delivery, notification delivery, host replacement/draining, live scanner-error injection and a synthetic secret-rejection exercise remain unverified, as disclosed in the [evidence limits](../evidence/README.md#limits). Passing reports do not establish those additional behaviors.

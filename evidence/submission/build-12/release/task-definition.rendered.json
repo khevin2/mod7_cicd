@@ -1,0 +1,44 @@
+{
+  "family": "mod9-ecs-app",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": [
+    "EC2"
+  ],
+  "executionRoleArn": "arn:aws:iam::111122223333:role/mod9-ecs-exec-7caa3c5fe89daab20adbd37ca2",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "111122223333.dkr.ecr.eu-north-1.amazonaws.com/mod9-ecs@sha256:606ea7f71ad7b64019eed5814953af2d6bf5359cbc79f79fe26fbece19e1be1b",
+      "essential": true,
+      "cpu": 128,
+      "memoryReservation": 256,
+      "memory": 384,
+      "user": "10001:10001",
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "hostPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "node -e \"fetch('http://REDACTED_IP:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
+        ],
+        "interval": 10,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 15
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/mod9-ecs",
+          "awslogs-region": "eu-north-1",
+          "awslogs-stream-prefix": "app"
+        }
+      }
+    }
+  ]
+}
