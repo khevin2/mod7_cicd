@@ -10,6 +10,8 @@ pipeline {
   }
   triggers { githubPush() }
   parameters {
+    string(name: 'EXPECTED_SOURCE_COMMIT', defaultValue: '',
+      description: 'Optional source commit approved for this build; empty permits the current branch head.')
     booleanParam(name: 'ROLLBACK_DEMO_APPROVED', defaultValue: false,
       description: 'With RELEASE_APPROVED: test circuit-breaker rollback using an intentionally failing health check. The Jenkins build must fail.')
     booleanParam(name: 'PUBLISH_APPROVED', defaultValue: false,
@@ -30,7 +32,7 @@ pipeline {
           def source = checkout scm
           env.CHECKED_OUT_BRANCH = env.BRANCH_NAME ?: source.GIT_BRANCH ?: ''
           env.GIT_SHA = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-          if (env.EXPECTED_SOURCE_COMMIT && env.GIT_SHA != env.EXPECTED_SOURCE_COMMIT) {
+          if (params.EXPECTED_SOURCE_COMMIT && env.GIT_SHA != params.EXPECTED_SOURCE_COMMIT) {
             error('The checked-out source differs from the commit approved by the lab orchestrator.')
           }
           env.IMAGE_REF = "mod9-jenkins-webapp:${env.GIT_SHA}-${env.BUILD_NUMBER}"

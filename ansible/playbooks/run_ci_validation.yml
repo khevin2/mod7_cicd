@@ -84,6 +84,7 @@
           RELEASE_APPROVED: "{{ 'true' if ci_release_approved | default(false) else 'false' }}"
           PUBLISH_APPROVED: "{{ 'true' if ci_publish_approved | default(false) else 'false' }}"
           ROLLBACK_DEMO_APPROVED: "{{ 'true' if ci_rollback_demo_approved | default(false) else 'false' }}"
+          EXPECTED_SOURCE_COMMIT: '{{ ci_expected_source_commit | default("") }}'
         status_code: 201
         follow_redirects: none
       register: ci_build_queue
@@ -136,6 +137,12 @@
       when: ci_resume_validation | default(false) | bool
       ansible.builtin.assert:
         that:
+          - >-
+            ci_expected_source_commit is not defined or
+            ci_existing_build.json.actions | selectattr('parameters', 'defined') |
+            map(attribute='parameters') | flatten |
+            selectattr('name', 'equalto', 'EXPECTED_SOURCE_COMMIT') |
+            map(attribute='value') | list == [ci_expected_source_commit]
           - >-
             ci_existing_build.json.actions | selectattr('parameters', 'defined') |
             map(attribute='parameters') | flatten |

@@ -186,7 +186,7 @@ class Lab:
     def checkpoint(self):
         write_json(self.state_path, self.state)
 
-    def initialize(self, restart):
+    def initialize(self, restart, fresh=False):
         signature = dict(config=self.config, commit=self.commit,
                          vault_hash=hashlib.sha256(Path(self.config['vault_file']).read_bytes()).hexdigest(),
                          key_hash=hashlib.sha256(Path(self.config['ssh_private_key'] + '.pub').read_bytes()).hexdigest())
@@ -196,14 +196,38 @@ class Lab:
             if self.state.get('fingerprint') != fingerprint:
                 raise LabError('Source/configuration changed. Review the previous run and use --restart for a new run.')
         else:
+            retained = {}
             if self.state_path.exists():
+                previous = json.loads(self.state_path.read_text())
+                if fresh:
+                    self.require_teardown(previous)
+                else:
+                    # Build/configuration checkpoints may be reset without
+                    # removing the infrastructure needed by a later retry.
+                    retained = {key: previous[key] for key in (
+                        'bootstrap_image', 'ci_instance', 'ecs_vpc', 'release_scope_generated'
+                    ) if key in previous}
                 archive = WORK / ('previous-' + str(time.time_ns()))
                 archive.mkdir(mode=0o700)
                 for path in WORK.glob('*.json'):
                     path.replace(archive / path.name)
             self.state = dict(version=1, fingerprint=fingerprint, commit=self.commit,
                               completed=[], bootstrap_image=None)
+            self.state.update(retained)
+            if self.state['bootstrap_image']:
+                self.state['completed'].append('publish')
             self.checkpoint()
+
+    def require_teardown(self, previous):
+        if previous.get('ci_instance'):
+            instances = self.aws('ec2', 'describe-instances', '--filters',
+                                 'Name=instance-id,Values=' + previous['ci_instance'])
+            if any(i['State']['Name'] != 'terminated' for r in instances['Reservations'] for i in r['Instances']):
+                raise LabError('--fresh requires the previous CI instance to be terminated first.')
+        if previous.get('ecs_vpc'):
+            networks = self.aws('ec2', 'describe-vpcs', '--filters', 'Name=vpc-id,Values=' + previous['ecs_vpc'])
+            if networks['Vpcs']:
+                raise LabError('--fresh requires the previous ECS VPC to be deleted first.')
 
     def tf(self, stack, variables):
         """Always refresh/plan; never trust a cached successful Terraform phase."""
@@ -312,8 +336,8 @@ class Lab:
             raise LabError('Jenkins built a different commit.')
         return result
 
-    def up(self, restart=False, recover=None):
-        self.initialize(restart)
+    def up(self, restart=False, recover=None, fresh=False):
+        self.initialize(restart, fresh)
         recovery_phase = self.state.get('phase')
         if recover is not None and recovery_phase not in ('publish', 'release'):
             raise LabError('--recover-build requires an interrupted publish or release phase.')
@@ -325,7 +349,7 @@ class Lab:
             ci_vars.update(json.loads(scope_file.read_text()))
         ci = self.tf('ci', ci_vars)
         if self.state.get('ci_instance') not in (None, ci['instance_id']):
-            raise LabError('CI instance changed. Use --restart after reviewing teardown/recreation.')
+            raise LabError('CI instance changed. After verified teardown, use --restart --fresh.')
         self.state['ci_instance'] = ci['instance_id']
         self.checkpoint()
         self.inventory(ci)
@@ -339,7 +363,7 @@ class Lab:
                         release_image=self.state['bootstrap_image'])
         ecs = self.tf('ecs-ec2', ecs_vars)
         if self.state.get('ecs_vpc') not in (None, ecs['vpc_id']):
-            raise LabError('ECS VPC changed. Use --restart after reviewing teardown/recreation.')
+            raise LabError('ECS VPC changed. After verified teardown, use --restart --fresh.')
         self.state['ecs_vpc'] = ecs['vpc_id']
         self.checkpoint()
         def publish():
@@ -425,13 +449,16 @@ def main(argv=None):
     parser.add_argument('command', choices=['check', 'up', 'status'])
     parser.add_argument('--config', default='lab.local.json', help='JSON configuration; paths resolve from the repository root')
     parser.add_argument('--yes', action='store_true', help='Authorize all non-destructive Terraform applies and the Jenkins publish/release builds')
-    parser.add_argument('--restart', action='store_true', help='Archive checkpoints and begin a new run after reviewed teardown/source changes')
+    parser.add_argument('--restart', action='store_true', help='Reset build/configuration checkpoints while preserving infrastructure settings')
+    parser.add_argument('--fresh', action='store_true', help='With --restart, discard infrastructure settings after verified teardown')
     parser.add_argument('--recover-build', type=int, help='Exact Jenkins build number to recover an ambiguous interrupted submission')
     args = parser.parse_args(argv)
     if args.recover_build is not None and args.recover_build < 1:
         parser.error('--recover-build must be positive')
-    if args.command != 'up' and (args.yes or args.restart or args.recover_build is not None):
-        parser.error('--yes, --restart and --recover-build apply only to up')
+    if args.fresh and not args.restart:
+        parser.error('--fresh requires --restart')
+    if args.command != 'up' and (args.yes or args.restart or args.fresh or args.recover_build is not None):
+        parser.error('--yes, --restart, --fresh and --recover-build apply only to up')
     os.umask(0o077)
     try:
         if args.command == 'status':
@@ -445,7 +472,7 @@ def main(argv=None):
                 print('Scope: create/configure this lab and publish/deploy security-approved images; no rollback or cleanup demos.', flush=True)
                 if not args.yes and input('Authorize this rebuild, image publication and ECS release? [yes/no] ').strip() != 'yes':
                     raise LabError('Rebuild not authorized.')
-                lab.up(args.restart, args.recover_build)
+                lab.up(args.restart, args.recover_build, args.fresh)
         return 0
     except (LabError, OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
         print(f'Lab stopped: {error}', file=sys.stderr)

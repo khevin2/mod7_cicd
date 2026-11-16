@@ -24,7 +24,7 @@ Edit ignored `lab.local.json`:
 
 Create missing SSH/Vault files using the [CI setup instructions](../infra/ci/README.md). Keep the Vault password outside the repository and restrict its permissions with `chmod 600`. For a passphrase-protected SSH key, load it into your SSH agent before starting. Do not put secret values in the JSON configuration or command arguments.
 
-Commit and push this implementation and all intended pipeline changes to the configured branch. The script requires a clean checkout whose commit matches the published branch. Jenkins reads that remote source; the orchestrator also configures an expected-commit check so a branch change between preflight and checkout fails before publication/deployment.
+Commit and push this implementation and all intended pipeline changes to the configured branch. The script requires a clean checkout whose commit matches the published branch. Jenkins reads that remote source; the orchestrator passes an expected-commit parameter for each build so a branch change between preflight and checkout fails before publication/deployment. Ordinary UI/push builds default to an empty parameter and can process later commits without a persistent global pin.
 
 ## Run
 
@@ -55,7 +55,7 @@ Progress and build IDs are stored under ignored `build-metadata/lab/`, with owne
 ./scripts/lab.sh up --config lab.local.json --yes
 ```
 
-Rerunning refreshes/plans infrastructure, checks CI/ECS identities, verifies SSH trust, skips completed host configuration, and monitors the exact recorded Jenkins queue item/build. A completed workflow queues no new builds and rechecks deployment health. A changed source commit, config, encrypted Vault contents or SSH public key requires an explicit new run; old checkpoints cannot silently authorize changed inputs. An unexpected instance/VPC replacement also stops the workflow.
+Rerunning refreshes/plans infrastructure, checks CI/ECS identities, verifies SSH trust, skips completed host configuration, and monitors the exact recorded Jenkins queue item/build. A completed workflow queues no new builds and rechecks deployment health. A changed source commit, config, encrypted Vault contents or SSH public key requires `--restart`; old build checkpoints cannot silently authorize changed inputs. An unexpected instance/VPC replacement also stops the workflow.
 
 There is a small unavoidable ambiguity if the controller loses contact after Jenkins accepts a build but before its queue ID is saved. The script stops rather than queuing a duplicate. Inspect Jenkins, identify the exact accepted build and recover it explicitly:
 
@@ -63,15 +63,21 @@ There is a small unavoidable ambiguity if the controller loses contact after Jen
 ./scripts/lab.sh up --config lab.local.json --yes --recover-build 7
 ```
 
-This is also the recovery path if Jenkins expires a recorded queue item before the build number is saved. The recovered build must match the expected publication/deployment choices, source commit and image repository. Failed/cancelled builds are not retried automatically. Resolve the cause, ensure the previous build has stopped, and start a reviewed new run. Do not run provisioning from another terminal or enable competing release jobs while rebuilding.
-
-After intentional teardown, begin with fresh checkpoints:
+This is also the recovery path if Jenkins expires a recorded queue item before the build number is saved. The recovered build must match the expected publication/deployment choices, expected-commit parameter, source commit and image repository. Failed/cancelled builds are not retried automatically. Resolve the cause, ensure the previous build has stopped, then reset build/configuration checkpoints:
 
 ```bash
 ./scripts/lab.sh up --config lab.local.json --yes --restart
 ```
 
-`--restart` archives the old journal/build records and clears its bootstrap digest. It does not delete Terraform state or cloud resources. Terraform refresh handles externally deleted resources when it can determine they are absent. Partial deletion, retained bootstrap task revisions, unmanaged leftovers, name collisions and proposed replacements may require separate review/import/cleanup. Restart is intended for rebuilding after teardown; use the ordinary release playbook to update a running lab to a new source commit.
+`--restart` archives old build records and reruns host configuration, while preserving the bootstrap digest, CI/ECS identities and generated release IAM scope. If the bootstrap image already exists, it is reused for Terraform and only the final release build is queued again. This allows recovery after a failed final release without proposing removal of the policy or service. Other destructive changes (for example replacing an SSH key or removing client CIDRs) still require separate plan review. Do not run provisioning from another terminal or enable competing release jobs while rebuilding.
+
+After intentional teardown, begin with fresh checkpoints:
+
+```bash
+./scripts/lab.sh up --config lab.local.json --yes --restart --fresh
+```
+
+`--fresh` requires `--restart` and explicitly clears the retained infrastructure settings, including the bootstrap digest. Before archiving/resetting an existing journal, the script checks that the recorded CI instance is terminated/absent and the ECS VPC is absent. It refuses a fresh reset if either remains. It does not delete Terraform state or cloud resources. Terraform refresh handles externally deleted resources when it can determine they are absent. Partial deletion, retained bootstrap task revisions, unmanaged leftovers, name collisions and proposed replacements may require separate review/import/cleanup. Use the ordinary release playbook for routine updates to a running lab.
 
 Preserve Terraform state until teardown is verified. Never delete state to make an apply pass. The script's lock covers this checkout only: local state does not coordinate multiple machines. Preserve state and encrypted/private inputs separately before deleting compute or storage. Existing ECR `force_delete=false` and ECS `skip_destroy` settings still apply during a separate teardown.
 

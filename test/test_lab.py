@@ -180,14 +180,69 @@ class LabTests(unittest.TestCase):
         with self.assertRaisesRegex(lab.LabError, 'CI instance changed'):
             runner.up()
 
-    def test_restart_archives_build_records_and_clears_bootstrap_image(self):
+    def test_restart_archives_build_records_and_preserves_infrastructure(self):
         runner = FakeLab(self.config)
         runner.up()
         runner.initialize(True)
-        self.assertIsNone(runner.state['bootstrap_image'])
-        self.assertEqual(runner.state['completed'], [])
+        self.assertEqual(runner.state['bootstrap_image'], IMAGE)
+        self.assertEqual(runner.state['completed'], ['publish'])
+        self.assertTrue(runner.state['release_scope_generated'])
+        self.assertEqual(runner.state['ci_instance'], 'i-first')
         self.assertFalse((lab.WORK / 'release.json').exists())
         self.assertEqual(len(list(lab.WORK.glob('previous-*/release.json'))), 1)
+
+    def test_failed_release_can_restart_after_credential_fix_without_deletions(self):
+        runner = FakeLab(self.config)
+        original_ansible = runner.ansible
+        def failed_release(playbook, extra=None):
+            original_ansible(playbook,extra)
+            if extra and extra.get('ci_release_approved'):
+                raise lab.LabError('simulated final security gate failure')
+        runner.ansible = failed_release
+        with self.assertRaises(lab.LabError):
+            runner.up()
+        Path(self.config['vault_file']).write_text('$ANSIBLE_VAULT;1.1;AES256\ncorrected-fixture')
+        with self.assertRaisesRegex(lab.LabError,'Source/configuration changed'):
+            runner.up()
+        original_tf = runner.tf
+        def no_removals(stack, variables):
+            if stack == 'ci':
+                self.assertIsNotNone(variables['ecs_release'])
+            else:
+                self.assertEqual(variables['release_image'],IMAGE)
+            return original_tf(stack,variables)
+        runner.tf = no_removals
+        runner.ansible = original_ansible
+        runner.events.clear()
+        runner.up(restart=True)
+        builds = [e[2] for e in runner.events if e[:2] == ('ansible','run_ci_validation.yml')]
+        self.assertEqual(len(builds),1)
+        self.assertTrue(builds[0]['ci_release_approved'])
+        self.assertEqual(runner.state['bootstrap_image'],IMAGE)
+        self.assertEqual(runner.state['phase'],'complete')
+
+    def test_fresh_restart_requires_teardown_before_archiving_and_resetting(self):
+        runner = FakeLab(self.config)
+        runner.up()
+        original = runner.state_path.read_text()
+        def active_instance(*args):
+            return {'Reservations':[{'Instances':[{'State':{'Name':'running'}}]}]}
+        runner.aws = active_instance
+        with self.assertRaisesRegex(lab.LabError,'terminated first'):
+            runner.initialize(True,fresh=True)
+        self.assertEqual(runner.state_path.read_text(),original)
+        def active_vpc(*args):
+            return {'Reservations':[]} if args[1]=='describe-instances' else {'Vpcs':[{'VpcId':'vpc-first'}]}
+        runner.aws = active_vpc
+        with self.assertRaisesRegex(lab.LabError,'VPC to be deleted'):
+            runner.initialize(True,fresh=True)
+        self.assertEqual(runner.state_path.read_text(),original)
+        runner.aws = lambda *args: {'Reservations':[]} if args[1]=='describe-instances' else {'Vpcs':[]}
+        runner.initialize(True,fresh=True)
+        self.assertIsNone(runner.state['bootstrap_image'])
+        self.assertNotIn('release_scope_generated',runner.state)
+        self.assertNotIn('ci_instance',runner.state)
+        self.assertEqual(runner.state['completed'],[])
 
     def test_plans_reject_deletion_and_both_replacement_orders(self):
         for actions in [['delete'], ['delete','create'], ['create','delete']]:

@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import threading
 import unittest
+from urllib.parse import parse_qs
 
 try:
     import yaml
@@ -29,6 +30,8 @@ class JenkinsAnsibleTests(unittest.TestCase):
         self.posts = 0
         self.commit = COMMIT
         self.release = False
+        self.expected_commit = ''
+        self.submitted_parameters = []
         fixture = self
 
         class Handler(http.server.BaseHTTPRequestHandler):
@@ -36,7 +39,10 @@ class JenkinsAnsibleTests(unittest.TestCase):
                 pass
 
             def do_POST(self):
-                self.rfile.read(int(self.headers.get('Content-Length', '0')))
+                body = self.rfile.read(int(self.headers.get('Content-Length', '0')))
+                parameters = parse_qs(body.decode(),keep_blank_values=True)
+                fixture.submitted_parameters.append(parameters)
+                fixture.expected_commit = parameters['EXPECTED_SOURCE_COMMIT'][0]
                 fixture.posts += 1
                 self.send_response(201)
                 self.send_header('Location', f'http://127.0.0.1:{self.server.server_port}/queue/item/42/')
@@ -57,6 +63,7 @@ class JenkinsAnsibleTests(unittest.TestCase):
                 elif path.startswith('/job/mod9-secure-ecs/7/api/json'):
                     data = {'number':7,'building':False,'result':'SUCCESS',
                             'actions':[{'parameters':[{'name':'RELEASE_APPROVED','value':fixture.release},
+                                                      {'name':'EXPECTED_SOURCE_COMMIT','value':fixture.expected_commit},
                                                       {'name':'PUBLISH_APPROVED','value':True}]}]}
                 else:
                     self.send_error(404)
@@ -95,16 +102,21 @@ class JenkinsAnsibleTests(unittest.TestCase):
                               capture_output=True,text=True,timeout=120)
 
     def test_publish_and_resume_exact_build_export_identity_without_duplicate_post(self):
-        first = self.run_play()
+        first = self.run_play(ci_expected_source_commit=COMMIT)
         self.assertEqual(first.returncode,0,first.stdout+first.stderr)
         record = json.loads(self.record.read_text())
         self.assertEqual(record['result'],'SUCCESS')
         self.assertEqual(record['image_digest'],IMAGE)
         self.assertEqual(record['source_commit'],COMMIT)
         self.assertEqual(record['task_definition_arn'],'')
-        second = self.run_play(ci_resume_validation=True,ci_resume_build_number=7)
+        second = self.run_play(ci_resume_validation=True,ci_resume_build_number=7,ci_expected_source_commit=COMMIT)
         self.assertEqual(second.returncode,0,second.stdout+second.stderr)
         self.assertEqual(self.posts,1)
+        self.assertEqual(self.submitted_parameters[0]['EXPECTED_SOURCE_COMMIT'],[COMMIT])
+        # A subsequent ordinary build has no inherited pin from the first.
+        third = self.run_play()
+        self.assertEqual(third.returncode,0,third.stdout+third.stderr)
+        self.assertEqual(self.submitted_parameters[-1]['EXPECTED_SOURCE_COMMIT'],[''])
 
     def test_resumed_queue_exports_exact_release_revision(self):
         self.release = True
@@ -122,6 +134,13 @@ class JenkinsAnsibleTests(unittest.TestCase):
     def test_recovered_build_with_wrong_approval_is_rejected(self):
         self.release = True
         result = self.run_play(ci_resume_validation=True,ci_resume_build_number=7,ci_release_approved=False)
+        self.assertNotEqual(result.returncode,0)
+        self.assertEqual(self.posts,0)
+        self.assertFalse(self.record.exists())
+
+    def test_recovered_build_with_wrong_commit_parameter_is_rejected(self):
+        self.expected_commit = 'c' * 40
+        result = self.run_play(ci_resume_validation=True,ci_resume_build_number=7,ci_expected_source_commit=COMMIT)
         self.assertNotEqual(result.returncode,0)
         self.assertEqual(self.posts,0)
         self.assertFalse(self.record.exists())
