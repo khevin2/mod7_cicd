@@ -37,6 +37,8 @@ The EC2 publisher role supplies scoped ECR/ECS permissions without stored AWS ac
 
 ## Reproduce the lab
 
+For a coordinated rebuild, see [one-command provisioning and recovery](docs/REBUILD.md). After preparing private inputs and publishing the intended source, run `./scripts/lab.sh up --config lab.local.json --yes`. The orchestrator has local validation; a full teardown/rebuild test remains outstanding.
+
 Prerequisites: Git, Node.js 24, npm, Terraform, AWS CLI profile `training` in `eu-north-1`, Python 3 and the [pinned Ansible controller](ansible/requirements-ci.txt). Docker is needed for local container checks. Provisioning also requires an operator-owned Snyk account/token and private Vault inputs.
 
 1. Provision the CI EC2 host using [infra/ci/README.md](infra/ci/README.md). Verify its SSH host key and configure ignored inventory/Vault inputs.

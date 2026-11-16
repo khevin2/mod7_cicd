@@ -1,0 +1,11 @@
+{
+  "owner": "REPLACE_ME",
+  "profile": "training",
+  "account": "447558491229",
+  "region": "eu-north-1",
+  "admin_cidr": "203.0.113.10/32",
+  "allowed_http_cidrs": ["203.0.113.10/32"],
+  "ssh_private_key": "keys/mod9-ci",
+  "vault_file": "ansible/inventory/ci-secrets.yml",
+  "vault_password_file": "/REPLACE_WITH_PRIVATE_PATH/vault-password"
+}

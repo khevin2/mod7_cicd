@@ -71,3 +71,6 @@ build-metadata/
 task-definition.rendered.json
 # Sanitized submission evidence is intentionally versioned.
 !evidence/submission/build-12/release/task-definition.rendered.json
+
+# Private one-command rebuild configuration
+lab.local.json

@@ -30,6 +30,9 @@ pipeline {
           def source = checkout scm
           env.CHECKED_OUT_BRANCH = env.BRANCH_NAME ?: source.GIT_BRANCH ?: ''
           env.GIT_SHA = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+          if (env.EXPECTED_SOURCE_COMMIT && env.GIT_SHA != env.EXPECTED_SOURCE_COMMIT) {
+            error('The checked-out source differs from the commit approved by the lab orchestrator.')
+          }
           env.IMAGE_REF = "mod9-jenkins-webapp:${env.GIT_SHA}-${env.BUILD_NUMBER}"
           if (!(env.CHECKED_OUT_BRANCH in ['feature/secure-ecs-ec2', 'origin/feature/secure-ecs-ec2'])) {
             error("Configure this job to check out feature/secure-ecs-ec2; got ${env.CHECKED_OUT_BRANCH}")

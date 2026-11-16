@@ -61,15 +61,20 @@
       force_basic_auth: true
       timeout: 15
   tasks:
+    - name: Restore the orchestrator's exact queue identifier
+      when: ci_resume_queue_id is defined
+      ansible.builtin.set_fact:
+        ci_queue_id: '{{ ci_resume_queue_id }}'
+
     - name: Obtain a CSRF crumb and session cookie
-      when: not (ci_resume_validation | default(false) | bool)
+      when: not (ci_resume_validation | default(false) | bool) and ci_resume_queue_id is not defined
       ansible.builtin.uri:
         url: http://127.0.0.1:8080/crumbIssuer/api/json
       register: ci_crumb
       no_log: true
 
     - name: Queue a build with explicit publication and deployment choices
-      when: not (ci_resume_validation | default(false) | bool)
+      when: not (ci_resume_validation | default(false) | bool) and ci_resume_queue_id is not defined
       ansible.builtin.uri:
         url: http://127.0.0.1:8080/job/mod9-secure-ecs/buildWithParameters
         method: POST
@@ -85,10 +90,19 @@
       no_log: true
 
     - name: Extract the queued build identifier
-      when: not (ci_resume_validation | default(false) | bool)
+      when: not (ci_resume_validation | default(false) | bool) and ci_resume_queue_id is not defined
       ansible.builtin.set_fact:
         ci_queue_id: '{{ ci_build_queue.location | regex_findall("/queue/item/([0-9]+)(?:/|$)") | first }}'
       no_log: true
+
+    - name: Persist the exact queue identifier for the lab orchestrator
+      when: ci_run_record_path is defined and not (ci_resume_validation | default(false) | bool)
+      delegate_to: localhost
+      become: false
+      ansible.builtin.copy:
+        content: '{{ {"queue_id": ci_queue_id, "source_commit": hostvars["localhost"].ci_local_commit.stdout} | to_nice_json }}'
+        dest: '{{ ci_run_record_path }}'
+        mode: '0600'
 
     - name: Wait for the queued build to start
       when: not (ci_resume_validation | default(false) | bool)
@@ -114,7 +128,7 @@
     - name: Read the existing latest build without queuing another
       when: ci_resume_validation | default(false) | bool
       ansible.builtin.uri:
-        url: 'http://127.0.0.1:8080/job/mod9-secure-ecs/lastBuild/api/json?tree=number,actions[parameters[name,value]]'
+        url: 'http://127.0.0.1:8080/job/mod9-secure-ecs/{{ ci_resume_build_number | default("lastBuild") }}/api/json?tree=number,actions[parameters[name,value]]'
       register: ci_existing_build
       no_log: true
 
@@ -122,6 +136,11 @@
       when: ci_resume_validation | default(false) | bool
       ansible.builtin.assert:
         that:
+          - >-
+            ci_existing_build.json.actions | selectattr('parameters', 'defined') |
+            map(attribute='parameters') | flatten |
+            selectattr('name', 'equalto', 'PUBLISH_APPROVED') |
+            map(attribute='value') | list == [ci_publish_approved | default(false)]
           - >-
             ci_existing_build.json.actions | selectattr('parameters', 'defined') |
             map(attribute='parameters') | flatten |
@@ -138,6 +157,15 @@
     - name: Show the build console address
       ansible.builtin.debug:
         msg: 'Build {{ ci_validation_build }}; deployment approved={{ ci_release_approved | default(false) }}. Console via SSH tunnel: http://localhost:8080/job/mod9-secure-ecs/{{ ci_validation_build }}/console'
+
+    - name: Persist the exact build number for the lab orchestrator
+      when: ci_run_record_path is defined
+      delegate_to: localhost
+      become: false
+      ansible.builtin.copy:
+        content: '{{ {"build_number": ci_validation_build | int, "source_commit": hostvars["localhost"].ci_local_commit.stdout} | to_nice_json }}'
+        dest: '{{ ci_run_record_path }}'
+        mode: '0600'
 
     - name: Wait for build completion
       ansible.builtin.uri:
@@ -157,6 +185,45 @@
       ansible.builtin.assert:
         that: ci_validation_result.json.result == 'SUCCESS'
         fail_msg: 'Build failed or was aborted. Inspect its console and artifacts. Deployment approved={{ ci_release_approved | default(false) }}; publication approved={{ (ci_publish_approved | default(false)) or (ci_release_approved | default(false)) }}.'
+
+    - name: Export the successful build identity and digest to the lab orchestrator
+      when: ci_run_record_path is defined
+      block:
+        - name: Read the build's checked-out source commit
+          ansible.builtin.uri:
+            url: 'http://127.0.0.1:8080/job/mod9-secure-ecs/{{ ci_validation_build }}/artifact/build-metadata/git-commit.txt'
+            return_content: true
+          register: ci_run_commit
+          no_log: true
+
+        - name: Read the published image digest
+          ansible.builtin.uri:
+            url: 'http://127.0.0.1:8080/job/mod9-secure-ecs/{{ ci_validation_build }}/artifact/build-metadata/image-digest.txt'
+            return_content: true
+          register: ci_run_digest
+          no_log: true
+
+        - name: Require the intended commit and an image from the lab repository
+          ansible.builtin.assert:
+            that:
+              - ci_run_commit.content | trim == hostvars['localhost'].ci_local_commit.stdout
+              - (ci_run_digest.content | trim) is match('^447558491229[.]dkr[.]ecr[.]eu-north-1[.]amazonaws[.]com/mod9-ecs@sha256:[0-9a-f]{64}$')
+
+        - name: Read the requested ECS revision for a release
+          when: ci_release_approved | default(false) | bool
+          ansible.builtin.uri:
+            url: 'http://127.0.0.1:8080/job/mod9-secure-ecs/{{ ci_validation_build }}/artifact/build-metadata/task-definition-arn.txt'
+            return_content: true
+          register: ci_run_revision
+          no_log: true
+
+        - name: Save the successful result without credentials
+          delegate_to: localhost
+          become: false
+          ansible.builtin.copy:
+            content: '{{ {"build_number": ci_validation_build | int, "source_commit": ci_run_commit.content | trim, "image_digest": ci_run_digest.content | trim, "task_definition_arn": ci_run_revision.content | default("") | trim, "result": ci_validation_result.json.result} | to_nice_json }}'
+            dest: '{{ ci_run_record_path }}'
+            mode: '0600'
 
     - name: Read rollback proof from the intentionally failed build
       when: ci_rollback_demo_approved | default(false) | bool
